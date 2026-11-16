@@ -1,0 +1,28 @@
+baseline/hf_reference.py
+  h_04353115311dd2 1-139
+baseline/modeling_muse_glimmer.py
+  s_cd83ddd01988c8::t_f40aeb2c0dc6ec 1-1204
+baseline/prompt.jsonl
+  h_04353115311dd2 1
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "4cc1beeb77a76feec89a73ef8249a0c967263fa1",
+  "prompts": {},
+  "humans": {
+    "h_04353115311dd2": {
+      "author": "r-chong <dev.reese.chong@gmail.com>"
+    }
+  },
+  "sessions": {
+    "s_cd83ddd01988c8": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1e58d-b0ab-70f1-b690-244860abf1d6",
+        "model": "gpt-6-sol"
+      },
+      "human_author": "r-chong <dev.reese.chong@gmail.com>"
+    }
+  }
+}
