@@ -125,7 +125,7 @@ def main(max_new_tokens: int) -> None:
     """Run the one saved case and download its results locally."""
     if max_new_tokens < 1:
         raise ValueError("max_new_tokens must be positive")
-    case = json.loads((ROOT / "smoke-test-prompt.jsonl").read_text())
+    case = json.loads((ROOT / "prompt.jsonl").read_text())
     if case.get("id") != "gsm8k_test_0001":
         raise ValueError("unexpected smoke case id")
     run_id = uuid.uuid4().hex
