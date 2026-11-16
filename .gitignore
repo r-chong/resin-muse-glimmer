@@ -1,0 +1,16 @@
+# Private take-home brief
+/[[]Take-home] Resin Investigation (1).pdf
+/MUSE_MODAL_PREPARATION.md
+
+# Local upstream checkouts
+/resin-source/
+/resin-explained/
+
+# Python and local tooling
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.venv/
+.venv-*/
+.DS_Store
