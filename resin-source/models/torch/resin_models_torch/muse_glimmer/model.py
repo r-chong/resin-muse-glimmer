@@ -124,6 +124,7 @@ class Attention(nn.Module):
     def __init__(self, config: MuseGlimmerTextConfig, layer: int) -> None:
         super().__init__()
         width = config.hidden_size
+        self.layer = layer
         self.num_heads = config.num_attention_heads
         self.num_kv_heads = config.num_key_value_heads
         self.kv_groups = self.num_heads // self.num_kv_heads
@@ -252,6 +253,56 @@ class Attention(nn.Module):
         )
         return self._output(attended, hidden)
 
+    def forward_paged(self, hidden: Tensor, positions: Tensor, rows, arena) -> Tensor:
+        """Attend using Engine-managed pages (see ``paged.py``).
+
+        ``hidden`` is ``[rows, length, width]``: one prefill chunk (one row) or
+        one decode token per row. New keys/values are written to the Engine's
+        append addresses first, then each row gathers its pages in block-table
+        order. Positions at or after ``row.end`` are reserved but unwritten.
+        """
+
+        queries, keys, values = self._project(hidden, positions)
+        group, key_pages, value_pages = arena.layer_views(self.layer)
+        gathered = []
+        for index, row in enumerate(rows):
+            cache = row.groups[group]
+            key_pages[cache.append_pages, cache.append_offsets] = keys[index].transpose(
+                0, 1
+            )
+            value_pages[cache.append_pages, cache.append_offsets] = values[
+                index
+            ].transpose(0, 1)
+        for row in rows:
+            cache = row.groups[group]
+            row_keys = key_pages[cache.pages].flatten(0, 1).transpose(0, 1)
+            row_values = value_pages[cache.pages].flatten(0, 1).transpose(0, 1)
+            key_positions = cache.first_position + torch.arange(
+                row_keys.shape[1], device=hidden.device
+            )
+            # Unwritten (reserved) slots move to the far future: always masked.
+            key_positions = torch.where(key_positions < row.end, key_positions, 1 << 30)
+            gathered.append((row_keys, row_values, key_positions))
+        width = max(k.shape[1] for k, _, _ in gathered)
+        padded_keys = torch.stack(
+            [F.pad(k, (0, 0, 0, width - k.shape[1])) for k, _, _ in gathered]
+        )
+        padded_values = torch.stack(
+            [F.pad(v, (0, 0, 0, width - v.shape[1])) for _, v, _ in gathered]
+        )
+        key_positions = torch.stack(
+            [F.pad(p, (0, width - p.shape[0]), value=1 << 30) for _, _, p in gathered]
+        )
+        mask = self._mask(positions, key_positions)[:, None]
+        attended = F.scaled_dot_product_attention(
+            queries,
+            padded_keys.repeat_interleave(self.kv_groups, dim=1),
+            padded_values.repeat_interleave(self.kv_groups, dim=1),
+            attn_mask=mask,
+            scale=self.scale,
+        )
+        return self._output(attended, hidden)
+
 
 class MLP(nn.Module):
     def __init__(self, config: MuseGlimmerTextConfig) -> None:
@@ -299,6 +350,12 @@ class DecoderLayer(nn.Module):
         )
         return self._feed_forward(hidden + self.post_attention_layernorm(update))
 
+    def forward_paged(self, hidden: Tensor, positions: Tensor, rows, arena) -> Tensor:
+        update = self.self_attn.forward_paged(
+            self.input_layernorm(hidden), positions, rows, arena
+        )
+        return self._feed_forward(hidden + self.post_attention_layernorm(update))
+
 
 class MuseGlimmerTextModel(nn.Module):
     def __init__(self, config: MuseGlimmerTextConfig) -> None:
@@ -327,6 +384,11 @@ class MuseGlimmerTextModel(nn.Module):
             hidden = layer.forward_batch(
                 hidden, positions, [state.layers[index] for state in states]
             )
+        return self.norm(hidden)
+
+    def forward_paged(self, hidden: Tensor, positions: Tensor, rows, arena) -> Tensor:
+        for layer in self.layers:
+            hidden = layer.forward_paged(hidden, positions, rows, arena)
         return self.norm(hidden)
 
 

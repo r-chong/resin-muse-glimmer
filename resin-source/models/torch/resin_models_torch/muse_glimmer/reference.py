@@ -37,6 +37,11 @@ from resin_models_torch.muse_glimmer.model import (
     MuseGlimmerForConditionalGeneration,
     MuseGlimmerState,
 )
+from resin_models_torch.muse_glimmer.paged import (
+    MuseCacheGeometry,
+    MuseKvArena,
+    paged_rows,
+)
 
 if TYPE_CHECKING:
     from resin import BatchPlan, ForwardOutput
@@ -125,6 +130,10 @@ class MuseGlimmerTorchRunner(Runner):
 
     Uniform one-token decode steps run as one batched forward. Prefill chunks
     and mixed steps run one request at a time.
+
+    ``kv_cache="engine"`` (default) declares a Resin ``CacheLayout`` and keeps
+    K/V in Engine-managed pages (``paged.py``). ``kv_cache="local"`` keeps the
+    original request-owned tensors, retained for comparison.
     """
 
     parallelism_capabilities = ParallelismCapabilities()
@@ -139,7 +148,13 @@ class MuseGlimmerTorchRunner(Runner):
         include_vision: bool = True,
         prefill_chunk_size: int | None = None,
         max_batch_tokens: int | None = None,
+        kv_cache: str = "engine",
+        gpu_memory_utilization: float = 0.90,
+        kv_workspace_bytes: int = 8 << 30,
+        cache_parent_capacity: int | None = None,
     ) -> None:
+        if kv_cache not in ("engine", "local"):
+            raise ValueError("kv_cache must be 'engine' or 'local'")
         self.device = torch.device(device)
         self.model_path = resolve_model_path(model, revision)
         self._model = load_model(
@@ -152,15 +167,84 @@ class MuseGlimmerTorchRunner(Runner):
         self.include_vision = include_vision
         self.vocab_size = self.config.text.vocab_size
         self.eos_token_ids = self.config.text.eos_token_ids
+        self.kv_cache = kv_cache
+        self.cache_layout = None
+        self.cache_capacity_plan = None
+        self._arena = None
+        self._binding = None
+        if kv_cache == "engine":
+            self._configure_engine_cache(
+                prefill_chunk_size or 8192,
+                gpu_memory_utilization,
+                kv_workspace_bytes,
+                cache_parent_capacity,
+            )
         self.runner_config = RunnerConfig(
             continuation_prefill=True,
             prefill_chunk_size=prefill_chunk_size,
             max_batch_tokens=max_batch_tokens,
+            cache_layout=self.cache_layout,
         )
         self._sampler = TorchSampler()
         self._requests: dict[int, _Request] = {}
         self.forward_calls = 0
         self.vision_calls = 0
+
+    # -- Engine-managed cache ----------------------------------------------
+
+    def _configure_engine_cache(
+        self, chunk_tokens, memory_utilization, workspace_bytes, parent_limit
+    ) -> None:
+        from resin.backend.capacity import plan_cache_capacity
+        from resin.backend.resources import CachePoolBinding
+
+        geometry = MuseCacheGeometry.from_config(
+            self.config.text, chunk_tokens=chunk_tokens
+        )
+        if self.device.type == "cuda":
+            free, total = torch.cuda.mem_get_info(self.device)
+            plan = plan_cache_capacity(
+                total,
+                free,
+                memory_utilization,
+                geometry.slab_bytes(),
+                overhead_bytes=workspace_bytes,
+            )
+            capacity = plan.parent_capacity
+        elif parent_limit is None:
+            raise ValueError("non-CUDA devices need an explicit cache_parent_capacity")
+        else:
+            plan, capacity = None, parent_limit
+        if parent_limit is not None:
+            capacity = min(capacity, parent_limit)
+        self.cache_capacity_plan = plan
+        self.cache_parent_capacity = capacity
+        self.cache_geometry = geometry
+        self.cache_layout = geometry.layout(capacity)
+        self._arena = MuseKvArena(
+            geometry,
+            capacity,
+            device=self.device,
+            dtype=self._model.lm_head.weight.dtype,
+        )
+        self._binding = CachePoolBinding(self.cache_layout, resource="Muse Glimmer KV")
+
+    def bind_resources(self, binding) -> None:
+        """Bind the arena to an Engine's pool.
+
+        Sequential Engines (tests, benchmark sweeps) may reuse one runner, so
+        a new pool rebinds the same arena; the frozen-layout check still
+        applies. Never drive two live Engines with one runner.
+        """
+        from resin.backend.resources import CachePoolBinding
+
+        if self._binding is None:
+            raise RuntimeError("this runner was built with kv_cache='local'")
+        if self._binding.pool_id not in (None, binding.cache_pool_id):
+            self._binding = CachePoolBinding(
+                self.cache_layout, resource="Muse Glimmer KV"
+            )
+        self._binding.bind_resources(binding)
 
     # -- request state -----------------------------------------------------
 
@@ -215,9 +299,12 @@ class MuseGlimmerTorchRunner(Runner):
             request = self._request(int(sequence_id), media[index])
             token_slice = batch.token_slice(index)
             positions = batch.positions[token_slice]
+            # With Engine-managed pages the Engine is the source of truth for
+            # history; only the local path tracks lengths itself.
             offset = request.state.length
-            if int(batch.context_lengths[index]) != offset or (
-                len(positions) and int(positions[0]) != offset
+            if self.kv_cache == "local" and (
+                int(batch.context_lengths[index]) != offset
+                or (len(positions) and int(positions[0]) != offset)
             ):
                 raise ValueError(
                     f"non-contiguous positions for request {int(sequence_id)}: "
@@ -251,6 +338,12 @@ class MuseGlimmerTorchRunner(Runner):
         self.forward_calls += 1
         batch = BatchView.from_plan(plan)
         requests = self._validate(batch, plan)
+        rows = (
+            paged_rows(batch, self.cache_parent_capacity, self.device)
+            if self._arena is not None
+            else None
+        )
+        text = self._model.model.language_model
         logits_rows: list[torch.Tensor] = []
         prompt_rows: list[PromptScores | None] = []
         with torch.inference_mode():
@@ -270,9 +363,14 @@ class MuseGlimmerTorchRunner(Runner):
                 positions = torch.as_tensor(
                     batch.positions.astype(np.int64)[:, None], device=self.device
                 )
-                hidden = self._model.forward_batch(
-                    tokens, [request.state for request in requests], positions
-                )
+                if rows is not None:
+                    hidden = text.forward_paged(
+                        self._model.embed(tokens), positions, rows, self._arena
+                    )
+                else:
+                    hidden = self._model.forward_batch(
+                        tokens, [request.state for request in requests], positions
+                    )
                 logits_rows.append(self._model.logits(hidden[:, -1]))
             else:
                 for index, request in enumerate(requests):
@@ -285,12 +383,15 @@ class MuseGlimmerTorchRunner(Runner):
                     positions = torch.as_tensor(
                         row_positions.astype(np.int64)[None], device=self.device
                     )
-                    hidden = self._model(
-                        tokens,
-                        request.state,
-                        positions,
-                        hidden=self._hidden_for(request, tokens, row_positions),
-                    )
+                    embedded = self._hidden_for(request, tokens, row_positions)
+                    if rows is not None:
+                        hidden = text.forward_paged(
+                            embedded, positions, rows[index : index + 1], self._arena
+                        )
+                    else:
+                        hidden = self._model(
+                            tokens, request.state, positions, hidden=embedded
+                        )
                     if plan.needs_prompt_logprobs:
                         prompt_rows.append(
                             prompt_scores(

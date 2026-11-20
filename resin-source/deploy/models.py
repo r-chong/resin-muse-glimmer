@@ -687,6 +687,7 @@ def create_runner(
             device=device,
             include_vision=not spec.text_only,
             prefill_chunk_size=prefill_chunk_size,
+            gpu_memory_utilization=memory,
         )
     common: dict[str, Any] = dict(
         device=device, cuda_graph_prefill=prefill_graph, cuda_graph_decode=decode_graph

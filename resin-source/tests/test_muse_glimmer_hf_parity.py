@@ -48,7 +48,10 @@ def _token_summary(actual: list[int], expected: list[int]) -> dict:
     first = next((i for i, (a, b) in enumerate(zip(actual, expected)) if a != b), None)
     if first is None and len(actual) != len(expected):
         first = min(len(actual), len(expected))
-    return {"matches": sum(a == b for a, b in zip(actual, expected)), "first_mismatch": first}
+    return {
+        "matches": sum(a == b for a, b in zip(actual, expected)),
+        "first_mismatch": first,
+    }
 
 
 def _logit_summary(actual: np.ndarray, expected: np.ndarray) -> dict:
@@ -59,7 +62,9 @@ def _logit_summary(actual: np.ndarray, expected: np.ndarray) -> dict:
         "rows": int(len(expected)),
         "max_abs_diff": [round(float(v), 4) for v in diff.max(-1)],
         "mean_abs_diff": [round(float(v), 5) for v in diff.mean(-1)],
-        "reference_top1_margin": [round(float(v), 4) for v in ranked[:, -1] - ranked[:, -2]],
+        "reference_top1_margin": [
+            round(float(v), 4) for v in ranked[:, -1] - ranked[:, -2]
+        ],
     }
 
 
@@ -86,7 +91,11 @@ def _generate(runner, prompts, steps, *, chunk=None, max_running=8):
 
     previous = runner.runner_config
     if chunk is not None:
-        runner.runner_config = RunnerConfig(continuation_prefill=True, prefill_chunk_size=chunk)
+        runner.runner_config = RunnerConfig(
+            continuation_prefill=True,
+            prefill_chunk_size=chunk,
+            cache_layout=previous.cache_layout,
+        )
     try:
         engine = Engine(
             runner,
@@ -129,7 +138,9 @@ def _teacher_forced(runner, ref) -> tuple[np.ndarray, np.ndarray | None]:
         probes = None
         if "probe_positions" in ref:
             index = torch.as_tensor(ref["probe_positions"], device="cuda")
-            probes = model.logits(hidden[0].index_select(0, index)).float().cpu().numpy()
+            probes = (
+                model.logits(hidden[0].index_select(0, index)).float().cpu().numpy()
+            )
         rows = [model.logits(hidden[:, -1]).float()[0]]
         for token in ref["tokens"][:-1]:
             hidden = model(
@@ -145,7 +156,9 @@ def test_single_request_tokens_and_logits(runner, references):
     """One prefill plus greedy decode per reference, including window-crossing prompts."""
     failures = []
     for ref in references:
-        (tokens,) = _generate(runner, [ref["prompt"]], [len(ref["tokens"])], max_running=1)
+        (tokens,) = _generate(
+            runner, [ref["prompt"]], [len(ref["tokens"])], max_running=1
+        )
         steps, probes = _teacher_forced(runner, ref)
         if DUMP_DIR:
             Path(DUMP_DIR).mkdir(parents=True, exist_ok=True)
@@ -154,8 +167,11 @@ def test_single_request_tokens_and_logits(runner, references):
                 step_logits=steps,
                 reference_tokens=np.array(ref["tokens"]),
                 engine_tokens=np.array(tokens),
-                **({"probe_logits": probes, "probe_positions": ref["probe_positions"]}
-                   if probes is not None else {}),
+                **(
+                    {"probe_logits": probes, "probe_positions": ref["probe_positions"]}
+                    if probes is not None
+                    else {}
+                ),
             )
         summary = _report(
             "single_request",
@@ -165,14 +181,21 @@ def test_single_request_tokens_and_logits(runner, references):
             reference_tokens=ref["tokens"],
             engine=_token_summary(tokens, ref["tokens"]),
             steps=_logit_summary(steps, ref["step_logits"]),
-            probe_positions=ref["probe_positions"].tolist() if probes is not None else [],
-            probes=_logit_summary(probes, ref["probe_logits"]) if probes is not None else None,
+            probe_positions=ref["probe_positions"].tolist()
+            if probes is not None
+            else [],
+            probes=_logit_summary(probes, ref["probe_logits"])
+            if probes is not None
+            else None,
         )
         if summary["engine"]["first_mismatch"] is not None:
             failures.append(f"{ref['name']}: engine tokens diverge")
         if summary["steps"]["argmax_matches"] != summary["steps"]["rows"]:
             failures.append(f"{ref['name']}: teacher-forced argmax mismatch")
-        if probes is not None and summary["probes"]["argmax_matches"] != summary["probes"]["rows"]:
+        if (
+            probes is not None
+            and summary["probes"]["argmax_matches"] != summary["probes"]["rows"]
+        ):
             failures.append(f"{ref['name']}: probe argmax mismatch")
     assert not failures, failures
     assert runner.live_cache_count == 0
@@ -187,7 +210,11 @@ def test_chunked_prefill_across_window_matches_reference(runner, references):
     for chunk in (1000, 2047):
         for ref in long_refs:
             (tokens,) = _generate(
-                runner, [ref["prompt"]], [len(ref["tokens"])], chunk=chunk, max_running=1
+                runner,
+                [ref["prompt"]],
+                [len(ref["tokens"])],
+                chunk=chunk,
+                max_running=1,
             )
             summary = _report(
                 "chunked_prefill",
@@ -235,5 +262,7 @@ def test_concurrent_requests_batch_and_match_reference(runner, references, concu
         requests=results,
     )
     assert runner.live_cache_count == 0
-    assert max(batch_sizes, default=0) == concurrency, "batched decode path not exercised"
+    assert max(batch_sizes, default=0) == concurrency, (
+        "batched decode path not exercised"
+    )
     assert all(r["first_mismatch"] is None for r in results), results
