@@ -1,0 +1,41 @@
+reports/implementation-log.md
+  s_0d9d163433c805::t_73b5154d935774 1-127
+  s_0d9d163433c805::t_1ff0edbba8e6b3 128-166
+DECISIONS.md
+  s_0d9d163433c805::t_1fddf1cf045ded 154-164,170-171
+resin-patches/README.md
+  s_0d9d163433c805::t_629500a194f936 45
+results/bench/20261119T201630.jsonl
+  s_568d3678d21992::t_3f1e957344f09f 1-6
+resin-patches/infra/0002-fix-bench-support-runners-without-CUDA-runner-extras.patch
+  s_0d9d163433c805::t_8e9d0c01fae0e3 1-50
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "c4ecb7e2c420ae03a0697dc91d4489ffc9604e7e",
+  "prompts": {},
+  "humans": {
+    "h_04353115311dd2": {
+      "author": "r-chong <dev.reese.chong@gmail.com>"
+    }
+  },
+  "sessions": {
+    "s_0d9d163433c805": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "13cdd190-051a-4924-b48b-997280d71d90",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": null
+    },
+    "s_568d3678d21992": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1f653-9273-7663-a0c1-38bf597b6ae3",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "r-chong <dev.reese.chong@gmail.com>"
+    }
+  }
+}
