@@ -1,0 +1,48 @@
+resin-patches/infra/0001-fix-deploy-ship-resin_models_torch-runners-in-the-Mo.patch
+  s_0d9d163433c805::t_7d640fb4acaa0e 1,3
+resin-patches/model/0006-test-cover-sliding-window-probes-chunked-prefill-and.patch
+  s_0d9d163433c805::t_7d640fb4acaa0e 1,3
+resin-patches/model/0001-feat-recipe-add-Muse-Glimmer-ATEM-recipe-and-image-p.patch
+  s_0d9d163433c805::t_7d640fb4acaa0e 1,3,21-24
+harness/muse_bench.sh
+  s_0d9d163433c805::t_88897c05baf8f7 1-24
+scripts/apply_resin_patches.sh
+  s_0d9d163433c805::t_7d640fb4acaa0e 2-5,9
+harness/muse_parity.py
+  s_0d9d163433c805::t_7d640fb4acaa0e 42-45,58
+resin-patches/model/0002-feat-py-expose-muse_glimmer-recipe-and-MuseGlimmerMe.patch
+  s_0d9d163433c805::t_7d640fb4acaa0e 1,3
+resin-patches/model/0003-feat-models-torch-add-Muse-Glimmer-PyTorch-reference.patch
+  s_0d9d163433c805::t_7d640fb4acaa0e 1,3,19-23
+resin-patches/model/0005-test-add-Muse-Glimmer-text-parity-against-saved-HF-g.patch
+  s_0d9d163433c805::t_7d640fb4acaa0e 1,3,11
+resin-patches/model/0004-feat-deploy-register-muse-glimmer-30b-torch-preset-o.patch
+  s_0d9d163433c805::t_7d640fb4acaa0e 1,3
+DECISIONS.md
+  s_0d9d163433c805::t_910607df110508 126-130,136-153
+resin-patches/README.md
+  s_0d9d163433c805::t_1d91e8f31feed4 11-14,19,23-24,28-29,33-34,37-39
+results/parity/20261119T200741.json
+  s_0d9d163433c805::t_1755f4350daa64 1-528
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "9836d31fde2565e2ada7e144a4361bfc36c0b949",
+  "prompts": {},
+  "humans": {
+    "h_04353115311dd2": {
+      "author": "r-chong <dev.reese.chong@gmail.com>"
+    }
+  },
+  "sessions": {
+    "s_0d9d163433c805": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "13cdd190-051a-4924-b48b-997280d71d90",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "r-chong <dev.reese.chong@gmail.com>"
+    }
+  }
+}
