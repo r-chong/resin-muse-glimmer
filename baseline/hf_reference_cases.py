@@ -19,7 +19,7 @@ import modal
 ROOT = Path(__file__).resolve().parent
 MODEL_ID = "meta-models/Muse-Glimmer-30B"
 REVISION = "cec94fcfd6512f2cfe708138c32533b346ea4f69"
-CURRENT_DATE = "2026-11-19"  # fixed so the template's date line is reproducible
+CURRENT_DATE = "2026-11-19"  # default; the gsm8k fixture (hf_reference.py) used 2026-11-16
 IMAGE_PATH = ROOT / "fixtures" / "muse_check_644x476.png"
 MOUNT = Path("/shared")
 VOLUME = modal.Volume.from_name("muse-glimmer-transformers-reference-v1", version=2, create_if_missing=True)
@@ -74,7 +74,8 @@ def cases() -> list[dict]:
 
 
 @app.function(image=IMAGE, gpu="H100!", volumes={MOUNT: VOLUME}, cpu=8, memory=65536, timeout=7200)
-def capture(all_cases: list[dict], image_bytes: bytes, steps: int, run_id: str) -> dict:
+def capture(all_cases: list[dict], image_bytes: bytes, steps: int, run_id: str, attn: str = "sdpa",
+            current_date: str = CURRENT_DATE) -> dict:
     import importlib.metadata as metadata
     import io
     import platform
@@ -92,7 +93,8 @@ def capture(all_cases: list[dict], image_bytes: bytes, steps: int, run_id: str) 
     processor = AutoProcessor.from_pretrained(checkpoint, local_files_only=True)
     tokenizer = processor.tokenizer
     model = MuseGlimmerForConditionalGeneration.from_pretrained(
-        checkpoint, dtype=torch.bfloat16, device_map="cuda:0", low_cpu_mem_usage=True, local_files_only=True
+        checkpoint, dtype=torch.bfloat16, device_map="cuda:0", low_cpu_mem_usage=True, local_files_only=True,
+        attn_implementation=attn,
     ).eval()
     stop_ids = {tokenizer.convert_tokens_to_ids("<|eot|>"), tokenizer.convert_tokens_to_ids("<|end_of_text|>")}
     image = Image.open(io.BytesIO(image_bytes)).convert("RGB")
@@ -101,7 +103,7 @@ def capture(all_cases: list[dict], image_bytes: bytes, steps: int, run_id: str) 
     results = []
     for case in all_cases:
         text = processor.apply_chat_template(
-            case["messages"], add_generation_prompt=True, tokenize=False, current_date=CURRENT_DATE
+            case["messages"], add_generation_prompt=True, tokenize=False, current_date=current_date
         )
         encoded = processor(
             text=[text], images=[image] if case.get("image") else None, return_tensors="pt",
@@ -172,7 +174,7 @@ def capture(all_cases: list[dict], image_bytes: bytes, steps: int, run_id: str) 
         "format": "muse-transformers-reference-cases-v1",
         "model": MODEL_ID,
         "revision": REVISION,
-        "current_date": CURRENT_DATE,
+        "current_date": current_date,
         "image_sha256": hashlib.sha256(image_bytes).hexdigest(),
         "dtype": "bfloat16",
         "attn_implementation": model.config._attn_implementation,
@@ -189,13 +191,14 @@ def capture(all_cases: list[dict], image_bytes: bytes, steps: int, run_id: str) 
 
 
 @app.local_entrypoint()
-def main(steps: int = 16, cases_filter: str = "long_window,long_8k") -> None:
+def main(steps: int = 16, cases_filter: str = "long_window,long_8k", attn: str = "sdpa",
+         current_date: str = CURRENT_DATE) -> None:
     wanted = [name for name in cases_filter.split(",") if name]
     selected = [case for case in cases() if case["id"] in wanted]
     if len(selected) != len(wanted):
         raise ValueError(f"unknown case in {wanted}")
     run_id = uuid.uuid4().hex
-    manifest = capture.remote(selected, IMAGE_PATH.read_bytes(), steps, run_id)
+    manifest = capture.remote(selected, IMAGE_PATH.read_bytes(), steps, run_id, attn, current_date)
     destination = ROOT / "output" / run_id
     destination.mkdir(parents=True)
     for name in [case["file"] for case in manifest["cases"]] + ["manifest.json"]:

@@ -28,6 +28,8 @@ def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--reference", required=True, action="append", help="reference .npz on the trace volume (repeatable)")
     parser.add_argument("--steps", type=int, default=16)
+    parser.add_argument("--dump-dir", help="trace-volume directory for full logit rows")
+    parser.add_argument("-k", dest="select", help="pytest -k expression")
     parser.add_argument("--output", type=Path, default=ROOT / "results" / "parity")
     args = parser.parse_args()
 
@@ -46,8 +48,12 @@ def main() -> None:
     with modal.enable_output(), modal_bench.app.run():
         result = modal_bench.qualify.with_options(gpu="H100!").remote(
             "muse-glimmer-30b",
-            [TEST, "-s"],
-            environment={"RESIN_MUSE_REFERENCES": ",".join(args.reference), "RESIN_MUSE_STEPS": str(args.steps)},
+            [TEST, "-s", *(["-k", args.select] if args.select else [])],
+            environment={
+                "RESIN_MUSE_REFERENCES": ",".join(args.reference),
+                "RESIN_MUSE_STEPS": str(args.steps),
+                **({"RESIN_MUSE_DUMP_DIR": args.dump_dir} if args.dump_dir else {}),
+            },
         )
     report = [
         json.loads(line.split("MUSE_PARITY_REPORT ", 1)[1])
@@ -59,6 +65,8 @@ def main() -> None:
         "resin_source_dirty": dirty,
         "reference": args.reference,
         "steps": args.steps,
+        "dump_dir": args.dump_dir,
+        "select": args.select,
         "returncode": result["returncode"],
         "elapsed_s": result["elapsed_s"],
         "report": report,
