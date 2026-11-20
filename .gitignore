@@ -18,3 +18,17 @@ __pycache__/
 
 # Large logit dumps (kept on the Modal trace volume /muse-dumps/)
 /results/logits/**/*.npz
+
+# Generated experiment artifacts stay local or on the recorded Modal volumes.
+# Retain source, JSON measurements/manifests, patches, and presentation charts.
+/baseline/output/
+/baseline/frozen/**/*.tar
+/baseline/frozen/**/*.tar.gz
+/results/**/*.npz
+/results/**/*.json.gz
+/results/**/*.tar
+/results/**/*.tar.gz
+/results/**/*.zip
+/results/**/*.log
+/resin-explained-deploy.tar.gz
+*.bundle

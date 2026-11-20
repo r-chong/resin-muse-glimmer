@@ -1,0 +1,19 @@
+{
+  "tracked": [
+    "Source and benchmark scripts",
+    "JSON measurement records, protocols, audit reports, and checksums",
+    "Small benchmark JSONL records",
+    "Source patches",
+    "PNG and SVG presentation charts"
+  ],
+  "excluded_from_all_branch_histories": [
+    "Generated baseline/output NPZ logit dumps",
+    "Generated baseline/frozen source archives",
+    "Results NPZ arrays, compressed profiler traces, source archives, and console logs"
+  ],
+  "local_preservation": "Removed artifacts remain byte-for-byte at their original local paths. A verified Git bundle preserves the pre-cleanup history outside the repository.",
+  "remote_artifacts": "Per-job request.json records identify the existing Modal output volumes; no new GPU runs or storage migration were performed.",
+  "checksum_manifests": "Manifests describe the original full experiment artifact set, including excluded local/Modal files. GitHub checkouts intentionally contain only the tracked subset.",
+  "commit_provenance": "history-rewrite-map.json maps original experimental source commit IDs to equivalent cleaned revisions.",
+  "lfs": "No LFS pointers or .gitattributes are added; generated artifacts are excluded rather than migrated to LFS."
+}
