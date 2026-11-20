@@ -54,8 +54,8 @@ tiny. Above |x| = 4 the p99 is ≤ 9 ULPs for both candidates; see
    return BF16 logits (verified bit patterns). A logit near 15 can only move in
    steps of 0.0625, and near 17–20 in steps of 0.125. A one-step rounding
    change at the end already shows up as 0.06–0.125.
-2. **The rest is accumulated BF16 rounding through 52 layers, not a math
-   error.** The observed differences are 2–9 ULPs at p99, at most about 1.1 at
+2. **The rest is consistent with accumulated BF16 rounding through 52 layers.**
+   The observed differences are 2–9 ULPs at p99, at most about 1.1 at
    decode steps, and a median of 0 (66–76% of logits are bit-identical).
    - Swapping only HF's own attention kernel gives differences that are
      **equal or larger**: max 2.4 versus Resin's 0.63 on GSM8K, and 3.1 versus
@@ -95,17 +95,22 @@ here they did not change any Resin token. The decisive evidence:
   All 128 Engine tokens match.
 
 Interpretation: on this checkpoint, greedy steps with a margin of a few BF16
-ULPs (about 0.25 or less near logits of 15–20) are decided by rounding. Exact
-token agreement there is luck, not a correctness property, for Resin and for HF
-alike. The appropriate acceptance test is:
-- exact tokens only while margins exceed about 2× the observed implementation
-  noise (≈ 1.0 here);
-- distribution-level agreement (KL ≤ about 1e-2, top-5 sets) elsewhere.
+ULPs (about 0.25 or less near logits of 15–20) can be decided by rounding. HF
+flips between its own kernels at such a step.
 
-Resin passes both. The current pytest asserts exact tokens for every step. It
-passed, but a future kernel change could flip a margin-0.125 step without any
-bug. That assertion should be relaxed to be margin-aware before the CUDA runner
-work.
+**Acceptance criteria going forward.** Keep exact token agreement, and report
+it as a diagnostic alongside numerical and distributional criteria; none of
+these replaces the others:
+- **Exact greedy tokens and teacher-forced argmax:** reported and asserted as
+  now. A mismatch is a signal to investigate, starting with the reference
+  margin at the first divergent step.
+- **Numerical criteria:** per-row max and mean |Δlogit|, and the ULP
+  distribution, compared with the HF eager-vs-sdpa control measured here.
+- **Distributional criteria:** KL(HF‖candidate) and top-k set agreement per row.
+
+No numeric threshold (for example a "margin ≥ 1.0" rule) is adopted. The data
+here does not justify one. Any threshold should come from a measured noise
+distribution over more prompts.
 
 ## 2. Which Resin abstractions are exercised
 

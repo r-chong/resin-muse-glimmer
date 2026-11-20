@@ -164,12 +164,17 @@ decisions. Newest entries are at the bottom.
 
 - **Logit discrepancy analysis (2026-11-19).** See
   [`reports/correctness-analysis.md`](reports/correctness-analysis.md).
-  - Resin-vs-HF differences are BF16 implementation noise. They are no
-    larger than HF's own eager-vs-sdpa control, which itself diverges at a
-    margin-0.125 step.
+  - Resin-vs-HF differences are *consistent with* BF16 implementation noise.
+    They are no larger than HF's own eager-vs-sdpa control, which itself
+    diverges at a margin-0.125 step. Not proven to be rounding only: a subtle
+    implementation difference of similar size cannot be ruled out.
   - Resin matches all 128 greedy GSM8K tokens, including an exact tie in the
     reference.
-  - Recommendation: make exact-token assertions margin-aware.
+  - Acceptance (owner): keep exact-token agreement as a diagnostic, and add
+    numerical (|Δlogit|, ULPs) and distributional (KL, top-k) criteria
+    alongside it. No margin threshold without justification.
+  - Owner: correctness of the torch runner is established. No further parity
+    investigation unless a new failure appears.
 - **Resin coverage.** The runner declares no `CacheLayout`, so the scheduler
   and bench paths are exercised. The paged KV pool, prefix cache, graphs and
   overlap are **not**.
