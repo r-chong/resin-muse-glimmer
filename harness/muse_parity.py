@@ -5,7 +5,8 @@ the patched ``resin-source`` checkout. The HF reference ``.npz`` must already
 be on the ``resin-benchmark-traces-v1`` volume (mounted at /bench-traces).
 
     resin-source/.venv/bin/python harness/muse_parity.py \
-        --reference /bench-traces/muse-reference/e0b3ae6b/gsm8k_test_0001.npz --steps 16
+        --reference /bench-traces/muse-reference/e0b3ae6b/gsm8k_test_0001.npz \
+        --reference /bench-traces/muse-reference/69d7fbf4/long_window.npz --steps 16
 """
 
 from __future__ import annotations
@@ -25,7 +26,7 @@ TEST = "tests/test_muse_glimmer_hf_parity.py"
 
 def main() -> None:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--reference", required=True, help="reference .npz path on the trace volume")
+    parser.add_argument("--reference", required=True, action="append", help="reference .npz on the trace volume (repeatable)")
     parser.add_argument("--steps", type=int, default=16)
     parser.add_argument("--output", type=Path, default=ROOT / "results" / "parity")
     args = parser.parse_args()
@@ -44,13 +45,13 @@ def main() -> None:
         result = modal_bench.qualify.with_options(gpu="H100!").remote(
             "muse-glimmer-30b",
             [TEST, "-s"],
-            environment={"RESIN_MUSE_REFERENCE": args.reference, "RESIN_MUSE_STEPS": str(args.steps)},
+            environment={"RESIN_MUSE_REFERENCES": ",".join(args.reference), "RESIN_MUSE_STEPS": str(args.steps)},
         )
-    report = next(
-        (json.loads(line.split("MUSE_PARITY_REPORT ", 1)[1])
-         for line in result["output"].splitlines() if "MUSE_PARITY_REPORT " in line),
-        None,
-    )
+    report = [
+        json.loads(line.split("MUSE_PARITY_REPORT ", 1)[1])
+        for line in result["output"].splitlines()
+        if "MUSE_PARITY_REPORT " in line
+    ]
     record = {
         "resin_source_commit": source,
         "resin_source_dirty": dirty,

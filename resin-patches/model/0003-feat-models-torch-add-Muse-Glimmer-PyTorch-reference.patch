@@ -1,7 +1,7 @@
 From 801c46100a4d7e3d8196d2626167ab32cc5a986a Mon Sep 17 00:00:00 2001
 From: r-chong <dev.reese.chong@gmail.com>
 Date: Thu, 19 Nov 2026 19:19:03 -0500
-Subject: [PATCH 3/5] feat(models-torch): add Muse Glimmer PyTorch reference
+Subject: [PATCH 3/6] feat(models-torch): add Muse Glimmer PyTorch reference
  runner
 
 Checkpoint-shaped text decoder (sliding/NoPE layers, gated GQA, centered norms,
