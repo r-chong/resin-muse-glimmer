@@ -1,0 +1,37 @@
+pins/cec94fc/config.json
+  s_0d9d163433c805::t_4dd40495635a51 1-222
+pins/README.md
+  s_0d9d163433c805::t_358330e1324853 1-64,71-116
+  s_0d9d163433c805::t_ab2c1d21138f30 65-70
+pins/cec94fc/SHA256SUMS
+  s_0d9d163433c805::t_4dd40495635a51 1-6
+pins/cec94fc/processor_config.json
+  s_0d9d163433c805::t_4dd40495635a51 1-53
+pins/cec94fc/tokenizer_config.json
+  s_0d9d163433c805::t_4dd40495635a51 1-2102
+pins/cec94fc/chat_template.jinja
+  s_0d9d163433c805::t_4dd40495635a51 1-211
+pins/cec94fc/generation_config.json
+  s_0d9d163433c805::t_4dd40495635a51 1-13
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "4a231da2d210b9b889304d0b86a08a389831f015",
+  "prompts": {},
+  "humans": {
+    "h_04353115311dd2": {
+      "author": "r-chong <dev.reese.chong@gmail.com>"
+    }
+  },
+  "sessions": {
+    "s_0d9d163433c805": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "13cdd190-051a-4924-b48b-997280d71d90",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "r-chong <dev.reese.chong@gmail.com>"
+    }
+  }
+}
