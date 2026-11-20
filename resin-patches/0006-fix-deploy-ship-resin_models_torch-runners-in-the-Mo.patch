@@ -1,0 +1,36 @@
+From cdaa69f86b3c44a9634493b863d02bc97a4cd453 Mon Sep 17 00:00:00 2001
+From: r-chong <dev.reese.chong@gmail.com>
+Date: Thu, 19 Nov 2026 19:49:47 -0500
+Subject: [PATCH 6/6] fix(deploy): ship resin_models_torch runners in the Modal
+ image
+
+The image copied only the package __init__, so torch-backend presets such as
+muse-glimmer-30b failed with ModuleNotFoundError on the worker.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+---
+ deploy/modal_image.py | 8 ++++++++
+ 1 file changed, 8 insertions(+)
+
+diff --git a/deploy/modal_image.py b/deploy/modal_image.py
+index f59af95..3f8b920 100644
+--- a/deploy/modal_image.py
++++ b/deploy/modal_image.py
+@@ -161,6 +161,14 @@ def build_modal_image(
+             ignore=["tests", *_PYTHON_SOURCE_IGNORE, *cuda_source_ignore],
+         )
+         .uv_pip_install(_SOURCE_ROOT, extra_options="--no-deps")
++        # Ship the PyTorch reference runners (for example Muse Glimmer), not
++        # just the package shell. Placed after the Rust build to reuse its layer.
++        .add_local_dir(
++            root / "models/torch/resin_models_torch",
++            f"{_SOURCE_ROOT}/models/torch/resin_models_torch",
++            copy=True,
++            ignore=list(_PYTHON_SOURCE_IGNORE),
++        )
+         .uv_pip_install(f"{_SOURCE_ROOT}/models/torch", extra_options="--no-deps")
+         .uv_pip_install(f"{_SOURCE_ROOT}/models/cuda", extra_options="--no-deps")
+         .env(env or {})
+-- 
+2.50.1 (Apple Git-155)
+

@@ -106,6 +106,21 @@ decisions. Newest entries are at the bottom.
   it never crosses the 2,048-token sliding window. I reused the run already in
   flight instead of launching a duplicate.
 
+- **First Resin blocker (fixed).** Resin's Modal image copies only
+  `resin_models_torch/__init__.py`, so the worker raised
+  `ModuleNotFoundError: resin_models_torch.muse_glimmer`. Fix: patch 0006 ships
+  the full torch package, placed after the Rust-build layer so the cached
+  layers are reused.
+- **Resin text parity passed (2026-11-19, `results/parity/20261119T195604.json`,
+  resin-source `cdaa69f8`, clean).** H100, BF16, PyTorch reference runner, one
+  prefill (82 tokens) plus 16 greedy decode steps through the Resin Engine.
+  All 16 tokens match the HF reference `e0b3…`, and teacher-forced argmax
+  matches 16/16. Max abs logit difference is 0.25–0.53 per step (mean
+  0.010–0.079). The reference top-1 margin is ≥ 12.3 on every step. These
+  are not bitwise equal: the runner reimplements the math rather than calling
+  HF layers. Not yet covered: the sliding-window boundary (only 98
+  positions), batch > 1, and steps beyond 16.
+
 ### Open items
 
 - Speculative decoding (target-only for now).

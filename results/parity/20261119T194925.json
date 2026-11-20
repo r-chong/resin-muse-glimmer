@@ -1,0 +1,10 @@
+{
+  "resin_source_commit": "805259e9baa6715b6dfbe14b7c0278b6b6a07d56",
+  "resin_source_dirty": false,
+  "reference": "/bench-traces/muse-reference/e0b3ae6b/gsm8k_test_0001.npz",
+  "steps": 16,
+  "returncode": 1,
+  "elapsed_s": 5.905399664,
+  "report": null,
+  "output": "============================= test session starts ==============================\nplatform linux -- Python 3.12.1, pytest-8.4.2, pluggy-1.7.0 -- /opt/resin-deps/.venv/bin/python\ncachedir: .pytest_cache\nrootdir: /opt/resin\nconfigfile: pyproject.toml\nplugins: anyio-4.14.2\ncollecting ... collected 1 item\n\n../opt/resin/tests/test_muse_glimmer_hf_parity.py::test_engine_greedy_tokens_and_logits_match_transformers ERROR\n\n==================================== ERRORS ====================================\n__ ERROR at setup of test_engine_greedy_tokens_and_logits_match_transformers ___\n/opt/resin/tests/test_muse_glimmer_hf_parity.py:31: in runner\n    from resin_models_torch.muse_glimmer import MuseGlimmerTorchRunner\nE   ModuleNotFoundError: No module named 'resin_models_torch.muse_glimmer'\n=========================== short test summary info ============================\nERROR ../opt/resin/tests/test_muse_glimmer_hf_parity.py::test_engine_greedy_tokens_and_logits_match_transformers\n=============================== 1 error in 4.91s ===============================\n"
+}

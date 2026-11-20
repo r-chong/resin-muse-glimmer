@@ -1,7 +1,7 @@
 From c10b32200b4c76cc1232399c863fdcfa5d1f76e7 Mon Sep 17 00:00:00 2001
 From: r-chong <dev.reese.chong@gmail.com>
 Date: Thu, 19 Nov 2026 19:19:03 -0500
-Subject: [PATCH 2/5] feat(py): expose muse_glimmer recipe and MuseGlimmerMedia
+Subject: [PATCH 2/6] feat(py): expose muse_glimmer recipe and MuseGlimmerMedia
  payload
 
 Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
