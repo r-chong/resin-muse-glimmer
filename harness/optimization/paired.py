@@ -182,12 +182,18 @@ def execute(config):
                 path,
                 "--repeats",
                 "3",
+                *config.get("completion_extra_args", []),
             ]
             leg = run(variant, command, "completion-" + name)
             if Path(path).exists():
                 leg["completion"] = json.loads(Path(path).read_text())
             result.setdefault("completions", []).append(leg)
             save()
+        for variant in config["variants"]:
+            if command := variant.get("diagnostic_command"):
+                diagnostic = run(variant, command, "diagnostic-" + variant["name"])
+                result.setdefault("diagnostics", []).append(diagnostic)
+                save()
         return result
     finally:
         save()

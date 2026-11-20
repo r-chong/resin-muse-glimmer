@@ -132,7 +132,7 @@ def main():
         "pairs": {},
         "validation": {"case_records": 0, "all_available_records_validated": True},
         "limitations": [
-            "Each pair shares one physical H100 and software stack. The control block precedes the candidate block; three repeated cohorts per case, not randomized alternating blocks.",
+            "Each candidate/control case shares one physical H100 and software stack. Delivery batch eight uses a separate recovery allocation after a timeout; both sides are replaced together. The control block precedes the candidate block; three repeated cohorts per case, not randomized alternating blocks.",
             "Different pairs use different H100 allocations. Host dispatch and allocation variability may affect absolute decode times; compare each candidate to its own paired control.",
             "The stock vLLM reference is from the prior round, with its own pinned stack and separate physical H100, using identical model, tokens, precision, output budget and completion boundary.",
             "Greedy parity on saved references and kernel/scheduler tests does not establish dataset-level output quality.",
@@ -141,6 +141,8 @@ def main():
     }
     for lane in ["graphs", "prefill", "delivery"]:
         path = root / lane / "pair-001/result.json"
+        if lane == "delivery" and (root / "delivery/combined/result.json").exists():
+            path = root / "delivery/combined/result.json"
         if not path.exists():
             continue
         raw = json.loads(path.read_text())
@@ -155,6 +157,21 @@ def main():
             },
             "variants": {},
         }
+        if "hardware_by_case" in raw:
+            pair["hardware_by_case"] = raw["hardware_by_case"]
+            pair["synthesis_note"] = raw["synthesis_note"]
+        if lane == "prefill":
+            qualification_path = root / "prefill/qual-001/result.json"
+            qualification = json.loads(qualification_path.read_text())
+            qualified = next(v for v in qualification["variants"] if v["name"] == lane)
+            measured = next(v for v in raw["variants"] if v["name"] == lane)
+            assert qualified["source_sha256"] == measured["source_sha256"]
+            assert qualified["commit"] == measured["commit"]
+            pair["qualification_source"] = str(qualification_path.relative_to(root))
+            pair["qualification"] = {
+                n: {k: v[k] for k in ["returncode", "elapsed_s"]}
+                for n, v in qualification["qualification"].items()
+            }
         for name, leg in legs.items():
             assert leg["returncode"] == 0, (lane, name, "benchmark failed")
             completion = leg["completion"]
@@ -165,7 +182,8 @@ def main():
             pair["complete"] = False
             report["pairs"][lane] = pair
             continue
-        assert all(x["returncode"] == 0 for x in raw["qualification"].values())
+        assert pair["qualification"]
+        assert all(x["returncode"] == 0 for x in pair["qualification"].values())
         control, candidate = pair["variants"]["C"], pair["variants"][lane]
         assert control["prompt_sha256"] == candidate["prompt_sha256"]
         changes = []
@@ -231,6 +249,13 @@ def main():
             complete=True,
             changes=changes,
             synthetic_token_disagreements=disagreements,
+            qualification_scope={
+                "saved_reference_and_affected_contract_tests_passed": True,
+                "full_synthetic_generated_sequences_match_control": not disagreements,
+                "strict_full_sequence_status": "pass"
+                if not disagreements
+                else "unresolved; investigate numerical sensitivity versus semantic error",
+            },
             success_gate={
                 "minimum_batch8_throughput_gain_percent": 10,
                 "maximum_latency_regression_percent": 5,
@@ -255,6 +280,10 @@ def main():
         x.get("complete") for x in report["pairs"].values()
     ):
         report["status"] = "complete"
+    numeric = root / "shared/numeric-diagnosis.json"
+    if numeric.exists():
+        report["numeric_diagnosis"] = json.loads(numeric.read_text())
+    report["protocol"] = json.loads((root / "protocol.json").read_text())
     (root / "analysis.json").write_text(json.dumps(report, indent=2) + "\n")
     print(
         json.dumps(

@@ -6,6 +6,7 @@ import os
 from pathlib import Path
 
 os.environ.setdefault("MPLCONFIGDIR", "/private/tmp/resin-round2-matplotlib")
+os.environ.setdefault("XDG_CACHE_HOME", "/private/tmp/resin-round2-font-cache")
 
 import matplotlib
 
@@ -92,6 +93,15 @@ def main():
     gains.barh(labels, values, color=colors, height=0.5)
     for i, value in enumerate(values):
         gains.text(max(value, 0) + 0.6, i, f"{value:+.1f}%", va="center", weight="bold")
+        if i:
+            gains.text(
+                max(value, 0) + 0.6,
+                i + 0.19,
+                "Long parity unresolved" if i == 1 else "Latency guard failed",
+                va="center",
+                fontsize=8.5,
+                color="#4b5563",
+            )
     gains.invert_yaxis()
     gains.axvline(0, color="#b6bdc8", linewidth=0.8)
     gains.set(
@@ -121,7 +131,7 @@ def main():
         0.07,
         0.055,
         "Medians of three cohorts; error bars show observed ranges. Timing includes prefill through CPU-visible final token.\n"
-        "Each candidate/control pair shares one GPU allocation. Stock vLLM uses its own stack and an earlier, separate H100 allocation.",
+        "Each workload case uses a matched candidate/control GPU allocation. Stock vLLM uses its own stack and an earlier H100 allocation.",
         fontsize=9,
         color="#4b5563",
         linespacing=1.5,

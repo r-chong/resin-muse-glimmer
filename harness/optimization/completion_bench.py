@@ -134,7 +134,12 @@ def main():
     p.add_argument("--checkpoint", required=True)
     p.add_argument("--output", type=Path, required=True)
     p.add_argument("--repeats", type=int, default=3)
+    p.add_argument("--decode-batches", default="1,2,4,8")
+    p.add_argument("--skip-prefill", action="store_true")
     args = p.parse_args()
+    decode_batches = [int(b) for b in args.decode_batches.split(",")]
+    if any(b not in (1, 2, 4, 8) for b in decode_batches):
+        raise ValueError("Only the original decode batches may be selected")
     started = time.perf_counter()
     adapter = (ResinAdapter if args.backend == "resin" else VllmAdapter)(
         args.checkpoint
@@ -189,11 +194,16 @@ def main():
     result["prompt_sha256"] = hashlib.sha256(
         np.array(prompt, dtype=np.int64).tobytes()
     ).hexdigest()
-    for phase, context, batch, steps in [
-        ("prefill", 4096, 1, 1),
-        ("prefill", 8192, 1, 1),
-        *[("decode", 8192, b, 256) for b in [1, 2, 4, 8]],
-    ]:
+    cases = (
+        []
+        if args.skip_prefill
+        else [
+            ("prefill", 4096, 1, 1),
+            ("prefill", 8192, 1, 1),
+        ]
+    )
+    cases.extend(("decode", 8192, b, 256) for b in decode_batches)
+    for phase, context, batch, steps in cases:
         prompts = [prompt[:context] for _ in range(batch)]
         adapter.cohort(prompts, steps)
         for repeat in range(args.repeats):

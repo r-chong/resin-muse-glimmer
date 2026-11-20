@@ -43,6 +43,8 @@ def main():
         )
     )
     fragment = diagnostic_fragment()
+    for local, remote in config.get("extra_local_files", {}).items():
+        image = image.add_local_file(Path(local), remote, copy=True)
     for variant in config["variants"]:
         name = variant["name"]
         if not name.replace("_", "").isalnum():
@@ -79,6 +81,10 @@ def main():
         "/models/resin-muse-glimmer-30b/cec94fcfd6512f2cfe708138c32533b346ea4f69"
     )
     config.setdefault("completion_only", True)
+    config["harness_sha256"] = {
+        name: hashlib.sha256(Path(__file__).with_name(name).read_bytes()).hexdigest()
+        for name in ("round2_modal.py", "paired.py", "completion_bench.py")
+    }
     (args.output / "request.json").write_text(json.dumps(config, indent=2))
     volume = modal.Volume.from_name(volume_name, create_if_missing=True)
     app = modal.App("resin-opt-" + args.job_id)
