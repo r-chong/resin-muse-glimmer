@@ -1,0 +1,53 @@
+{
+  "base_source": "/private/tmp/resin-opt-snapshots/c-final/resin-source",
+  "completion_only": true,
+  "variants": [
+    {
+      "name": "C",
+      "source": "/private/tmp/resin-opt-snapshots/c-final/resin-source",
+      "commit": "66bb70a63470581f1ced548265e839da374836aa",
+      "qualify": false,
+      "completion": false,
+      "diagnostic_command": [
+        "python",
+        "/root/diagnose_prefill_divergence.py",
+        "--mode",
+        "C",
+        "--checkpoint",
+        "/models/resin-muse-glimmer-30b/cec94fcfd6512f2cfe708138c32533b346ea4f69",
+        "--continuation",
+        "/root/prefill-divergence-continuation.json",
+        "--source-commit",
+        "66bb70a63470581f1ced548265e839da374836aa",
+        "--output",
+        "/experiment/divergence-C.json"
+      ]
+    },
+    {
+      "name": "prefill",
+      "source": "/private/tmp/resin-round2-snapshots/prefill/resin-source",
+      "commit": "e74e98174447b77e55d43d39b6c8a6239d13c9b9",
+      "qualify": false,
+      "completion": false,
+      "diagnostic_command": [
+        "python",
+        "/root/diagnose_prefill_divergence.py",
+        "--mode",
+        "prefill",
+        "--checkpoint",
+        "/models/resin-muse-glimmer-30b/cec94fcfd6512f2cfe708138c32533b346ea4f69",
+        "--continuation",
+        "/root/prefill-divergence-continuation.json",
+        "--source-commit",
+        "e74e98174447b77e55d43d39b6c8a6239d13c9b9",
+        "--output",
+        "/experiment/divergence-prefill.json"
+      ]
+    }
+  ],
+  "extra_local_files": {
+    "/Users/reese/code/resin/results/optimization/round2-20261119/shared/diagnose_prefill_divergence.py": "/root/diagnose_prefill_divergence.py",
+    "/Users/reese/code/resin/results/optimization/round2-20261119/shared/prefill-divergence-continuation.json": "/root/prefill-divergence-continuation.json"
+  },
+  "diagnostic_scope": "Current pinned C/prefill paths only. No HF run or reference-stack change; no qualification thresholds changed."
+}

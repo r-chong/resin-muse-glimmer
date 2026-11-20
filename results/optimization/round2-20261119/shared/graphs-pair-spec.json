@@ -1,0 +1,28 @@
+{
+  "base_source": "/private/tmp/resin-opt-snapshots/c-final/resin-source",
+  "completion_only": true,
+  "variants": [
+    {
+      "name": "C",
+      "source": "/private/tmp/resin-opt-snapshots/c-final/resin-source",
+      "commit": "66bb70a",
+      "qualify": false,
+      "completion": true
+    },
+    {
+      "name": "graphs",
+      "source": "/private/tmp/resin-round2-snapshots/graphs/resin-source",
+      "commit": "6fd2dda4b0677bea4e539135f016c6b40a5c8653",
+      "qualify": true,
+      "completion": true,
+      "environment": {
+        "RESIN_MUSE_DECODE_EXECUTION": "graphs"
+      },
+      "extra_tests": [
+        "models/torch/tests/test_muse_glimmer_graph_failures.py",
+        "models/torch/tests/test_muse_glimmer_graphs.py",
+        "tests/test_muse_glimmer_flashinfer.py"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,40 @@
+{
+  "schema_version": 1,
+  "reviewable_harness_commit": "fc8616d3b940d5701c5970205c7d8c37e9d45c7f",
+  "branch": "codex/resin-round2-bench",
+  "harness_path": "/private/tmp/resin-round2-bench/harness/optimization",
+  "driver": [
+    "python",
+    "round2_modal.py",
+    "--spec",
+    "<shared/spec.json>",
+    "--job-id",
+    "<new unique id>",
+    "--output",
+    "<new output directory>",
+    "--timeout",
+    "900"
+  ],
+  "base_source": "C commit66bb70a63470581f1ced548265e839da374836aa; source tar shared/validated-c-source.tar",
+  "candidate_checkpoints": "shared/checkpoints.json; independent.patch in each lane directory; existing git branch refs preserve every source commit",
+  "inputs": "Same checkpoint revisioncec94fcfd6512f2cfe708138c32533b346ea4f69 and frozen references, both mounted read-only in request.json",
+  "artifact_isolation": "Unique output Modal Volume per job, all retries disabled; job configs and exact source hashes recorded",
+  "analyze": [
+    "python",
+    "harness/optimization/combine_delivery.py",
+    "<round2-results-directory>",
+    "then",
+    "python",
+    "harness/optimization/analyze_round2.py",
+    "<round2-results-directory>"
+  ],
+  "plot": [
+    "python",
+    "harness/optimization/plot_round2.py",
+    "<round2-results-directory>"
+  ],
+  "validation": "108 normalized case records; three cohorts per original workload; original failed delivery run retained and both b8 sides replaced together",
+  "numeric_diagnostic": "shared/diagnose_prefill_divergence.py and frozen continuation, C/prefill only, actual Engine sampler input, no reference or threshold changes",
+  "provenance": "shared/executed-drivers contains initial transport sources plus recovery/numeric/final-reporting versions. Model source is immutable and hash-pinned per job. Runner/benchmark outputs retain exact commands and full records.",
+  "limitations": "Fixed case order per paired allocation; separate physical H100 and dependency stack for prior stock vLLM; no dataset quality score; native-prefill long-sequence parity unresolved."
+}

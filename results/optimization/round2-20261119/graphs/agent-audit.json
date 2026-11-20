@@ -1,0 +1,57 @@
+{
+  "lane": "round2_graphs",
+  "recorded_at": "2026-11-20T04:14:18.785554+00:00",
+  "base_commit": "66bb70a63470581f1ced548265e839da374836aa",
+  "reused_graph_commit": "3baaa0f6b300b3b5408c50893f3cc41e0796ec9f",
+  "hypothesis": "Native paged attention removes cache materialization; stateless region graphs may now remove a larger fraction of remaining host launch overhead. No additive speedup assumed.",
+  "scope": "C plus existing B exact-batch projection/RoPE and feed-forward graph regions; no additional graph scope or compilation.",
+  "activation": "RESIN_MUSE_DECODE_EXECUTION=graphs",
+  "cache_attention_policy": "Unchanged C Engine-managed pages and eager-planned FA2 native one-token attention; prefill remains original SDPA.",
+  "failure_contract": "A graph staging rejection inside a model forward is conservatively promoted to PostAcceptCudaError after synchronization, because earlier layers may already have changed persistent KV state. No successful-forward synchronization added.",
+  "changes_from_B": [
+    "GPU tiny graph fixture uses head dimension128 so C native attention geometry is supported; assert native calls on eager-C and graph-C",
+    "Graph staging rejection quarantines mid-forward state; CPU regression checks cover successful and failed quiescence",
+    "Expose existing native plan/layer counters through shared benchmark hook outside timed intervals; metadata labels actual attention path"
+  ],
+  "local_checks": [
+    {
+      "name": "CPU Engine cache parity + graph failure checks",
+      "result": "5 passed,2 CUDA skips in4.75s"
+    },
+    {
+      "name": "head-dimension128 fixture construction/forward",
+      "result": "passed on CPU"
+    },
+    {
+      "name": "ruff lint/format",
+      "result": "passed"
+    },
+    {
+      "name": "git diff --check",
+      "result": "passed"
+    }
+  ],
+  "gpu_launched_by_lane": false,
+  "gpu_request": {
+    "environment": {
+      "RESIN_MUSE_DECODE_EXECUTION": "graphs"
+    },
+    "first_tests": [
+      "models/torch/tests/test_muse_glimmer_graph_failures.py",
+      "models/torch/tests/test_muse_glimmer_graphs.py",
+      "tests/test_muse_glimmer_flashinfer.py"
+    ],
+    "then": "existing HF parity plus coordinator executing-path logits; all3 saved references,16 steps,window/chunk/concurrency cases",
+    "first_benchmark": "paired C/graphs-on-C8K b1/b8 with unchanged5warmup+250measured steps; then full curve/completion boundary if passing",
+    "estimated_h100_minutes": "4\u20137 for qualification and representative sweep including weight load/capture; first-use primitive JIT uncertain",
+    "expected_measured_counts_per_250_step_decode_case": {
+      "decode_regions.replay_count": 26000,
+      "decode_regions.eager_fallback_count": 0,
+      "native_decode.plan_calls": 500,
+      "native_decode.layer_calls": 13000
+    }
+  },
+  "human_interventions": [],
+  "performance_claim": null,
+  "source_status": "ready for centralized GPU qualification"
+}

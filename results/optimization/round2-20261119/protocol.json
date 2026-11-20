@@ -1,0 +1,183 @@
+{
+  "schema_version": 1,
+  "status": "complete",
+  "started_at": "2026-11-20T04:10:51.878695+00:00",
+  "source_commit": "66bb70a63470581f1ced548265e839da374836aa",
+  "source_archive_sha256": "b9a2136b61283aa135bb73edec9ad7e580672edb30a63623b1577f357c0f6a76",
+  "prior_round": "parallel-20261119",
+  "same_original_caps": {
+    "incremental_metered_usd": 60,
+    "h100_seconds": 28800,
+    "project_usd": 200,
+    "original_metered_start_usd": 4.84240954
+  },
+  "prior_usage_conservative": {
+    "incremental_metered_usd": 10.38050648,
+    "h100_function_body_seconds": 4531.324075904512
+  },
+  "billing_at_round2_start": {
+    "metered_usd": 13.46291602,
+    "note": "Current billing is lower than the prior end snapshot; retain the larger prior usage for conservative reservations."
+  },
+  "lane_wall_seconds": 7200,
+  "workload": {
+    "repo_id": "meta-models/Muse-Glimmer-30B",
+    "revision": "cec94fcfd6512f2cfe708138c32533b346ea4f69",
+    "gpu": "H100!",
+    "weights_dtype": "bfloat16",
+    "kv_dtype": "bfloat16",
+    "prefill_contexts": [
+      4096,
+      8192
+    ],
+    "prefill_batch": [
+      1
+    ],
+    "decode_context": 8192,
+    "decode_batches": [
+      1,
+      2,
+      4,
+      8
+    ],
+    "decode_warmup_steps": 5,
+    "decode_measure_steps": 250,
+    "prefill_warmup_cohorts": 1,
+    "prefill_measure_cohorts": 3,
+    "sampling": {
+      "temperature": 0,
+      "seed": 41,
+      "top_p": 1,
+      "top_k": null
+    },
+    "prefix_cache": false,
+    "speculation": false,
+    "overlap": false
+  },
+  "lanes": {
+    "graphs": "C plus B stateless graph regions",
+    "prefill": "native GQA/windowed prefill over current Engine pages",
+    "delivery": "earlier completion delivery through existing scheduler/executor APIs"
+  },
+  "primary_evaluation": "common submit-to-final-token completion throughput, mean TTFT and per-request TPOT; internal curves reported separately",
+  "correctness": "same references and actual-runner diagnostics plus affected kernel/scheduling contract tests; no relaxed thresholds",
+  "dispatch": "root only, immutable checkpoints, separate read-only input and writable artifacts, bounded remote functions",
+  "jobs": [
+    {
+      "job_id": "r2-c-profile-001",
+      "lane": "coordinator",
+      "status": "complete",
+      "timeout_seconds": 900,
+      "reserved_h100_seconds": 900,
+      "conservative_cost_reservation_usd": 8,
+      "source_commit": "66bb70a63470581f1ced548265e839da374836aa",
+      "scope": "C runner 4K/8K prefill and8K decode b1/b8,untimed post-sweep profiles; no model change",
+      "actual_h100_function_body_seconds": 205.4806125164032,
+      "local_result_available_at": "2026-11-20T04:17:12.901324+00:00"
+    },
+    {
+      "job_id": "r2-graphs-pair-001",
+      "lane": "graphs",
+      "status": "complete",
+      "timeout_seconds": 900,
+      "reserved_h100_seconds": 900,
+      "conservative_cost_reservation_usd": 8,
+      "scope": "B+C qualification plus same-GPU C/candidate common3repeat completion comparison",
+      "actual_h100_function_body_seconds": 665.5372018160001,
+      "local_result_available_at": "2026-11-20T04:30:17.484212+00:00"
+    },
+    {
+      "job_id": "r2-prefill-qual-001",
+      "lane": "prefill",
+      "status": "complete",
+      "timeout_seconds": 900,
+      "reserved_h100_seconds": 900,
+      "conservative_cost_reservation_usd": 8,
+      "scope": "native prefill primitive boundary tests and existing actual-runner/HF checks, no throughput before qualification",
+      "actual_h100_function_body_seconds": 81.35822698000001,
+      "local_result_available_at": "2026-11-20T04:19:53.804795+00:00"
+    },
+    {
+      "job_id": "r2-prefill-pair-001",
+      "lane": "prefill",
+      "status": "complete",
+      "timeout_seconds": 900,
+      "reserved_h100_seconds": 900,
+      "conservative_cost_reservation_usd": 8,
+      "scope": "same-GPU C/prefill common three-repeat completion comparison; candidate must pass qualification",
+      "actual_h100_function_body_seconds": 863.201876599,
+      "local_result_available_at": "2026-11-20T04:36:32.532741+00:00"
+    },
+    {
+      "job_id": "r2-delivery-pair-001",
+      "lane": "delivery",
+      "status": "timed_out_recovered_by_separate_paired_b8_job",
+      "timeout_seconds": 900,
+      "reserved_h100_seconds": 900,
+      "conservative_cost_reservation_usd": 8,
+      "scope": "same-GPU C/delivery common three-repeat completion comparison; candidate must pass qualification",
+      "actual_h100_function_body_seconds": 904.204557129,
+      "note": "Completed qualification and all non-b8 cases; only paired batch8 is rerun, preserving failed-run raw artifacts.",
+      "local_result_available_at": "2026-11-20T04:38:32.279165+00:00"
+    },
+    {
+      "job_id": "r2-delivery-b8-recovery-001",
+      "lane": "delivery",
+      "status": "complete",
+      "timeout_seconds": 900,
+      "reserved_h100_seconds": 900,
+      "conservative_cost_reservation_usd": 8,
+      "scope": "Rerun original batch8 common completion case, three cohorts for both C/control and unchanged candidate on one fresh H100; no workload or source changes",
+      "actual_h100_function_body_seconds": 285.19446413400004,
+      "local_result_available_at": "2026-11-20T04:45:25.635725+00:00"
+    },
+    {
+      "job_id": "r2-prefill-numeric-001",
+      "lane": "prefill",
+      "status": "complete",
+      "timeout_seconds": 900,
+      "reserved_h100_seconds": 900,
+      "conservative_cost_reservation_usd": 8,
+      "scope": "Current pinned C/prefill paths only. No HF run or reference-stack change; no qualification thresholds changed.",
+      "actual_h100_function_body_seconds": 69.000074514,
+      "local_result_available_at": "2026-11-20T04:47:20.272028+00:00"
+    }
+  ],
+  "events": [
+    {
+      "at": "2026-11-20T04:10:51.886384+00:00",
+      "event": "User requested spawning the follow-up experiments. Original overall budget limits retained across rounds."
+    }
+  ],
+  "billing_latest": {
+    "metered_usd": 19.46291602,
+    "round2_metered_increase_usd": 6.000000000000002,
+    "incremental_from_original_start_usd": 14.620506480000001,
+    "conservative_both_rounds_incremental_usd": 16.38050648,
+    "billed_usd": 0,
+    "note": "Account meter snapshots, not a finalized invoice. Asynchronous settlement can revise totals; prior higher end snapshot retained in conservative total."
+  },
+  "budget_reconciliation": {
+    "latest_metered_incremental_usd": 13.66050648,
+    "additional_unsettled_charge_reservation_usd": 8,
+    "new_recovery_reservation_usd": 8,
+    "conservative_total_usd": 37.66050648,
+    "limit_usd": 60,
+    "new_numeric_diagnostic_reservation_usd": 8
+  },
+  "measurements_complete_at": "2026-11-20T04:47:20.272028+00:00",
+  "report_verified_at": "2026-11-20T04:49:54.193796+00:00",
+  "elapsed_to_measurements_seconds": 2188.393333,
+  "resource_usage": {
+    "round2_h100_function_body_seconds": 3073.9770136884035,
+    "round2_h100_function_body_hours": 0.8538825038023343,
+    "both_rounds_h100_function_body_seconds": 7605.301089592916,
+    "h100_seconds_limit": 28800,
+    "note": "Reported function-body clocks exclude some container startup/shutdown and final volume-commit overhead; billing is recorded independently."
+  },
+  "outcomes": {
+    "graphs": "qualified performance win; exact full benchmark tokens match C",
+    "prefill": "measured5.02percent throughput gain, long synthetic sequence parity unresolved; provisional",
+    "delivery": "measured5.32percent throughput gain, latency guard failed; not a qualified win"
+  }
+}

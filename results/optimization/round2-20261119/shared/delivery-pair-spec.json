@@ -1,0 +1,27 @@
+{
+  "base_source": "/private/tmp/resin-opt-snapshots/c-final/resin-source",
+  "completion_only": true,
+  "variants": [
+    {
+      "name": "C",
+      "source": "/private/tmp/resin-opt-snapshots/c-final/resin-source",
+      "commit": "66bb70a63470581f1ced548265e839da374836aa",
+      "qualify": false,
+      "completion": true
+    },
+    {
+      "name": "delivery",
+      "source": "/private/tmp/resin-round2-snapshots/delivery/resin-source",
+      "commit": "8bf4e0993aae5402e75144b33a893b1da580857f",
+      "qualify": true,
+      "completion": true,
+      "environment": {
+        "RESIN_MUSE_MAX_BATCH_TOKENS": "8192"
+      },
+      "extra_tests": [
+        "models/torch/tests/test_muse_glimmer_delivery.py",
+        "tests/test_muse_glimmer_flashinfer.py"
+      ]
+    }
+  ]
+}

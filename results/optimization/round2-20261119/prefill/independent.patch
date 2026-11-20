@@ -1,0 +1,379 @@
+diff --git a/resin-source/models/torch/resin_models_torch/muse_glimmer/flashinfer.py b/resin-source/models/torch/resin_models_torch/muse_glimmer/flashinfer.py
+index 5042866..28ced7e 100644
+--- a/resin-source/models/torch/resin_models_torch/muse_glimmer/flashinfer.py
++++ b/resin-source/models/torch/resin_models_torch/muse_glimmer/flashinfer.py
+@@ -1,7 +1,7 @@
+-"""Native decode attention over the existing Engine-owned Muse KV arena.
++"""Native attention over the existing Engine-owned Muse KV arena.
+ 
+-Only one-token queries use this adapter. The eager SDPA prefill/reference path
+-is unchanged, and projections, QK norms, RoPE and output gating stay in Torch.
++Decode and causal prefill use separate FA2 plans. Projections, QK norms, RoPE
++and output gating stay in Torch; the eager reference path remains available.
+ """
+ 
+ from __future__ import annotations
+@@ -15,8 +15,8 @@ def decode_page_lengths(rows, group: int) -> tuple[list[int], list[int]]:
+     """Return live page counts and last-page lengths, excluding reserved tails.
+ 
+     A window group's first page can represent a nonzero absolute position.
+-    FlashInfer sees only the retained, chronological suffix; for a one-token
+-    query its relative last-token/window mask is therefore the same mask.
++    FlashInfer sees only the retained, chronological suffix. Bottom-right
++    query alignment preserves the absolute causal/window mask for that suffix.
+     """
+     counts, last_lengths = [], []
+     for row in rows:
+@@ -89,3 +89,73 @@ class FlashinferPagedDecode:
+     def run(self, group: int, queries, key_pages, value_pages):
+         self.layer_calls += 1
+         return self.wrappers[group].run(queries, (key_pages, value_pages))
++
++
++class FlashinferPagedPrefill:
++    """Causal GQA prefill directly over the existing strided page arena.
++
++    Queries are the final ``query_length`` positions of each row's live KV
++    suffix. FlashInfer's bottom-right causal alignment therefore matches the
++    absolute query positions even after window eviction or chunked prefill.
++    Projection, RoPE, QK normalization and output gating remain in Torch.
++    """
++
++    def __init__(self, geometry, num_query_heads: int, *, device, dtype):
++        from flashinfer import BatchPrefillWithPagedKVCacheWrapper
++
++        self.geometry = geometry
++        self.num_query_heads = num_query_heads
++        self.device = device
++        self.dtype = dtype
++        self.workspace = torch.zeros(128 << 20, dtype=torch.uint8, device=device)
++        self.wrappers = tuple(
++            BatchPrefillWithPagedKVCacheWrapper(self.workspace, "NHD", backend="fa2")
++            for _ in range(2)
++        )
++        self.plan_calls = 0
++        self.layer_calls = 0
++
++    def plan(self, rows, query_length: int) -> None:
++        if type(query_length) is not int or query_length <= 1:
++            raise ValueError("native prefill needs more than one query token")
++        g = self.geometry
++        qo_indptr = (
++            torch.arange(len(rows) + 1, dtype=torch.int32, device=self.device)
++            * query_length
++        )
++        for group, wrapper in enumerate(self.wrappers):
++            counts, last_lengths = decode_page_lengths(rows, group)
++            if any(
++                row.end - row.groups[group].first_position < query_length
++                for row in rows
++            ):
++                raise ValueError("live KV suffix does not cover the prefill queries")
++            offsets = [0]
++            for count in counts:
++                offsets.append(offsets[-1] + count)
++            indices = torch.cat(
++                [row.groups[group].pages[:count] for row, count in zip(rows, counts)]
++            ).to(torch.int32)
++            wrapper.plan(
++                qo_indptr,
++                torch.tensor(offsets, dtype=torch.int32, device=self.device),
++                indices,
++                torch.tensor(last_lengths, dtype=torch.int32, device=self.device),
++                self.num_query_heads,
++                g.kv_heads,
++                g.head_dim,
++                BLOCK_TOKENS,
++                causal=True,
++                pos_encoding_mode="NONE",
++                use_fp16_qk_reduction=False,
++                window_left=g.read_window - 1 if group == WINDOW_GROUP else -1,
++                sm_scale=g.head_dim**-0.5,
++                q_data_type=self.dtype,
++                kv_data_type=self.dtype,
++                o_data_type=self.dtype,
++            )
++            self.plan_calls += 1
++
++    def run(self, group: int, queries, key_pages, value_pages):
++        self.layer_calls += 1
++        return self.wrappers[group].run(queries, (key_pages, value_pages))
+diff --git a/resin-source/models/torch/resin_models_torch/muse_glimmer/model.py b/resin-source/models/torch/resin_models_torch/muse_glimmer/model.py
+index 7242dd3..e325dc6 100644
+--- a/resin-source/models/torch/resin_models_torch/muse_glimmer/model.py
++++ b/resin-source/models/torch/resin_models_torch/muse_glimmer/model.py
+@@ -259,8 +259,9 @@ class Attention(nn.Module):
+ 
+         ``hidden`` is ``[rows, length, width]``: one prefill chunk (one row) or
+         one decode token per row. New keys/values are written to the Engine's
+-        append addresses first, then each row gathers its pages in block-table
+-        order. Positions at or after ``row.end`` are reserved but unwritten.
++        append addresses first, then native attention reads those pages or the
++        reference path gathers them. Positions at or after ``row.end`` are
++        reserved but unwritten.
+         """
+ 
+         queries, keys, values = self._project(hidden, positions)
+@@ -279,6 +280,14 @@ class Attention(nn.Module):
+                 group, queries[:, :, 0, :].contiguous(), key_pages, value_pages
+             )
+             return self._output(attended.unsqueeze(2), hidden)
++        if arena.prefill_attention is not None:
++            batch, heads, length, dim = queries.shape
++            flat_queries = queries.transpose(1, 2).contiguous().view(-1, heads, dim)
++            attended = arena.prefill_attention.run(
++                group, flat_queries, key_pages, value_pages
++            )
++            attended = attended.view(batch, length, heads, dim).transpose(1, 2)
++            return self._output(attended, hidden)
+         for row in rows:
+             cache = row.groups[group]
+             row_keys = key_pages[cache.pages].flatten(0, 1).transpose(0, 1)
+@@ -395,14 +404,14 @@ class MuseGlimmerTextModel(nn.Module):
+     def forward_paged(self, hidden: Tensor, positions: Tensor, rows, arena) -> Tensor:
+         arena.prepare_forward(rows, hidden.shape[1])
+         guard = nullcontext()
+-        if arena.decode_attention is not None:
++        if arena.decode_attention is not None or arena.prefill_attention is not None:
+             from resin.backend.cuda.failures import CudaFailureGuard
+ 
+             # A failed kernel may follow successful in-place K/V writes; the
+             # Engine must quarantine those resources rather than retry them.
+             guard = CudaFailureGuard(
+                 lambda: torch.cuda.synchronize(hidden.device),
+-                label="Muse native paged decode",
++                label="Muse native paged attention",
+             )
+         with guard:
+             for layer in self.layers:
+diff --git a/resin-source/models/torch/resin_models_torch/muse_glimmer/paged.py b/resin-source/models/torch/resin_models_torch/muse_glimmer/paged.py
+index bc7afac..7d9759b 100644
+--- a/resin-source/models/torch/resin_models_torch/muse_glimmer/paged.py
++++ b/resin-source/models/torch/resin_models_torch/muse_glimmer/paged.py
+@@ -96,13 +96,17 @@ class MuseKvArena:
+         device,
+         dtype,
+         native_decode: bool = False,
++        native_prefill: bool = False,
+         num_query_heads: int | None = None,
+     ):
+         self.geometry = geometry
+         self.native_decode = native_decode
++        self.native_prefill = native_prefill
+         self.num_query_heads = num_query_heads
+         self._native_decoder = None
+         self.decode_attention = None
++        self._native_prefiller = None
++        self.prefill_attention = None
+         g = geometry
+         slabs = parent_capacity + 1
+         self.storage = torch.zeros(
+@@ -133,8 +137,25 @@ class MuseKvArena:
+         return group, table[:, index, 0], table[:, index, 1]
+ 
+     def prepare_forward(self, rows, query_length: int) -> None:
+-        """Plan native one-token attention once before running all layers."""
++        """Plan each selected native attention group once for all layers."""
+         self.decode_attention = None
++        self.prefill_attention = None
++        if query_length > 1 and self.native_prefill:
++            from resin_models_torch.muse_glimmer.flashinfer import (
++                FlashinferPagedPrefill,
++            )
++
++            if self.num_query_heads is None:
++                raise ValueError("native prefill needs the model's query-head count")
++            if self._native_prefiller is None:
++                self._native_prefiller = FlashinferPagedPrefill(
++                    self.geometry,
++                    self.num_query_heads,
++                    device=self.storage.device,
++                    dtype=self.storage.dtype,
++                )
++            self._native_prefiller.plan(rows, query_length)
++            self.prefill_attention = self._native_prefiller
+         if not self.native_decode or query_length != 1:
+             return
+         if self._native_decoder is None:
+diff --git a/resin-source/models/torch/resin_models_torch/muse_glimmer/reference.py b/resin-source/models/torch/resin_models_torch/muse_glimmer/reference.py
+index 451d2e3..5f736c2 100644
+--- a/resin-source/models/torch/resin_models_torch/muse_glimmer/reference.py
++++ b/resin-source/models/torch/resin_models_torch/muse_glimmer/reference.py
+@@ -227,6 +227,7 @@ class MuseGlimmerTorchRunner(Runner):
+             device=self.device,
+             dtype=self._model.lm_head.weight.dtype,
+             native_decode=self.device.type == "cuda",
++            native_prefill=self.device.type == "cuda",
+             num_query_heads=self.config.text.num_attention_heads,
+         )
+         self._binding = CachePoolBinding(self.cache_layout, resource="Muse Glimmer KV")
+diff --git a/resin-source/tests/test_muse_glimmer_prefill_flashinfer.py b/resin-source/tests/test_muse_glimmer_prefill_flashinfer.py
+new file mode 100644
+index 0000000..37673ef
+--- /dev/null
++++ b/resin-source/tests/test_muse_glimmer_prefill_flashinfer.py
+@@ -0,0 +1,164 @@
++"""Native prefill qualification against an independent absolute-position mask.
++
++Real GQA geometry and strided arena views cover initial/chunked prefill, page
++and window crossings, unequal histories, and unwritten NaN page tails. Full
++checkpoint HF parity remains a separate unchanged qualification gate.
++"""
++
++from __future__ import annotations
++
++import math
++
++import pytest
++import torch
++from torch.nn import functional as F
++
++from resin_models_torch.muse_glimmer.flashinfer import FlashinferPagedPrefill
++from resin_models_torch.muse_glimmer.paged import (
++    BLOCK_TOKENS,
++    GroupRow,
++    MuseCacheGeometry,
++    MuseKvArena,
++    PagedRow,
++)
++
++
++def _group(pages, first_position, query_start, end, device):
++    pages = torch.tensor(pages, dtype=torch.long, device=device)
++    append = torch.arange(
++        query_start - first_position, end - first_position, device=device
++    )
++    return GroupRow(
++        pages,
++        first_position,
++        pages[append // BLOCK_TOKENS],
++        append % BLOCK_TOKENS,
++    )
++
++
++def _absolute_reference(queries, keys, values, *, query_start, key_start, window):
++    """FP32 oracle with bounded temporary memory and explicit absolute masks."""
++    key_positions = torch.arange(
++        key_start, key_start + len(keys), device=queries.device
++    )
++    keys = keys.transpose(0, 1)[None].repeat_interleave(16, dim=1).float()
++    values = values.transpose(0, 1)[None].repeat_interleave(16, dim=1).float()
++    output = []
++    for first in range(0, len(queries), 64):
++        query = queries[first : first + 64]
++        positions = torch.arange(
++            query_start + first, query_start + first + len(query), device=queries.device
++        )
++        mask = key_positions[None] <= positions[:, None]
++        if window is not None:
++            mask &= key_positions[None] > positions[:, None] - window
++        attended = F.scaled_dot_product_attention(
++            query.transpose(0, 1)[None].float(),
++            keys,
++            values,
++            attn_mask=mask[None, None],
++            scale=128**-0.5,
++        )
++        output.append(attended[0].transpose(0, 1).to(torch.bfloat16))
++    return torch.cat(output)
++
++
++@pytest.mark.skipif(not torch.cuda.is_available(), reason="CUDA kernel qualification")
++@pytest.mark.parametrize(
++    ("query_length", "ends"),
++    [
++        (2, (2, 63, 64, 65, 2047, 2048, 2049, 8193)),
++        (63, (63, 2049, 8193)),
++        (64, (64, 2049, 8193)),
++        (65, (65, 2049, 8193)),
++        (2049, (2049, 8193)),
++        (8192, (8192,)),
++    ],
++)
++def test_native_paged_prefill_matches_absolute_attention(query_length, ends):
++    pytest.importorskip("flashinfer")
++    torch.manual_seed(456)
++    device = "cuda"
++    geometry = MuseCacheGeometry(
++        full_layers=(0,),
++        sliding_layers=(1, 2, 3),
++        kv_heads=2,
++        head_dim=128,
++        read_window=2048,
++        window_tokens=10239,
++    )
++    arena = MuseKvArena(geometry, 600, device=device, dtype=torch.bfloat16)
++    arena.storage.fill_(float("nan"))
++    rows, data = [], {0: [], 1: []}
++    # Keep full and window data in disjoint slab ranges. History page n maps
++    # to slab n // 3, so the first range cannot alias the second range.
++    next_page = [3, 350]
++    for end in ends:
++        query_start = end - query_length
++        earliest_window_key = max(0, query_start - geometry.read_window + 1)
++        first_window = earliest_window_key // BLOCK_TOKENS * BLOCK_TOKENS
++        groups = []
++        for group, first in enumerate((0, first_window)):
++            live = end - first
++            count = math.ceil(live / BLOCK_TOKENS)
++            pages = list(range(next_page[group], next_page[group] + count + 2))
++            next_page[group] += count + 2
++            groups.append(_group(pages, first, query_start, end, device))
++            keys = torch.randn(live, 2, 128, device=device, dtype=torch.bfloat16)
++            values = torch.randn_like(keys)
++            _, key_pages, value_pages = arena.layer_views(group)
++            slots = torch.arange(live - query_length, device=device)
++            page_ids = groups[-1].pages[slots // BLOCK_TOKENS]
++            key_pages[page_ids, slots % BLOCK_TOKENS] = keys[:-query_length]
++            value_pages[page_ids, slots % BLOCK_TOKENS] = values[:-query_length]
++            # Reproduce the model's append-before-read order; every unwritten
++            # slot and both reserved future pages remain NaN.
++            key_pages[groups[-1].append_pages, groups[-1].append_offsets] = keys[
++                -query_length:
++            ]
++            value_pages[groups[-1].append_pages, groups[-1].append_offsets] = values[
++                -query_length:
++            ]
++            data[group].append((first, keys, values))
++        rows.append(PagedRow(tuple(groups), end))
++
++    prefiller = FlashinferPagedPrefill(
++        geometry, 32, device=device, dtype=torch.bfloat16
++    )
++    prefiller.plan(rows, query_length)
++    queries = torch.randn(
++        len(rows), query_length, 32, 128, device=device, dtype=torch.bfloat16
++    )
++    for group in (0, 1):
++        _, key_pages, value_pages = arena.layer_views(group)
++        assert not key_pages.is_contiguous()
++        actual = prefiller.run(
++            group, queries.flatten(0, 1), key_pages, value_pages
++        ).view_as(queries)
++        expected = []
++        for query, row, (first, keys, values) in zip(queries, rows, data[group]):
++            expected.append(
++                _absolute_reference(
++                    query,
++                    keys,
++                    values,
++                    query_start=row.end - query_length,
++                    key_start=first,
++                    window=geometry.read_window if group == 1 else None,
++                )
++            )
++        expected = torch.stack(expected)
++        assert torch.isfinite(actual).all(), "unwritten NaN tails entered attention"
++        print(
++            {
++                "group": group,
++                "query_length": query_length,
++                "ends": ends,
++                "max_abs_error": (actual.float() - expected.float()).abs().max().item(),
++            }
++        )
++        # Identical to the existing decode primitive tolerance. Full-model
++        # greedy tokens and diagnostic logits keep their original gates.
++        torch.testing.assert_close(actual, expected, atol=0.01, rtol=0.01)
++    assert prefiller.plan_calls == 2
++    assert prefiller.layer_calls == 2

@@ -1,0 +1,32 @@
+{
+  "protocol_started_at": "2026-11-20T04:10:51.878695+00:00",
+  "measurements_available_at": "2026-11-20T04:47:20.272028+00:00",
+  "wall_seconds_to_measurements": 2188.393333,
+  "measured_h100_function_seconds": 3073.9770136884035,
+  "agent_active_model_runtime": "not separately instrumented; wall/candidate checkpoints cannot be interpreted as active agent runtime",
+  "human_interventions": "No human code edits or architecture steering after round approval; voice status discussion and session end did not alter experiment scope.",
+  "root_coordination": "Shared qualification, H100 dispatch, budget control, independent measurement, numerical diagnosis, artifact preservation",
+  "checkpoints": [
+    {
+      "lane": "graphs",
+      "commit": "6fd2dda4b0677bea4e539135f016c6b40a5c8653",
+      "checkpoint_at": "2026-11-19T23:14:19-05:00",
+      "source_changes": "191\t0\tresin-source/models/torch/resin_models_torch/muse_glimmer/execution.py\n56\t0\tresin-source/models/torch/resin_models_torch/muse_glimmer/reference.py\n50\t0\tresin-source/models/torch/tests/test_muse_glimmer_graph_failures.py\n116\t0\tresin-source/models/torch/tests/test_muse_glimmer_graphs.py\n3\t1\tresin-source/tests/test_muse_glimmer_hf_parity.py\n",
+      "checkpoint_seconds_since_protocol_start": 207.121305
+    },
+    {
+      "lane": "prefill",
+      "commit": "e74e98174447b77e55d43d39b6c8a6239d13c9b9",
+      "checkpoint_at": "2026-11-19T23:15:59-05:00",
+      "source_changes": "75\t5\tresin-source/models/torch/resin_models_torch/muse_glimmer/flashinfer.py\n13\t4\tresin-source/models/torch/resin_models_torch/muse_glimmer/model.py\n22\t1\tresin-source/models/torch/resin_models_torch/muse_glimmer/paged.py\n1\t0\tresin-source/models/torch/resin_models_torch/muse_glimmer/reference.py\n164\t0\tresin-source/tests/test_muse_glimmer_prefill_flashinfer.py\n",
+      "checkpoint_seconds_since_protocol_start": 307.121305
+    },
+    {
+      "lane": "delivery",
+      "commit": "8bf4e0993aae5402e75144b33a893b1da580857f",
+      "checkpoint_at": "2026-11-19T23:17:58-05:00",
+      "source_changes": "21\t0\tresin-source/models/torch/resin_models_torch/muse_glimmer/reference.py\n196\t0\tresin-source/models/torch/tests/test_muse_glimmer_delivery.py\n",
+      "checkpoint_seconds_since_protocol_start": 426.121305
+    }
+  ]
+}

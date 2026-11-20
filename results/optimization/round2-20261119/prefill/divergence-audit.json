@@ -1,0 +1,165 @@
+{
+  "source": "/Users/reese/code/resin/results/optimization/round2-20261119/prefill/pair-001/result.json",
+  "candidate_commit": "e74e981",
+  "candidate_changed": false,
+  "status": "long-synthetic-greedy-parity-unresolved",
+  "matched_prompt_sha256": "ae5e6bef4b478825593de5beaab38195ded52e26bc527c98105db2a6c2989ae9",
+  "repeatability": {
+    "C_b1": {
+      "records": 3,
+      "requests": 3,
+      "unique_full_sequences": 1
+    },
+    "C_b2": {
+      "records": 3,
+      "requests": 6,
+      "unique_full_sequences": 1
+    },
+    "C_b4": {
+      "records": 3,
+      "requests": 12,
+      "unique_full_sequences": 1
+    },
+    "C_b8": {
+      "records": 3,
+      "requests": 24,
+      "unique_full_sequences": 1
+    },
+    "prefill_b1": {
+      "records": 3,
+      "requests": 3,
+      "unique_full_sequences": 1
+    },
+    "prefill_b2": {
+      "records": 3,
+      "requests": 6,
+      "unique_full_sequences": 1
+    },
+    "prefill_b4": {
+      "records": 3,
+      "requests": 12,
+      "unique_full_sequences": 1
+    },
+    "prefill_b8": {
+      "records": 3,
+      "requests": 24,
+      "unique_full_sequences": 1
+    }
+  },
+  "first_mismatch_zero_based_all_pairs": {
+    "C_b1": {
+      "C_b1": null,
+      "C_b2": 47,
+      "C_b4": 47,
+      "C_b8": 57,
+      "prefill_b1": 28,
+      "prefill_b2": 28,
+      "prefill_b4": 88,
+      "prefill_b8": 47
+    },
+    "C_b2": {
+      "C_b1": 47,
+      "C_b2": null,
+      "C_b4": 199,
+      "C_b8": 47,
+      "prefill_b1": 28,
+      "prefill_b2": 28,
+      "prefill_b4": 47,
+      "prefill_b8": 199
+    },
+    "C_b4": {
+      "C_b1": 47,
+      "C_b2": 199,
+      "C_b4": null,
+      "C_b8": 47,
+      "prefill_b1": 28,
+      "prefill_b2": 28,
+      "prefill_b4": 47,
+      "prefill_b8": null
+    },
+    "C_b8": {
+      "C_b1": 57,
+      "C_b2": 47,
+      "C_b4": 47,
+      "C_b8": null,
+      "prefill_b1": 28,
+      "prefill_b2": 28,
+      "prefill_b4": 57,
+      "prefill_b8": 47
+    },
+    "prefill_b1": {
+      "C_b1": 28,
+      "C_b2": 28,
+      "C_b4": 28,
+      "C_b8": 28,
+      "prefill_b1": null,
+      "prefill_b2": 125,
+      "prefill_b4": 28,
+      "prefill_b8": 28
+    },
+    "prefill_b2": {
+      "C_b1": 28,
+      "C_b2": 28,
+      "C_b4": 28,
+      "C_b8": 28,
+      "prefill_b1": 125,
+      "prefill_b2": null,
+      "prefill_b4": 28,
+      "prefill_b8": 28
+    },
+    "prefill_b4": {
+      "C_b1": 88,
+      "C_b2": 47,
+      "C_b4": 47,
+      "C_b8": 57,
+      "prefill_b1": 28,
+      "prefill_b2": 28,
+      "prefill_b4": null,
+      "prefill_b8": 47
+    },
+    "prefill_b8": {
+      "C_b1": 47,
+      "C_b2": 199,
+      "C_b4": null,
+      "C_b8": 47,
+      "prefill_b1": 28,
+      "prefill_b2": 28,
+      "prefill_b4": 47,
+      "prefill_b8": null
+    }
+  },
+  "observations": [
+    "C itself changes full256-token sequences across batch widths; b1/b2 first differ47 and b1/b8 first differ57",
+    "Native-prefill b8 is exactly identical to C b4 for all256 output tokens",
+    "Native-prefill b1/b2 first differ from all C widths at output step28, choosing589 instead of2931",
+    "Every same-variant/same-batch sequence is identical across3 repeats and all requests",
+    "Primitive causal/window/tail qualification and3x16 saved HF greedy references pass, but do not establish long-synthetic parity"
+  ],
+  "inferences_not_proven": [
+    "Batch-sensitive BF16 accumulation/rounding is a plausible source of near-tie argmax changes",
+    "Late divergence and matching another C batch width do not prove native prefill is semantically correct for every model state",
+    "The first differing output positions28/47 are not new64-token cache-page crossings"
+  ],
+  "diagnostic": {
+    "script": "results/optimization/diagnose_prefill_divergence.py",
+    "continuation": "results/optimization/prefill-divergence-continuation.json",
+    "owner": "root centralized bounded H100 dispatch",
+    "modes_to_run": [
+      "C",
+      "prefill"
+    ],
+    "context": "fixed seed41 full8451 prompt hash, first8192 IDs; teacher-force same frozen C b1 output prefix for48 predictions",
+    "scope": "actual Engine sampler input logits; BF16 weights/KV, Engine pages, native decode and candidate native prefill unchanged",
+    "probes_zero_based": [
+      0,
+      27,
+      28,
+      47
+    ],
+    "no_threshold_or_dataset_changes": true,
+    "independent_HF_status": "unavailable on pinned Resin Transformers5.14.1: no MuseGlimmer model support; root chose no overlays or reference changes",
+    "outputs": "JSON top5/argmax/near-tie details for48 rows plus full logits at4 probe rows as NPZ"
+  },
+  "primary_numerical_reference": "https://docs.pytorch.org/docs/2.9/notes/numerical_accuracy.html#batched-computations-or-slice-computations",
+  "performance_status": "Measured completion and prefill speedups exist but candidate remains unaccepted while strict long-sequence parity is unresolved"
+}

@@ -1,0 +1,29 @@
+{
+  "scope": "Untimed actual-Engine logits with identical forced C b1 context, first48predictions; unchanged pinned stack, BF16 weights/KV",
+  "sources": [
+    "prefill/numeric-001/divergence-C.json",
+    "prefill/numeric-001/divergence-prefill.json"
+  ],
+  "candidate_and_control_argmax_agree": 47,
+  "predictions": 48,
+  "first_difference_zero_based": 28,
+  "C_top_logits": {
+    "2931": 17.0,
+    "589": 16.875
+  },
+  "native_prefill_top_logits": {
+    "2931": 16.875,
+    "589": 16.875
+  },
+  "native_prefill_exact_max_tie": true,
+  "interpretation": "A one-BF16-increment change creates an exact top-logit tie at the first divergence. This supports numerical sensitivity as the immediate mechanism; it does not identify the originating reduction, prove semantic correctness or establish harmlessness.",
+  "strict_long_sequence_parity": "unresolved; full generated sequences differ",
+  "independent_HF_diagnostic": "not run: pinned Resin Transformers5.14.1 lacks this model class; frozen references used5.19.0. No stack or reference-policy change made.",
+  "saved_reference_suite": "passed unchanged three references,16steps plus chunk/window/concurrency and affected contracts",
+  "quality": "dataset-level quality not measured",
+  "independent_review": "prefill agent independently checked48rows, sources/versions/flags/context and real native-call counters; no source changes",
+  "related_primary_documentation": {
+    "url": "https://docs.pytorch.org/docs/2.9/notes/numerical_accuracy.html#batched-computations-or-slice-computations",
+    "support": "PyTorch documents that batch/slice computations need not be bitwise equal; this general observation does not validate this candidate."
+  }
+}

@@ -1,0 +1,17 @@
+{
+  "base_source": "/private/tmp/resin-opt-snapshots/c-final/resin-source",
+  "completion_only": true,
+  "variants": [
+    {
+      "name": "prefill",
+      "source": "/private/tmp/resin-round2-snapshots/prefill/resin-source",
+      "commit": "e74e981",
+      "qualify": true,
+      "completion": false,
+      "extra_tests": [
+        "tests/test_muse_glimmer_prefill_flashinfer.py",
+        "tests/test_muse_glimmer_flashinfer.py"
+      ]
+    }
+  ]
+}
