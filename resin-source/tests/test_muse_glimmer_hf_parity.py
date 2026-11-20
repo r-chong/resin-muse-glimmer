@@ -21,6 +21,8 @@ import pytest
 CHECKPOINT = os.environ.get("RESIN_TEST_CHECKPOINT")
 REFERENCES = [p for p in os.environ.get("RESIN_MUSE_REFERENCES", "").split(",") if p]
 STEPS = int(os.environ.get("RESIN_MUSE_STEPS", "16"))
+# Optional directory for full teacher-forced logit rows (diagnostics).
+DUMP_DIR = os.environ.get("RESIN_MUSE_DUMP_DIR")
 
 pytestmark = pytest.mark.skipif(
     not (CHECKPOINT and REFERENCES), reason="needs a GPU checkpoint and HF references"
@@ -145,6 +147,16 @@ def test_single_request_tokens_and_logits(runner, references):
     for ref in references:
         (tokens,) = _generate(runner, [ref["prompt"]], [len(ref["tokens"])], max_running=1)
         steps, probes = _teacher_forced(runner, ref)
+        if DUMP_DIR:
+            Path(DUMP_DIR).mkdir(parents=True, exist_ok=True)
+            np.savez_compressed(
+                Path(DUMP_DIR) / f"{ref['name']}.npz",
+                step_logits=steps,
+                reference_tokens=np.array(ref["tokens"]),
+                engine_tokens=np.array(tokens),
+                **({"probe_logits": probes, "probe_positions": ref["probe_positions"]}
+                   if probes is not None else {}),
+            )
         summary = _report(
             "single_request",
             reference=ref["name"],
