@@ -121,6 +121,13 @@ decisions. Newest entries are at the bottom.
   HF layers. Not yet covered: the sliding-window boundary (only 98
   positions), batch > 1, and steps beyond 16.
 
+### Layout (owner)
+
+- **Keep the fork.** Resin changes stay on the `muse-glimmer-torch` branch of
+  `resin-source` (base `1fe19de`), exported to `resin-patches/`. The native Rust
+  recipe and the shared registry/bench/serve tooling stay as they are.
+  `resin-benchmarks` holds docs, pins, the harness and results.
+
 ### Open items
 
 - Speculative decoding (target-only for now).
