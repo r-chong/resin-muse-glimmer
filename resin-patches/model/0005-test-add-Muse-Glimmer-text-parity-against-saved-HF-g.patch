@@ -1,6 +1,6 @@
-From 5d4f493e48a9e8a819449596585f65ecf82a5083 Mon Sep 17 00:00:00 2001
+From 0e374ae1ecaef827f5f73d9b92d7ed7478c4d7de Mon Sep 17 00:00:00 2001
 From: r-chong <dev.reese.chong@gmail.com>
-Date: Thu, 19 Nov 2026 19:19:03 -0500
+Date: Thu, 19 Nov 2026 20:07:59 -0500
 Subject: [PATCH 5/6] test: add Muse Glimmer text parity against saved HF
  greedy reference
 
@@ -8,7 +8,7 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
 ---
  tests/test_muse_glimmer_hf_parity.py | 111 +++++++++++++++++++++++++++
  1 file changed, 111 insertions(+)
- create mode 100644 tests/test_muse_glimmer_hf_parity.py
+ create mode 100644 resin-source/tests/test_muse_glimmer_hf_parity.py
 
 diff --git a/tests/test_muse_glimmer_hf_parity.py b/tests/test_muse_glimmer_hf_parity.py
 new file mode 100644

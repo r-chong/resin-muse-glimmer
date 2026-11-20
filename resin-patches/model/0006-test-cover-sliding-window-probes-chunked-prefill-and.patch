@@ -1,6 +1,6 @@
-From 51743c94ab2a709c85422613a6125f3f49163f86 Mon Sep 17 00:00:00 2001
+From ac23605e3b247328883109f31ec067cf5ce9f3e3 Mon Sep 17 00:00:00 2001
 From: r-chong <dev.reese.chong@gmail.com>
-Date: Thu, 19 Nov 2026 20:04:52 -0500
+Date: Thu, 19 Nov 2026 20:07:59 -0500
 Subject: [PATCH 6/6] test: cover sliding-window probes, chunked prefill, and
  concurrent batching
 

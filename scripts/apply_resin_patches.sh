@@ -1,10 +1,12 @@
 #!/usr/bin/env bash
-# Recreate the patched Resin checkout from the pinned upstream revision.
-#   scripts/apply_resin_patches.sh [target-dir]
+# Recreate the patched Resin tree from the pinned upstream revision, to check
+# that the patch series applies cleanly. (resin-source/ in this repo is already
+# the vendored, patched tree.)
+#   scripts/apply_resin_patches.sh <new-target-dir>
 # RESIN_REPO overrides the upstream URL (a local clone of ekzhang/resin works).
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-TARGET="${1:-$ROOT/resin-source}"
+TARGET="${1:?usage: $0 <new-target-dir>}"
 REPO="${RESIN_REPO:-https://github.com/ekzhang/resin.git}"
 BASE=1fe19de12380cd0f5cf9c05bdd06213272217df7
 if [ -e "$TARGET" ]; then

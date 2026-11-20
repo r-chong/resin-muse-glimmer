@@ -1,6 +1,6 @@
-From bc63b8e3cceaf70eab9bbb0210c5321e1e74a584 Mon Sep 17 00:00:00 2001
+From 7a8788f7e2043f74e60bd3e99595c3886f180803 Mon Sep 17 00:00:00 2001
 From: r-chong <dev.reese.chong@gmail.com>
-Date: Thu, 19 Nov 2026 19:19:02 -0500
+Date: Thu, 19 Nov 2026 20:07:57 -0500
 Subject: [PATCH 1/6] feat(recipe): add Muse Glimmer ATEM recipe and image
  preprocessing
 
@@ -18,10 +18,10 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
  .../resin-recipe/tests/fixtures/muse_hf.json  | 287 ++++++++
  crates/resin-recipe/tests/muse.rs             | 130 ++++
  7 files changed, 1320 insertions(+)
- create mode 100644 crates/resin-recipe/src/media/muse.rs
- create mode 100644 crates/resin-recipe/src/muse.rs
- create mode 100644 crates/resin-recipe/tests/fixtures/muse_hf.json
- create mode 100644 crates/resin-recipe/tests/muse.rs
+ create mode 100644 resin-source/crates/resin-recipe/src/media/muse.rs
+ create mode 100644 resin-source/crates/resin-recipe/src/muse.rs
+ create mode 100644 resin-source/crates/resin-recipe/tests/fixtures/muse_hf.json
+ create mode 100644 resin-source/crates/resin-recipe/tests/muse.rs
 
 diff --git a/crates/resin-recipe/src/lib.rs b/crates/resin-recipe/src/lib.rs
 index 140c768..73d5b75 100644

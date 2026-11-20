@@ -8,29 +8,34 @@ A patch series against upstream Resin
 | [`infra/`](infra/) | Resin infrastructure fixes that any new model of this kind would need. They are not Muse-specific. |
 | [`model/`](model/) | The Muse Glimmer integration: recipe, bindings, runner, registry entry, and parity test. |
 
-`resin-source/` is a gitignored working checkout on branch
-`muse-glimmer-torch`. These patches are the record.
+`resin-source/` is **vendored** in this repo. Commit `a1736eb` is pristine
+upstream `1fe19de`. Each later commit touching `resin-source/` is one fork
+change, with infrastructure commits first. These patches are generated from
+that history.
 
 ## Apply
 
 ```bash
-scripts/apply_resin_patches.sh            # clones upstream into ./resin-source
-scripts/apply_resin_patches.sh /tmp/resin # or into any new directory
+scripts/apply_resin_patches.sh /tmp/resin   # fresh upstream clone + both groups
 ```
 
 Verified on 2026-11-19: both groups apply cleanly to `1fe19de`. The resulting
-tree (`9201163761a58d551b7ccf24a30addd3405e5ad9`) is identical to the working
-fork.
+tree (`fd9db2e14958ef021e0628aa3a6167bb582cbc50`) is identical to the vendored
+`resin-source/`.
 
 ## Regenerate after changing the fork
 
-Keep infrastructure commits before model commits on the branch, then:
+Edit `resin-source/` directly. Commit infrastructure fixes and model changes
+separately, using Conventional Commit messages. Then:
 
 ```bash
 rm -f resin-patches/infra/*.patch resin-patches/model/*.patch
-git -C resin-source format-patch 1fe19de..<last-infra-commit> -o ../resin-patches/infra
-git -C resin-source format-patch <last-infra-commit>..HEAD -o ../resin-patches/model
+git format-patch --relative=resin-source a1736eb..<last-infra-commit> -o resin-patches/infra -- resin-source
+git format-patch --relative=resin-source <last-infra-commit>..<last-model-commit> -o resin-patches/model -- resin-source
 ```
+
+If a new infrastructure fix lands after model commits, list it separately
+(for example `infra/0002-…`) and note its position. Do not rewrite pushed history.
 
 ## Size (added lines)
 

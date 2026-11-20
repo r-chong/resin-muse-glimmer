@@ -1,6 +1,6 @@
-From c176778e4b44343dc0d6e10d9506f2152da85261 Mon Sep 17 00:00:00 2001
+From f6f6e25f2a6fa25d9361fdcc33b2ef362625bd1e Mon Sep 17 00:00:00 2001
 From: r-chong <dev.reese.chong@gmail.com>
-Date: Thu, 19 Nov 2026 19:49:47 -0500
+Date: Thu, 19 Nov 2026 20:07:57 -0500
 Subject: [PATCH] fix(deploy): ship resin_models_torch runners in the Modal
  image
 

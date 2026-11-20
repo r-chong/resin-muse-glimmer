@@ -39,8 +39,10 @@ def main() -> None:
 
     from deploy import modal_bench
 
-    source = subprocess.check_output(["git", "-C", str(RESIN), "rev-parse", "HEAD"], text=True).strip()
-    dirty = bool(subprocess.check_output(["git", "-C", str(RESIN), "status", "--porcelain"], text=True).strip())
+    # resin-source/ is vendored in this repo; identify it by this repo's commit.
+    source = subprocess.check_output(["git", "-C", str(ROOT), "rev-parse", "HEAD"], text=True).strip()
+    dirty = bool(subprocess.check_output(
+        ["git", "-C", str(ROOT), "status", "--porcelain", "--", "resin-source"], text=True).strip())
     with modal.enable_output(), modal_bench.app.run():
         result = modal_bench.qualify.with_options(gpu="H100!").remote(
             "muse-glimmer-30b",
@@ -53,7 +55,7 @@ def main() -> None:
         if "MUSE_PARITY_REPORT " in line
     ]
     record = {
-        "resin_source_commit": source,
+        "repo_commit": source,
         "resin_source_dirty": dirty,
         "reference": args.reference,
         "steps": args.steps,

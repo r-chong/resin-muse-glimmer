@@ -1,6 +1,6 @@
-From 6e96fdcb4ce1d1d1f072045e4cde01f008cf15a2 Mon Sep 17 00:00:00 2001
+From 81dcfe9958728c58305d86ab7503fc9afdadb148 Mon Sep 17 00:00:00 2001
 From: r-chong <dev.reese.chong@gmail.com>
-Date: Thu, 19 Nov 2026 19:19:03 -0500
+Date: Thu, 19 Nov 2026 20:07:58 -0500
 Subject: [PATCH 4/6] feat(deploy): register muse-glimmer-30b torch preset on
  H100
 

@@ -123,10 +123,33 @@ decisions. Newest entries are at the bottom.
 
 ### Layout (owner)
 
+- **Vendor the fork (owner).** `resin-source/` is no longer gitignored. It is
+  tracked in this repo: pristine upstream `1fe19de` in `a1736eb`, followed by
+  the infra and model commits replayed with their original messages. The fork's
+  former nested `.git` is kept as the ignored backup `.resin-fork.git/`.
+  Patches are generated with `git format-patch --relative=resin-source`.
 - **Keep the fork.** Resin changes stay on the `muse-glimmer-torch` branch of
   `resin-source` (base `1fe19de`), exported to `resin-patches/`. The native Rust
   recipe and the shared registry/bench/serve tooling stay as they are.
   `resin-benchmarks` holds docs, pins, the harness and results.
+
+- **Sliding-window and batching parity passed (2026-11-19,
+  `results/parity/20261119T200741.json`, 5/5 tests, 96 s on H100).** New HF
+  references `baseline/output/69d7fbf4…` (transformers 5.19.0, sdpa, H100):
+  `long_window` (3,829 tokens) and `long_8k`, which came out at **6,896
+  tokens, not 8K**.
+  - Single request (Engine, 16 greedy steps): tokens match 16/16 on all three
+    prompts. Teacher-forced argmax matches 16/16.
+  - Probe positions 1024, 2046–2050, 3828 / 2047, 4096, 6143, 6895: argmax
+    matches 11/11. Max abs logit difference is ≤ 1.0. The smallest
+    reference margin at a probe is 5.69, and on decode steps it is 1.75.
+  - Chunked Engine prefill (1,000- and 2,047-token chunks that straddle the
+    window): 16/16 tokens match on both long prompts.
+  - Concurrency 2/4/8 with mixed prompt lengths: every request matches its
+    reference 16/16. The batched decode path ran at full width (max batch =
+    concurrency).
+  - Limits: 16 decode steps, greedy only, BF16 batch-shape numerics not
+    stressed beyond these cases, no prompt of 8,192 or more tokens.
 
 ### Open items
 
