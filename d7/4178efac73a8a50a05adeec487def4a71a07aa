@@ -1,0 +1,26 @@
+REPRODUCE.md
+  s_0d9d163433c805::t_4b75a9409dc7cd 1-98
+resin-patches/README.md
+  s_0d9d163433c805::t_0dc9f3a022bd43 23
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "d74178efac73a8a50a05adeec487def4a71a07aa",
+  "prompts": {},
+  "humans": {
+    "h_04353115311dd2": {
+      "author": "r-chong <dev.reese.chong@gmail.com>"
+    }
+  },
+  "sessions": {
+    "s_0d9d163433c805": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "13cdd190-051a-4924-b48b-997280d71d90",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "r-chong <dev.reese.chong@gmail.com>"
+    }
+  }
+}
