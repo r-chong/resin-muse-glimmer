@@ -1,0 +1,15 @@
+ M baseline/hf_reference.py
+?? README.md
+?? baseline/output/3403e274230044318b789a8d6b819dcf/gsm8k_test_0001.npz
+?? baseline/output/69d7fbf49c4f4dd4a3fabcb4de81e17f/long_8k.npz
+?? baseline/output/69d7fbf49c4f4dd4a3fabcb4de81e17f/long_window.npz
+?? baseline/output/9a66aaec480f46cc999ed20c4a64f728/long_8k.npz
+?? baseline/output/9a66aaec480f46cc999ed20c4a64f728/long_window.npz
+?? baseline/output/a498545954134a0cadd3b603c8a7af8f/gsm8k_test_0001.npz
+?? baseline/output/a498545954134a0cadd3b603c8a7af8f/manifest.json
+?? baseline/output/ad4ed5b1764249f3a07ce6fe1b555fc0/custom_prompt.npz
+?? baseline/output/ad4ed5b1764249f3a07ce6fe1b555fc0/manifest.json
+?? baseline/output/e0b3ae6b507041dfb2347ff01b9db3a3/gsm8k_test_0001.npz
+?? baseline/output/e0b3ae6b507041dfb2347ff01b9db3a3/manifest.json
+?? resin-explained-deploy.tar.gz
+?? results/parity/20261119T205919.json
