@@ -1,0 +1,30 @@
+resin-source/models/torch/tests/test_muse_glimmer_graphs.py
+  s_fde809a6b235c8::t_543b34b2be39ea 1-14,18-37,47,56,61-104
+  s_fde809a6b235c8::t_1fddc6514e46ea 15-17,38-46,48-55,57-60
+resin-source/tests/test_muse_glimmer_hf_parity.py
+  s_fde809a6b235c8::t_e3f698ecf4589f 78,81-82
+resin-source/models/torch/resin_models_torch/muse_glimmer/reference.py
+  s_fde809a6b235c8::t_04bf7f6766cd92 12,156,194-230
+resin-source/models/torch/resin_models_torch/muse_glimmer/execution.py
+  s_fde809a6b235c8::t_543b34b2be39ea 86,111-112,138
+  s_fde809a6b235c8::t_1fddc6514e46ea 41-45,72-74,80-84,98,103-105,117-119,154-156,164-167
+  s_fde809a6b235c8::t_04bf7f6766cd92 1-40,46-71,75-79,85,87-97,99-102,106-110,113-116,120-137,139-153,157-163,168-173
+results/optimization/lane-b/checkpoint-v1.json
+  s_fde809a6b235c8::t_afac3041dde84a 1-58
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "3baaa0f6b300b3b5408c50893f3cc41e0796ec9f",
+  "prompts": {},
+  "sessions": {
+    "s_fde809a6b235c8": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1f6c2-b4d7-71e0-b3fa-c7d633aa35e4",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "r-chong <dev.reese.chong@gmail.com>"
+    }
+  }
+}
