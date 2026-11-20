@@ -1,0 +1,24 @@
+results/parity/20261119T205919.json
+  s_0d9d163433c805::t_2a3b417a49d266 1-111
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "5cf4a8892aa0e1716601b68a603de012a1c89348",
+  "prompts": {},
+  "humans": {
+    "h_04353115311dd2": {
+      "author": "r-chong <dev.reese.chong@gmail.com>"
+    }
+  },
+  "sessions": {
+    "s_0d9d163433c805": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "13cdd190-051a-4924-b48b-997280d71d90",
+        "model": "unknown"
+      },
+      "human_author": "r-chong <dev.reese.chong@gmail.com>"
+    }
+  }
+}
