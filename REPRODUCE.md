@@ -134,6 +134,22 @@ default to it.
 export MODAL_IMAGE_BUILDER_VERSION=2025.06
 ```
 
+Run the focused runner/cache/scheduler checks locally without model weights:
+
+```bash
+RESIN_MUSE_DECODE_EXECUTION=eager \
+PYTHONPATH=resin-source:resin-source/models/torch \
+resin-source/.venv/bin/python -m pytest \
+  resin-source/models/torch/tests/test_muse_glimmer_paged.py \
+  resin-source/models/torch/tests/test_muse_glimmer_graph_failures.py \
+  resin-source/models/torch/tests/test_muse_glimmer_graphs.py \
+  resin-source/tests/test_muse_glimmer_flashinfer.py \
+  resin-source/tests/test_scheduler.py -q
+```
+
+On the CPU integration machine this produced 35 passes and three CUDA-only
+skips. It supplements the recorded H100 qualification; it does not replace it.
+
 ## 2. Checkpoint (CPU worker, about 60 GB, about 4 min)
 
 ```bash
