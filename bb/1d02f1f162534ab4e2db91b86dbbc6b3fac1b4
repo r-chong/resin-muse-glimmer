@@ -1,0 +1,32 @@
+resin-source/models/torch/resin_models_torch/muse_glimmer/reference.py
+  s_0d9d163433c805::t_6bc10334d4e641 1-308
+resin-source/models/torch/resin_models_torch/muse_glimmer/vision.py
+  s_0d9d163433c805::t_6bc10334d4e641 1-274
+resin-source/models/torch/resin_models_torch/muse_glimmer/__init__.py
+  s_0d9d163433c805::t_6bc10334d4e641 1-15
+resin-source/models/torch/resin_models_torch/muse_glimmer/model.py
+  s_0d9d163433c805::t_6bc10334d4e641 1-448
+resin-source/models/torch/resin_models_torch/muse_glimmer/config.py
+  s_0d9d163433c805::t_6bc10334d4e641 1-176
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "bb1d02f1f162534ab4e2db91b86dbbc6b3fac1b4",
+  "prompts": {},
+  "humans": {
+    "h_04353115311dd2": {
+      "author": "r-chong <dev.reese.chong@gmail.com>"
+    }
+  },
+  "sessions": {
+    "s_0d9d163433c805": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "13cdd190-051a-4924-b48b-997280d71d90",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "r-chong <dev.reese.chong@gmail.com>"
+    }
+  }
+}
