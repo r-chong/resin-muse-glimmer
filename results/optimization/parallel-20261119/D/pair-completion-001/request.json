@@ -1,0 +1,51 @@
+{
+  "completion_only": true,
+  "variants": [
+    {
+      "name": "baseline",
+      "snapshot": "baseline",
+      "commit": "73532b9",
+      "qualify": false,
+      "completion": true,
+      "source_sha256": {
+        "models/torch/resin_models_torch/__init__.py": "494ba50d6c2d17dfbf7a8b0b39a53f9981626afe33ccc0a3cd131b439edf8618",
+        "models/torch/resin_models_torch/lfm2/__init__.py": "595b8005d46d2a23f288b17d3314212b484ca595855a612e97f78c2dd8963e72",
+        "models/torch/resin_models_torch/lfm2/config.py": "f429b9f98a84fe39c2acb2dfb4a917aa5f02feb4ae6623ee3538d4ba05e1b7ab",
+        "models/torch/resin_models_torch/lfm2/model.py": "2d0082238e523ba22fda6b2e8c10bdca4b920fdc7c54cc5d3f6fe37d26e45689",
+        "models/torch/resin_models_torch/lfm2/reference.py": "7ad95d59571429534e6c8259b1469a43b8dd147aeffc74e2f089a2ef2f4a49a8",
+        "models/torch/resin_models_torch/muse_glimmer/__init__.py": "7f9c21f71d7682adc9697b10227fe33a576f754372bb1aa5718c9ef0863fe215",
+        "models/torch/resin_models_torch/muse_glimmer/config.py": "ff4d5a68762bd17bb2014452d60a7b76816262cacc692de51894cd953ae04b34",
+        "models/torch/resin_models_torch/muse_glimmer/model.py": "066cc7141e53f34ee4cb24da5cdfa5299ba2c4dcd98e487874911c20d271d886",
+        "models/torch/resin_models_torch/muse_glimmer/paged.py": "c207e62394d1dad4fa6588a7e925671621d1dc175945059b0d0f5966d4696fa6",
+        "models/torch/resin_models_torch/muse_glimmer/reference.py": "6299fc94141ee9d570ad76ceb859bc2c373350fa2610a33e18773b00b2d788f4",
+        "models/torch/resin_models_torch/muse_glimmer/vision.py": "af55768714e097044731d404d24657eb3bbffeb8c442bfccce64071020040f71"
+      }
+    },
+    {
+      "name": "C",
+      "snapshot": "c-final",
+      "commit": "66bb70a",
+      "qualify": true,
+      "completion": true,
+      "extra_tests": [
+        "tests/test_muse_glimmer_flashinfer.py"
+      ],
+      "source_sha256": {
+        "models/torch/resin_models_torch/__init__.py": "494ba50d6c2d17dfbf7a8b0b39a53f9981626afe33ccc0a3cd131b439edf8618",
+        "models/torch/resin_models_torch/lfm2/__init__.py": "595b8005d46d2a23f288b17d3314212b484ca595855a612e97f78c2dd8963e72",
+        "models/torch/resin_models_torch/lfm2/config.py": "f429b9f98a84fe39c2acb2dfb4a917aa5f02feb4ae6623ee3538d4ba05e1b7ab",
+        "models/torch/resin_models_torch/lfm2/model.py": "2d0082238e523ba22fda6b2e8c10bdca4b920fdc7c54cc5d3f6fe37d26e45689",
+        "models/torch/resin_models_torch/lfm2/reference.py": "7ad95d59571429534e6c8259b1469a43b8dd147aeffc74e2f089a2ef2f4a49a8",
+        "models/torch/resin_models_torch/muse_glimmer/__init__.py": "7f9c21f71d7682adc9697b10227fe33a576f754372bb1aa5718c9ef0863fe215",
+        "models/torch/resin_models_torch/muse_glimmer/config.py": "ff4d5a68762bd17bb2014452d60a7b76816262cacc692de51894cd953ae04b34",
+        "models/torch/resin_models_torch/muse_glimmer/flashinfer.py": "35c4f941a7fae7967ba963dddb95bb949d91baf0f69b5fe471990dacec38a19d",
+        "models/torch/resin_models_torch/muse_glimmer/model.py": "70ab4d16d9d1015d7cbc7f4217d5552a0a6465f5cf76edcab67222af385860ec",
+        "models/torch/resin_models_torch/muse_glimmer/paged.py": "190fa5618467be9d29b9b9f277543a7983bb32bb1e7958141f33d3db60a20e38",
+        "models/torch/resin_models_torch/muse_glimmer/reference.py": "6113119c7c259dc150eb04caa4c52cacb9446d7fa0a5cf6530d597be3f7f9b8b",
+        "models/torch/resin_models_torch/muse_glimmer/vision.py": "af55768714e097044731d404d24657eb3bbffeb8c442bfccce64071020040f71"
+      }
+    }
+  ],
+  "volume": "resin-opt-pair-completion-001",
+  "checkpoint": "/models/resin-muse-glimmer-30b/cec94fcfd6512f2cfe708138c32533b346ea4f69"
+}

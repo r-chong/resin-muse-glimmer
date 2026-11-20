@@ -1,0 +1,278 @@
+{
+  "frozen_commit": "73532b9aa69f15d91b232dc47191c6a2cf077dbd",
+  "created_at": "2026-11-20T02:31:47.952669+00:00",
+  "status": "complete",
+  "limits": {
+    "lane_wall_seconds": 7200,
+    "total_h100_seconds": 28800,
+    "incremental_usd": 60,
+    "project_total_usd": 200
+  },
+  "worktrees": {
+    "A": "/private/tmp/resin-opt-a",
+    "B": "/private/tmp/resin-opt-b",
+    "C": "/private/tmp/resin-opt-c",
+    "D": "/private/tmp/resin-benchmark-d"
+  },
+  "workload": {
+    "repo_id": "meta-models/Muse-Glimmer-30B",
+    "revision": "cec94fcfd6512f2cfe708138c32533b346ea4f69",
+    "gpu": "H100!",
+    "weights_dtype": "bfloat16",
+    "kv_dtype": "bfloat16",
+    "prefill_contexts": [
+      4096,
+      8192
+    ],
+    "prefill_batch": [
+      1
+    ],
+    "decode_context": 8192,
+    "decode_batches": [
+      1,
+      2,
+      4,
+      8
+    ],
+    "decode_warmup_steps": 5,
+    "decode_measure_steps": 250,
+    "prefill_warmup_cohorts": 1,
+    "prefill_measure_cohorts": 3,
+    "sampling": {
+      "temperature": 0,
+      "seed": 41,
+      "top_p": 1,
+      "top_k": null
+    },
+    "prefix_cache": false,
+    "speculation": false,
+    "overlap": false
+  },
+  "success": {
+    "batch8_throughput_min_gain_percent": 10,
+    "max_latency_regression_percent": 5,
+    "latency_metrics": [
+      "mean_tpot",
+      "p90_tpot",
+      "prefill_ttft"
+    ],
+    "correctness": "existing checks plus diagnostics from actual optimized path; no relaxed numerical thresholds"
+  },
+  "timing": {
+    "internal_trajectory": "existing synchronized-step decode windows, prefill complete cohorts",
+    "external_comparison": "common completion-time boundary, to be implemented before claiming stock-vLLM comparison"
+  },
+  "isolation": "branches share frozen origin only; no cross-lane implementation/results before independent validation; read-only weights, separate output and writable cache namespaces",
+  "dispatch": "root only; each paid request receives bounded reservation; timeout and actual usage tracked",
+  "jobs": [
+    {
+      "job_id": "baseline-001",
+      "lane": "baseline",
+      "requested_at": "2026-11-20T02:34:54.259891+00:00",
+      "timeout_seconds": 900,
+      "reserved_h100_seconds": 900,
+      "conservative_cost_reservation_usd": 8,
+      "status": "failed_local",
+      "scope": "3 repeated frozen sweeps plus untimed profile cohorts",
+      "output": "baseline/run-001",
+      "actual_h100_seconds": 0,
+      "reason": "Modal requires globally defined function; corrected before remote dispatch"
+    },
+    {
+      "job_id": "baseline-002",
+      "lane": "baseline",
+      "timeout_seconds": 900,
+      "reserved_h100_seconds": 900,
+      "conservative_cost_reservation_usd": 8,
+      "status": "timings_complete_postprocess_failed",
+      "actual_h100_seconds": 466.36236357688904,
+      "result": "baseline/run-002/result.json",
+      "primary_records": 18,
+      "postprocess": "raw traces downloaded and merged locally; missing remote merge helper"
+    },
+    {
+      "job_id": "a1-001",
+      "lane": "A",
+      "timeout_seconds": 900,
+      "reserved_h100_seconds": 900,
+      "conservative_cost_reservation_usd": 8,
+      "status": "failed_before_gpu",
+      "source_snapshot": "/private/tmp/resin-opt-snapshots/a1",
+      "actual_h100_seconds": 0,
+      "reason": "Modal image layer storage timeout"
+    },
+    {
+      "job_id": "b1-001",
+      "lane": "B",
+      "timeout_seconds": 900,
+      "reserved_h100_seconds": 900,
+      "conservative_cost_reservation_usd": 8,
+      "status": "completed",
+      "source_snapshot": "/private/tmp/resin-opt-snapshots/b1",
+      "actual_h100_seconds": 180.97671699523926,
+      "result": "B/b1-001/result.json"
+    },
+    {
+      "job_id": "c1-001",
+      "lane": "C",
+      "timeout_seconds": 900,
+      "reserved_h100_seconds": 900,
+      "conservative_cost_reservation_usd": 8,
+      "status": "failed_before_gpu",
+      "source_snapshot": "/private/tmp/resin-opt-snapshots/c1",
+      "actual_h100_seconds": 0,
+      "reason": "app create rate limit"
+    },
+    {
+      "job_id": "c1-002",
+      "lane": "C",
+      "timeout_seconds": 900,
+      "reserved_h100_seconds": 900,
+      "conservative_cost_reservation_usd": 8,
+      "status": "completed",
+      "actual_h100_seconds": 142.62534999847412,
+      "result": "C/c1-002/result.json"
+    },
+    {
+      "job_id": "a1-002",
+      "lane": "A",
+      "timeout_seconds": 900,
+      "reserved_h100_seconds": 900,
+      "conservative_cost_reservation_usd": 8,
+      "status": "completed",
+      "actual_h100_seconds": 167.93899512290955,
+      "result": "A/a1-002/result.json"
+    },
+    {
+      "job_id": "paired-001",
+      "lane": "D",
+      "timeout_seconds": 2400,
+      "reserved_h100_seconds": 2400,
+      "conservative_cost_reservation_usd": 12,
+      "status": "cancelled_before_gpu",
+      "scope": "3 random-order full-curve runs of baseline,A2,B1,C on one physical H100 plus shared-boundary baseline/C completions",
+      "actual_h100_seconds": 0,
+      "reason": "One queued input, zero runners, no active workspace containers; allocation stalled for about10 minutes after image creation"
+    },
+    {
+      "job_id": "vllm-001",
+      "lane": "D",
+      "timeout_seconds": 900,
+      "reserved_h100_seconds": 900,
+      "conservative_cost_reservation_usd": 8,
+      "status": "failed_before_gpu",
+      "scope": "stock vLLM0.34 common completion benchmark",
+      "actual_h100_seconds": 0,
+      "reason": "Modal could not detect Python in released Docker image"
+    },
+    {
+      "job_id": "vllm-002",
+      "lane": "D",
+      "timeout_seconds": 900,
+      "reserved_h100_seconds": 900,
+      "conservative_cost_reservation_usd": 8,
+      "status": "completed",
+      "scope": "released vLLM0.34 wheel on CUDA image, no code changes",
+      "actual_h100_seconds": 337.312703937,
+      "result": "D/vllm-002/result.json"
+    },
+    {
+      "job_id": "paired-002",
+      "lane": "D",
+      "timeout_seconds": 2400,
+      "reserved_h100_seconds": 2400,
+      "conservative_cost_reservation_usd": 12,
+      "status": "cancelled_before_gpu",
+      "memory_reservation_mib": 131072,
+      "memory_hard_limit_mib": 262144,
+      "scope": "same H100,CPU32,model,KVs,workloads and randomized comparisons; use preset128GiB RAM reservation with unchanged256GiB ceiling for every variant",
+      "actual_h100_seconds": 0,
+      "reason": "Repeated long-allocation queue with no active containers; replaced by shorter equivalent per-candidate pairs"
+    },
+    {
+      "job_id": "pair-a2-001",
+      "lane": "D",
+      "timeout_seconds": 900,
+      "reserved_h100_seconds": 900,
+      "conservative_cost_reservation_usd": 8,
+      "status": "completed",
+      "scope": "3 random-order full-curve pairs baseline/a2",
+      "memory_reservation_mib": 131072,
+      "memory_hard_limit_mib": 262144,
+      "actual_h100_seconds": 790.226608777,
+      "result": "D/pair-a2-001/result.json"
+    },
+    {
+      "job_id": "pair-b1-001",
+      "lane": "D",
+      "timeout_seconds": 900,
+      "reserved_h100_seconds": 900,
+      "conservative_cost_reservation_usd": 8,
+      "status": "completed",
+      "scope": "3 random-order full-curve pairs baseline/b1",
+      "memory_reservation_mib": 131072,
+      "memory_hard_limit_mib": 262144,
+      "actual_h100_seconds": 809.963093927,
+      "result": "D/pair-b1-001/result.json"
+    },
+    {
+      "job_id": "pair-c-001",
+      "lane": "D",
+      "timeout_seconds": 900,
+      "reserved_h100_seconds": 900,
+      "conservative_cost_reservation_usd": 8,
+      "status": "completed",
+      "scope": "3 random-order full-curve pairs baseline/c",
+      "memory_reservation_mib": 131072,
+      "memory_hard_limit_mib": 262144,
+      "actual_h100_seconds": 812.957926055,
+      "result": "D/pair-c-001/result.json"
+    },
+    {
+      "job_id": "pair-completion-001",
+      "lane": "D",
+      "timeout_seconds": 900,
+      "reserved_h100_seconds": 900,
+      "conservative_cost_reservation_usd": 8,
+      "status": "completed",
+      "scope": "baseline/C common completion boundary3repeats each; C qualification gates C performance; separate from internal step timings",
+      "memory_reservation_mib": 131072,
+      "memory_hard_limit_mib": 262144,
+      "actual_h100_seconds": 822.960317515,
+      "result": "D/pair-completion-001/result.json"
+    }
+  ],
+  "interventions": [
+    {
+      "at": "2026-11-20T02:31:47.952669+00:00",
+      "actor": "owner",
+      "event": "Approved revised lanes, criteria, and limits"
+    }
+  ],
+  "billing_start": {
+    "metered_usd": 4.84240954,
+    "active_workspace": "resin"
+  },
+  "last_billing_metered_usd": 15.22291602,
+  "execution_events": [
+    {
+      "at": "2026-11-20T02:50:13.752408+00:00",
+      "event": "vLLM official image failed Python detection in pinned Modal builder. Switched only installation packaging to documented CUDA-base + stock pinned wheel; no vLLM engine customization."
+    },
+    {
+      "at": "2026-11-20T02:59:52.521132+00:00",
+      "event": "Retried queued final comparison with preset RAM reservation128GiB and same256GiB hard ceiling, identical for all variants; no model/GPU/workload change"
+    }
+  ],
+  "gpu_function_body_seconds_completed": 4531.324075904512,
+  "remaining_paid_reservations": [],
+  "validation_orchestration": "three independent baseline/candidate allocations,3 repetitions each; identical per-pair CPU/memory/GPU limits; common completion comparison separate",
+  "all_gpu_containers_stopped": true,
+  "completed_at": "2026-11-20T03:42:39.468152+00:00",
+  "billing_end": {
+    "metered_usd": 15.22291602,
+    "billed_usd": 0.0,
+    "credits_applied": true
+  },
+  "incremental_metered_usd": 10.38050648
+}

@@ -1,0 +1,20 @@
+{
+  "A": {
+    "model_added_lines": 77,
+    "model_removed_lines": 22,
+    "model_files": 2,
+    "rust_or_engine_changes": false
+  },
+  "B": {
+    "model_added_lines": 212,
+    "model_removed_lines": 0,
+    "model_files": 2,
+    "rust_or_engine_changes": false
+  },
+  "C": {
+    "model_added_lines": 145,
+    "model_removed_lines": 4,
+    "model_files": 4,
+    "rust_or_engine_changes": false
+  }
+}

@@ -1,0 +1,26 @@
+{
+  "analyze": [
+    "python3",
+    "/private/tmp/resin-benchmark-d/harness/analyze_parallel.py",
+    "/Users/reese/code/resin/results/optimization/parallel-20261119"
+  ],
+  "initial_candidate_driver": "parallel_modal.py: --source <immutable snapshot>/resin-source --qualify --bench --batches1,8; B env RESIN_MUSE_DECODE_EXECUTION=graphs; B/C extra primitive tests",
+  "paired_driver": "paired_short.py: --candidate A2|B1|C --job-id <unique> --output <new directory> --timeout900",
+  "completion_driver": "completion_pair.py: --completion-only --job-id <unique> --output <new directory> --timeout900",
+  "stock_driver": "vllm_modal.py: --job-id <unique> --output <new directory>; released vllm==0.34.0 wheel, no engine patch",
+  "source_snapshot_creation": "git archive <commit> extracted into /private/tmp/resin-opt-snapshots/<name>; commits and source-file SHA256 in request.json and shared/source-manifest.json",
+  "snapshot_names": {
+    "baseline": "73532b9",
+    "a1": "cbf557e",
+    "a2": "e1424dc",
+    "b1": "3baaa0f",
+    "c1": "ba76ccc",
+    "c-final": "66bb70a"
+  },
+  "local_interpreter": "/Users/reese/code/resin/resin-source/.venv/bin/python; pinned Modal1.5.3 and builder2025.06",
+  "weights": "Existing read-only Modal volume resin-muse-glimmer-30b-models-v1, revisioncec94fcfd6512f2cfe708138c32533b346ea4f69",
+  "references": "Existing read-only resin-benchmark-traces-v1 /muse-reference/e0b3ae6b and/muse-reference/69d7fbf4; exact NPZ fixtures are also in frozen source-and-evidence.tar.gz",
+  "executed_sources": "shared/executed-drivers preserves experiment transport versions; immutable model snapshots and exact per-job commands are pinned in request.json and result.json. The reviewable harness includes packaging/reporting fixes.",
+  "reviewable_harness_commit": "b4279da",
+  "reviewable_harness_path": "/private/tmp/resin-benchmark-d/harness/optimization"
+}

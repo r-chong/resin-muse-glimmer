@@ -1,0 +1,64 @@
+{
+  "schema_version": 1,
+  "lane": "B",
+  "checkpoint_commit": "3baaa0f",
+  "requested_at": "2026-11-20T02:37:44.905260+00:00",
+  "status": "awaiting_coordinator_dispatch",
+  "environment": {
+    "RESIN_MUSE_DECODE_EXECUTION": "graphs"
+  },
+  "steps": [
+    {
+      "kind": "qualify",
+      "targets": [
+        "models/torch/tests/test_muse_glimmer_graphs.py"
+      ],
+      "needs_checkpoint_weights": false,
+      "checks": [
+        "changed activations",
+        "changed absolute positions",
+        "exact batches 1/2/4/8",
+        "unsupported-batch and prefill fallback",
+        "paged Engine generation",
+        "64-token page boundary",
+        "sliding-window boundary",
+        "sequential Engines rebind one arena"
+      ]
+    },
+    {
+      "kind": "qualify",
+      "targets": [
+        "tests/test_muse_glimmer_hf_parity.py"
+      ],
+      "reference_paths": [
+        "/bench-traces/muse-reference/e0b3ae6b/gsm8k_test_0001.npz",
+        "/bench-traces/muse-reference/69d7fbf4/long_window.npz",
+        "/bench-traces/muse-reference/69d7fbf4/long_8k.npz"
+      ],
+      "decode_steps": 16
+    },
+    {
+      "kind": "benchmark",
+      "depends_on": "all qualification passing",
+      "harness": "existing scripts/bench.py / resin.bench",
+      "context_tokens": 8192,
+      "decode_batches": [
+        1,
+        8
+      ],
+      "warmup_steps": 5,
+      "measure_steps": 50,
+      "graphs_in_cli": "leave disabled; candidate runner overrides metadata to stateless_regions",
+      "required_checks": [
+        "decode_regions.replay_count positive",
+        "captured batches 1/2/4/8",
+        "no poison error",
+        "numerical diagnostics from optimized execution path where common protocol supports them"
+      ]
+    }
+  ],
+  "estimated_gpu_seconds": 480,
+  "suggested_timeout_seconds": 900,
+  "transport_requirement": "Include models/torch/tests in qualification image; existing qualification_image currently copies only root tests and CUDA model tests.",
+  "spend_authority": "Coordinator only; lane has not launched paid resources."
+}
