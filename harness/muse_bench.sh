@@ -9,6 +9,7 @@
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 OUT="${1:-$ROOT/results/bench/$(date +%Y%m%dT%H%M%S).jsonl}"
+case "$OUT" in /*) ;; *) OUT="$PWD/$OUT" ;; esac  # resolve before cd
 mkdir -p "$(dirname "$OUT")"
 cd "$ROOT/resin-source"
 # Resin locks modal 1.5.3; the workspace default image builder is too new for it.

@@ -179,10 +179,25 @@ decisions. Newest entries are at the bottom.
   and bench paths are exercised. The paged KV pool, prefix cache, graphs and
   overlap are **not**.
 
+- **Cache contract adopted (2026-11-19, about 20:45–21:10; see
+  [`reports/cache-contract.md`](reports/cache-contract.md)).**
+  - The torch runner now defaults to Engine-managed pages: a two-group
+    `CacheLayout` (13 full-attention layers as HISTORY, 39 sliding layers as
+    WINDOW with read window 2,048). No Rust or infra change was needed.
+  - `muse-glimmer-30b-local-kv` keeps the old path for comparison.
+  - H100 parity is unchanged: all tokens match, including window, chunked
+    and concurrency cases.
+  - Measured decode throughput is 21–43% higher than local KV. Prefill is
+    unchanged. The cause has not been profiled.
+  - Per-request memory at 8K is higher (about 450 MB vs 194 MB) because of the
+    window `W + Q − 1` retention with 8,192-token chunks.
+- **Runner rebinding (agent).** The runner rebinds its arena when a new
+  Engine binds a different pool, because one runner serves sequential
+  Engines in tests and bench. Never use two live Engines.
+
 ### Open items
 
 - Speculative decoding (target-only for now).
 - Image path: implemented in recipe and runner, but not yet validated on GPU.
-- Sliding-window boundary and long-context parity: not yet tested.
 - Optimized CUDA runner: deferred (owner decision). No external baseline
   (vLLM/SGLang/from-scratch) has been measured under the same workload.

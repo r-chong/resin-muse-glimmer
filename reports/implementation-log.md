@@ -22,6 +22,9 @@ The agent was Claude Code (Opus 5.5). "Owner" is the experiment owner.
 | 20:07 | **Window, chunked-prefill and concurrency parity pass** (5/5) | `results/parity/20261119T200741.json` |
 | 20:12 | Benchmark blocked by a **second Resin infra bug** (`bench.py`) | infra patch 0002 |
 | 20:16–20:21 | Benchmark completes after a third Resin infra fix (graph capture assumed) | `results/bench/20261119T201630.jsonl` |
+| 20:25–20:40 | Logit-discrepancy analysis, with the HF eager-vs-sdpa control | `reports/correctness-analysis.md` |
+| 20:45–21:10 | **Cache contract adopted**: Engine-managed paged KV in the torch runner; parity unchanged | `reports/cache-contract.md` |
+| 20:59–21:07 | Paged vs local-KV benchmark: decode +21–43%, prefill unchanged | `results/bench/paged-*`, `local-*` |
 
 From session start to the first correct Engine output took **about 71 minutes**
 of wall clock. Roughly 30 of those minutes were waiting on Modal: image build
@@ -140,6 +143,21 @@ Rough roofline, unprofiled (a first estimate, not a measurement):
   were not run under this workload, so these numbers say nothing about Resin
   versus alternatives. They characterize only the correctness-first runner.
 
+## Phase 2: Resin cache contract
+
+Moving from Python-owned KV to Resin's `CacheLayout` and Engine pages took
+about **345 lines of model-specific code**: `paged.py` 171, `model.py` +62,
+`reference.py` +112/−11, registry +35. It also added a 167-line CPU test and
+needed **no Resin infrastructure changes**.
+- **What Resin provides:** allocation, window retention, admission, the
+  binding handshake, capacity planning and address validation.
+- **What the author writes:** the slab geometry, the arena, and
+  page-to-tensor addressing in attention.
+- **Friction:** one-pool-per-binding when reusing a runner across Engines,
+  and keeping `cache_layout` in `RunnerConfig` overrides.
+
+Details: [`cache-contract.md`](cache-contract.md).
+
 ## Optimization opportunities (not done; no premature optimization)
 
 The runner is deliberately eager and plain-PyTorch. Expected costs, in rough
@@ -152,8 +170,8 @@ order of impact:
    per step (16× for GQA 32/2).
 3. **Padded batched decode with materialized boolean masks.** Pads each request
    to the longest history; the SDPA mask path cannot use FlashAttention.
-4. **Engine paging unused.** Request state lives in Python, so no prefix
-   caching or cache-pool admission control.
+4. ~~Engine paging unused~~: adopted in phase 2 and measured.
+   Prefix caching is still not exercised.
 5. **Prefill runs one request at a time,** with dense
    `[L, L]` masks for the sliding layers.
 6. **Unfused small ops.** FP32 norms (four per layer plus QK norms), RoPE,

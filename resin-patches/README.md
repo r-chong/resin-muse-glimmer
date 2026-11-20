@@ -20,7 +20,7 @@ scripts/apply_resin_patches.sh /tmp/resin   # fresh upstream clone + both groups
 ```
 
 Verified on 2026-11-19: both groups apply cleanly to `1fe19de`. The resulting
-tree (`acfe9a275dd15740336bb5dc0c6421ff50f95f9c`) is identical to the vendored
+tree (`f2b6cab854f077b0ac5e7f6f9d23bb943d4444f8`) is identical to the vendored
 `resin-source/`.
 
 ## Regenerate after changing the fork
@@ -48,6 +48,10 @@ If a new infrastructure fix lands after model commits, list it separately
 | model 0003 PyTorch runner (config, text model, vision, Engine runner) | 1,221 | | |
 | model 0004 registry preset | 59 | | |
 | model 0005 HF parity test | | 111 | |
+| model 0006–0007 window/batching tests, logit dump | | ~170 | |
+| model 0008 Engine-managed paged KV (Resin `CacheLayout`) | ~345 | 167 | |
+| model 0009 batch-width check independent of KV path | | ~20 | |
+| model 0010 `kv_cache` spec field, local-KV comparison preset | 35 | | |
 
 ¹ Includes in-file unit tests: a 514-case `smart_resize` table on one line,
 and recipe and media tests.
