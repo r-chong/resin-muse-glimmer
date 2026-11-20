@@ -1,0 +1,32 @@
+baseline/frozen/20261119-73532b9/working-tree.patch
+  s_fde809a6b235c8::t_31484c06d2b20d 1-36
+baseline/frozen/20261119-73532b9/manifest.json
+  s_fde809a6b235c8::t_c43f3f04b69cdc 104-105,5866-5900
+  s_fde809a6b235c8::t_31484c06d2b20d 1-103,106-5865,5901
+baseline/frozen/20261119-73532b9/SHA256SUMS
+  s_fde809a6b235c8::t_31484c06d2b20d 1,3-4
+  s_fde809a6b235c8::t_c43f3f04b69cdc 2
+baseline/frozen/20261119-73532b9/git-status.txt
+  s_fde809a6b235c8::t_31484c06d2b20d 1-15
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "0d46e07def1c134d8f3606782f15dc191870a1b2",
+  "prompts": {},
+  "humans": {
+    "h_04353115311dd2": {
+      "author": "r-chong <dev.reese.chong@gmail.com>"
+    }
+  },
+  "sessions": {
+    "s_fde809a6b235c8": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1f6c2-b4d7-71e0-b3fa-c7d633aa35e4",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "r-chong <dev.reese.chong@gmail.com>"
+    }
+  }
+}
