@@ -108,6 +108,7 @@ def capture(case: dict, max_new_tokens: int, run_id: str) -> None:
         "max_new_tokens": max_new_tokens,
         "cases": [{
             "id": case["id"],
+            "messages": case["messages"],
             "file": filename,
             "input_length": input_ids.shape[1],
             "prefill_positions": [input_ids.shape[1] - 1],
@@ -121,13 +122,18 @@ def capture(case: dict, max_new_tokens: int, run_id: str) -> None:
 
 
 @app.local_entrypoint()
-def main(max_new_tokens: int) -> None:
-    """Run the one saved case and download its results locally."""
+def main(max_new_tokens: int, prompt: str = "") -> None:
+    """Run a custom prompt or the saved smoke case and download the results."""
     if max_new_tokens < 1:
         raise ValueError("max_new_tokens must be positive")
-    case = json.loads((ROOT / "prompt.jsonl").read_text())
-    if case.get("id") != "gsm8k_test_0001":
-        raise ValueError("unexpected smoke case id")
+    if prompt:
+        if not prompt.strip():
+            raise ValueError("prompt must contain non-whitespace text")
+        case = {"id": "custom_prompt", "messages": [{"role": "user", "content": prompt}]}
+    else:
+        case = json.loads((ROOT / "prompt.jsonl").read_text())
+        if case.get("id") != "gsm8k_test_0001":
+            raise ValueError("unexpected smoke case id")
     run_id = uuid.uuid4().hex
     capture.remote(case, max_new_tokens, run_id)
     destination = ROOT / "output" / run_id
