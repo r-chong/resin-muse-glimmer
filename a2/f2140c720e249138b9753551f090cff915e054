@@ -1,0 +1,235 @@
+results/optimization/parallel-20261119/A/a1-001.console.log
+  s_fde809a6b235c8::t_0acf220d846c2e 1-141
+results/optimization/parallel-20261119/A/a1-001/request.json
+  s_fde809a6b235c8::t_6cc3ed782b1c5b 1-485
+results/optimization/parallel-20261119/A/a1-001/test_muse_glimmer_qualified.py
+  s_fde809a6b235c8::t_c05fe6e9e01955 1-316
+results/optimization/parallel-20261119/A/a1-002.console.log
+  s_fde809a6b235c8::t_59972b127adf46 1-193
+results/optimization/parallel-20261119/A/a1-002/benchmark.jsonl
+  s_fde809a6b235c8::t_f40124f9ca2163 1-4
+results/optimization/parallel-20261119/A/a1-002/function-call.json
+  s_fde809a6b235c8::t_74a3cdf24d5d3a 1
+results/optimization/parallel-20261119/A/a1-002/request.json
+  s_fde809a6b235c8::t_2afda832db50a3 1-485
+results/optimization/parallel-20261119/A/a1-002/result.json
+  s_fde809a6b235c8::t_20d96d9dc35f49 1-1363
+results/optimization/parallel-20261119/A/a1-002/test_muse_glimmer_qualified.py
+  s_fde809a6b235c8::t_666182c3663846 1-316
+results/optimization/parallel-20261119/A/agent-audit/baseline-profile-analysis.json
+  s_fde809a6b235c8::t_8a3ad253bc8d13 1-3915
+results/optimization/parallel-20261119/A/agent-audit/checkpoints.json
+  s_fde809a6b235c8::t_e1e7197ebf7571 1-105
+results/optimization/parallel-20261119/A/agent-audit/mask-check.json
+  s_fde809a6b235c8::t_4b46cc1476f9f3 1-16
+results/optimization/parallel-20261119/A/independent.patch
+  s_fde809a6b235c8::t_fec7c9c7c6e9f2 1-195
+results/optimization/parallel-20261119/B/agent-audit/checkpoint-v1.json
+  s_fde809a6b235c8::t_dc73ec11e5876b 1-58
+results/optimization/parallel-20261119/B/agent-audit/final-validation-request.json
+  s_fde809a6b235c8::t_aec324c31d84e0 1-114
+results/optimization/parallel-20261119/B/agent-audit/gpu-request-v1.json
+  s_fde809a6b235c8::t_ed5437d46c63c9 1-64
+results/optimization/parallel-20261119/B/b1-001.console.log
+  s_fde809a6b235c8::t_51a69a434440fa 1-298
+results/optimization/parallel-20261119/B/b1-001/benchmark.jsonl
+  s_fde809a6b235c8::t_78e04aa4964f7e 1-4
+results/optimization/parallel-20261119/B/b1-001/function-call.json
+  s_fde809a6b235c8::t_0e02af964061e5 1
+results/optimization/parallel-20261119/B/b1-001/request.json
+  s_fde809a6b235c8::t_d5be9e43a33b74 1-491
+results/optimization/parallel-20261119/B/b1-001/result.json
+  s_fde809a6b235c8::t_ab0edd972be1cb 1-1408
+results/optimization/parallel-20261119/B/b1-001/test_muse_glimmer_qualified.py
+  s_fde809a6b235c8::t_f47f202a75d902 1-318
+results/optimization/parallel-20261119/B/independent.patch
+  s_fde809a6b235c8::t_954b66bd9fff0a 1-434
+results/optimization/parallel-20261119/C/agent-audit/lane-c.json
+  s_fde809a6b235c8::t_dad1e44794bd37 1-50
+results/optimization/parallel-20261119/C/c1-001.console.log
+  s_fde809a6b235c8::t_f0f2f64fc62696 1-42
+results/optimization/parallel-20261119/C/c1-001/request.json
+  s_fde809a6b235c8::t_b5476a293cfc48 1-489
+results/optimization/parallel-20261119/C/c1-001/test_muse_glimmer_qualified.py
+  s_fde809a6b235c8::t_1df55f2c6b933a 1-316
+results/optimization/parallel-20261119/C/c1-002.console.log
+  s_fde809a6b235c8::t_351ba608051160 1-269
+results/optimization/parallel-20261119/C/c1-002/benchmark.jsonl
+  s_fde809a6b235c8::t_203a0548d9b470 1-4
+results/optimization/parallel-20261119/C/c1-002/function-call.json
+  s_fde809a6b235c8::t_4bf966aa2771d1 1
+results/optimization/parallel-20261119/C/c1-002/request.json
+  s_fde809a6b235c8::t_f5b73ab4c1ddcc 1-489
+results/optimization/parallel-20261119/C/c1-002/result.json
+  s_fde809a6b235c8::t_3fbed23fa4ccab 1-1364
+results/optimization/parallel-20261119/C/c1-002/test_muse_glimmer_qualified.py
+  s_fde809a6b235c8::t_21b035331c7863 1-316
+results/optimization/parallel-20261119/C/independent.patch
+  s_fde809a6b235c8::t_884b8e5326acd7 1-399
+results/optimization/parallel-20261119/D/pair-a2-001.console.log
+  s_fde809a6b235c8::t_edbb4d7e15f0d7 1-194
+results/optimization/parallel-20261119/D/pair-a2-001/function-call.json
+  s_fde809a6b235c8::t_7bb84c0b1d7852 1
+results/optimization/parallel-20261119/D/pair-a2-001/progress.json
+  s_fde809a6b235c8::t_37f88d4fb27c90 1-8401
+results/optimization/parallel-20261119/D/pair-a2-001/qualified-A2.py
+  s_fde809a6b235c8::t_358319d934ba9c 1-316
+results/optimization/parallel-20261119/D/pair-a2-001/qualified-baseline.py
+  s_fde809a6b235c8::t_57cc20643eefdd 1-316
+results/optimization/parallel-20261119/D/pair-a2-001/request.json
+  s_fde809a6b235c8::t_22ea3cef8460c3 1-47
+results/optimization/parallel-20261119/D/pair-a2-001/result.json
+  s_fde809a6b235c8::t_f328e97eca4aae 1-12505
+results/optimization/parallel-20261119/D/pair-b1-001.console.log
+  s_fde809a6b235c8::t_f6f8eab91be24d 1-203
+results/optimization/parallel-20261119/D/pair-b1-001/function-call.json
+  s_fde809a6b235c8::t_9d187028c804c0 1
+results/optimization/parallel-20261119/D/pair-b1-001/progress.json
+  s_fde809a6b235c8::t_1f99c74defae9e 1-8518
+results/optimization/parallel-20261119/D/pair-b1-001/qualified-B1.py
+  s_fde809a6b235c8::t_ba925d281281d8 1-318
+results/optimization/parallel-20261119/D/pair-b1-001/qualified-baseline.py
+  s_fde809a6b235c8::t_89c233a0dca5f8 1-316
+results/optimization/parallel-20261119/D/pair-b1-001/request.json
+  s_fde809a6b235c8::t_89df5ef5c0011d 1-50
+results/optimization/parallel-20261119/D/pair-b1-001/result.json
+  s_fde809a6b235c8::t_852e9b566dcd23 1-12688
+results/optimization/parallel-20261119/D/pair-c-001.console.log
+  s_fde809a6b235c8::t_80da6e5f092bfa 1-263
+results/optimization/parallel-20261119/D/pair-c-001/function-call.json
+  s_fde809a6b235c8::t_60ed945c6c954f 1
+results/optimization/parallel-20261119/D/pair-c-001/progress.json
+  s_fde809a6b235c8::t_a6c54647449475 1-6371
+results/optimization/parallel-20261119/D/pair-c-001/qualified-C.py
+  s_fde809a6b235c8::t_c541c4193eaafe 1-316
+results/optimization/parallel-20261119/D/pair-c-001/qualified-baseline.py
+  s_fde809a6b235c8::t_7a968eee993e3a 1-316
+results/optimization/parallel-20261119/D/pair-c-001/request.json
+  s_fde809a6b235c8::t_15cbf2abbda352 1-51
+results/optimization/parallel-20261119/D/pair-c-001/result.json
+  s_fde809a6b235c8::t_36f89062dee1bf 1-12527
+results/optimization/parallel-20261119/D/pair-completion-001.console.log
+  s_fde809a6b235c8::t_c642da3e763d29 1-162
+results/optimization/parallel-20261119/D/pair-completion-001/function-call.json
+  s_fde809a6b235c8::t_0fd4d34846178e 1
+results/optimization/parallel-20261119/D/pair-completion-001/progress.json
+  s_fde809a6b235c8::t_07820388e3d9e0 1-197
+results/optimization/parallel-20261119/D/pair-completion-001/qualified-C.py
+  s_fde809a6b235c8::t_233955aa353206 1-316
+results/optimization/parallel-20261119/D/pair-completion-001/qualified-baseline.py
+  s_fde809a6b235c8::t_f0c606ab47ce50 1-316
+results/optimization/parallel-20261119/D/pair-completion-001/request.json
+  s_fde809a6b235c8::t_24ec5ef7108bd5 1-51
+results/optimization/parallel-20261119/D/pair-completion-001/result.json
+  s_fde809a6b235c8::t_cd7f975c70ffe7 1-71335
+results/optimization/parallel-20261119/D/paired-001.console.log
+  s_fde809a6b235c8::t_242190f8b87c42 1-346
+results/optimization/parallel-20261119/D/paired-001/function-call.json
+  s_fde809a6b235c8::t_d593b7e24c03ec 1
+results/optimization/parallel-20261119/D/paired-001/qualified-A2.py
+  s_fde809a6b235c8::t_34135ae4219674 1-316
+results/optimization/parallel-20261119/D/paired-001/qualified-B1.py
+  s_fde809a6b235c8::t_9eccd42cbd93b6 1-318
+results/optimization/parallel-20261119/D/paired-001/qualified-C.py
+  s_fde809a6b235c8::t_38a13d99a8744b 1-316
+results/optimization/parallel-20261119/D/paired-001/qualified-baseline.py
+  s_fde809a6b235c8::t_30262dbabcd284 1-316
+results/optimization/parallel-20261119/D/paired-001/request.json
+  s_fde809a6b235c8::t_4a47820c039264 1-91
+results/optimization/parallel-20261119/D/paired-002.console.log
+  s_fde809a6b235c8::t_1e7cb33e3620c3 1-160
+results/optimization/parallel-20261119/D/paired-002/function-call.json
+  s_fde809a6b235c8::t_ae43464eb02c03 1
+results/optimization/parallel-20261119/D/paired-002/qualified-A2.py
+  s_fde809a6b235c8::t_8e8d82e68068c1 1-316
+results/optimization/parallel-20261119/D/paired-002/qualified-B1.py
+  s_fde809a6b235c8::t_46a73ff03d307a 1-318
+results/optimization/parallel-20261119/D/paired-002/qualified-C.py
+  s_fde809a6b235c8::t_9d04da3c348e14 1-316
+results/optimization/parallel-20261119/D/paired-002/qualified-baseline.py
+  s_fde809a6b235c8::t_75e70eb333a108 1-316
+results/optimization/parallel-20261119/D/paired-002/request.json
+  s_fde809a6b235c8::t_71a1647e79d1d6 1-91
+results/optimization/parallel-20261119/D/vllm-001.console.log
+  s_fde809a6b235c8::t_cda83e338beb6c 1-60
+results/optimization/parallel-20261119/D/vllm-002.console.log
+  s_fde809a6b235c8::t_2b1959715419c9 1-511
+results/optimization/parallel-20261119/D/vllm-002/function-call.json
+  s_fde809a6b235c8::t_b4a95d962d7159 1
+results/optimization/parallel-20261119/D/vllm-002/result.json
+  s_fde809a6b235c8::t_3f35e18cd32344 1-35660
+results/optimization/parallel-20261119/D/vllm-prepare-001.console.log
+  s_fde809a6b235c8::t_34429d54964ade 1-38
+results/optimization/parallel-20261119/D/vllm-prepare-002.console.log
+  s_fde809a6b235c8::t_266e36b213a700 1-97
+results/optimization/parallel-20261119/SHA256.json
+  s_fde809a6b235c8::t_317259fc06dfeb 1-118
+results/optimization/parallel-20261119/analysis.json
+  s_fde809a6b235c8::t_569dc118e9cef1 1-3686
+results/optimization/parallel-20261119/baseline/job001.console.log
+  s_fde809a6b235c8::t_d375b252be81b0 1-25
+results/optimization/parallel-20261119/baseline/job002.console.log
+  s_fde809a6b235c8::t_8a58d8842dfa8a 1-347
+results/optimization/parallel-20261119/baseline/run-002/benchmark.jsonl
+  s_fde809a6b235c8::t_11e4a2f92998e5 1-18
+results/optimization/parallel-20261119/baseline/run-002/function-call.json
+  s_fde809a6b235c8::t_73589f860411a8 1
+results/optimization/parallel-20261119/baseline/run-002/request.json
+  s_fde809a6b235c8::t_28034876bef6f4 1-483
+results/optimization/parallel-20261119/baseline/run-002/result.json
+  s_fde809a6b235c8::t_c4bbffee3db4a2 1-6195
+results/optimization/parallel-20261119/protocol.json
+  s_fde809a6b235c8::t_8aa74f475f0a5f 1-278
+results/optimization/parallel-20261119/shared/analyze_baseline_traces.py
+  s_fde809a6b235c8::t_850c7704d762a8 1-315
+results/optimization/parallel-20261119/shared/baseline-profile-analysis.json
+  s_fde809a6b235c8::t_7bff4bc435502b 1-3915
+results/optimization/parallel-20261119/shared/code-effort.json
+  s_fde809a6b235c8::t_dca677388d090d 1-20
+results/optimization/parallel-20261119/shared/engineering-timeline.json
+  s_fde809a6b235c8::t_6e0f64d891e7db 1-23
+results/optimization/parallel-20261119/shared/executed-drivers/SHA256.json
+  s_fde809a6b235c8::t_a32ed015337caf 1-11
+results/optimization/parallel-20261119/shared/executed-drivers/analyze_parallel.py
+  s_fde809a6b235c8::t_652a1f9d0d5fa4 1-120
+results/optimization/parallel-20261119/shared/executed-drivers/completion_bench.py
+  s_fde809a6b235c8::t_be58205aa174f1 1-123
+results/optimization/parallel-20261119/shared/executed-drivers/completion_pair.py
+  s_fde809a6b235c8::t_051c5b73987265 1-111
+results/optimization/parallel-20261119/shared/executed-drivers/paired_modal.py
+  s_fde809a6b235c8::t_744de6bdf8e836 1-103
+results/optimization/parallel-20261119/shared/executed-drivers/paired_modal_retry.py
+  s_fde809a6b235c8::t_48bd4216f8e565 1-103
+results/optimization/parallel-20261119/shared/executed-drivers/paired_short.py
+  s_fde809a6b235c8::t_29f4502c517a10 1-111
+results/optimization/parallel-20261119/shared/executed-drivers/parallel_modal.py
+  s_fde809a6b235c8::t_b22a66b9b43334 1-140
+results/optimization/parallel-20261119/shared/executed-drivers/test_executing_path.py
+  s_fde809a6b235c8::t_8069a91fafa1bc 1-41
+results/optimization/parallel-20261119/shared/executed-drivers/vllm_modal.py
+  s_fde809a6b235c8::t_54586651152ff2 1-53
+results/optimization/parallel-20261119/shared/final-validation.json
+  s_fde809a6b235c8::t_0cdb843e08c87b 1-8
+results/optimization/parallel-20261119/shared/reproduction.json
+  s_fde809a6b235c8::t_51c82a96e9087c 1-26
+results/optimization/parallel-20261119/shared/source-manifest.json
+  s_fde809a6b235c8::t_713fd4ee72f523 1-51
+results/optimization/parallel-20261119/throughput.svg
+  s_fde809a6b235c8::t_f77ca616d8a9d3 1-2838
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "a2f2140c720e249138b9753551f090cff915e054",
+  "prompts": {},
+  "sessions": {
+    "s_fde809a6b235c8": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1f6c2-b4d7-71e0-b3fa-c7d633aa35e4",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "r-chong <dev.reese.chong@gmail.com>"
+    }
+  }
+}
