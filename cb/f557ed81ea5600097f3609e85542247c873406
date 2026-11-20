@@ -1,0 +1,21 @@
+resin-source/models/torch/tests/test_muse_glimmer_paged.py
+  s_fde809a6b235c8::t_4f7ce7dc3972b7 125-129,160,162
+resin-source/models/torch/resin_models_torch/muse_glimmer/model.py
+  s_fde809a6b235c8::t_4f7ce7dc3972b7 278-292
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "cbf557ed81ea5600097f3609e85542247c873406",
+  "prompts": {},
+  "sessions": {
+    "s_fde809a6b235c8": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1f6c2-b4d7-71e0-b3fa-c7d633aa35e4",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "r-chong <dev.reese.chong@gmail.com>"
+    }
+  }
+}
