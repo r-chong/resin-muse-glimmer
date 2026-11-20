@@ -6,7 +6,7 @@ prompt positions (including the 2,048-token sliding-window boundary), and
 greedy decode logits. The image case also saves processor outputs and the
 projected vision features.
 
-    modal run baseline/hf_reference_cases.py --steps 16
+    modal run baseline/hf_reference_cases.py --steps 16 --cases-filter long_window,long_8k
 """
 
 import hashlib
@@ -189,9 +189,13 @@ def capture(all_cases: list[dict], image_bytes: bytes, steps: int, run_id: str) 
 
 
 @app.local_entrypoint()
-def main(steps: int = 16) -> None:
+def main(steps: int = 16, cases_filter: str = "long_window,long_8k") -> None:
+    wanted = [name for name in cases_filter.split(",") if name]
+    selected = [case for case in cases() if case["id"] in wanted]
+    if len(selected) != len(wanted):
+        raise ValueError(f"unknown case in {wanted}")
     run_id = uuid.uuid4().hex
-    manifest = capture.remote(cases(), IMAGE_PATH.read_bytes(), steps, run_id)
+    manifest = capture.remote(selected, IMAGE_PATH.read_bytes(), steps, run_id)
     destination = ROOT / "output" / run_id
     destination.mkdir(parents=True)
     for name in [case["file"] for case in manifest["cases"]] + ["manifest.json"]:
