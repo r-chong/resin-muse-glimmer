@@ -1,0 +1,37 @@
+DECISIONS.md
+  s_0d9d163433c805::t_0461e05c00e0fa 182-197
+reports/cache-contract.md
+  s_0d9d163433c805::t_4027149427d867 1-94
+  s_0d9d163433c805::t_0461e05c00e0fa 95-205
+harness/muse_bench.sh
+  s_0d9d163433c805::t_0cceb4719cd438 12
+reports/implementation-log.md
+  s_0d9d163433c805::t_073d03b548566c 25-27,146-160,173-174
+results/bench/local-20261119T210305.jsonl
+  s_0d9d163433c805::t_ab769554275fa5 1-6
+results/bench/paged-20261119T205919.jsonl
+  s_0d9d163433c805::t_1a200962e932e9 1-6
+resin-patches/README.md
+  s_0d9d163433c805::t_b5dcab644e294a 23,51-54
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "73532b9aa69f15d91b232dc47191c6a2cf077dbd",
+  "prompts": {},
+  "humans": {
+    "h_04353115311dd2": {
+      "author": "r-chong <dev.reese.chong@gmail.com>"
+    }
+  },
+  "sessions": {
+    "s_0d9d163433c805": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "13cdd190-051a-4924-b48b-997280d71d90",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "r-chong <dev.reese.chong@gmail.com>"
+    }
+  }
+}
