@@ -1,0 +1,26 @@
+harness/muse_parity.py
+  s_0d9d163433c805::t_125c9c55cf3c39 1-72
+DECISIONS.md
+  s_0d9d163433c805::t_c8f23ae145f99f 80-87
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "3929d23d0da7425edf6c3403a10f9047453f6eb5",
+  "prompts": {},
+  "humans": {
+    "h_04353115311dd2": {
+      "author": "r-chong <dev.reese.chong@gmail.com>"
+    }
+  },
+  "sessions": {
+    "s_0d9d163433c805": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "13cdd190-051a-4924-b48b-997280d71d90",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "r-chong <dev.reese.chong@gmail.com>"
+    }
+  }
+}
