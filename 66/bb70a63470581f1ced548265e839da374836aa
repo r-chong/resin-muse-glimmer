@@ -1,0 +1,21 @@
+resin-source/models/torch/resin_models_torch/muse_glimmer/model.py
+  s_fde809a6b235c8::t_710438f3d1fa61 15,397-410
+results/optimization/lane-c.json
+  s_fde809a6b235c8::t_82059e7ebf4218 17-18,22,24-26,48-49
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "66bb70a63470581f1ced548265e839da374836aa",
+  "prompts": {},
+  "sessions": {
+    "s_fde809a6b235c8": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1f6c2-b4d7-71e0-b3fa-c7d633aa35e4",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "r-chong <dev.reese.chong@gmail.com>"
+    }
+  }
+}
