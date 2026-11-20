@@ -1,0 +1,30 @@
+harness/muse_bench.sh
+  s_0d9d163433c805::t_b7a242842dc073 8,16
+resin-patches/model/0009-test-count-Engine-decode-batch-width-independently-o.patch
+  s_0d9d163433c805::t_05ada727093e9f 1-55
+resin-patches/model/0010-feat-deploy-add-kv_cache-spec-field-and-muse-glimmer.patch
+  s_0d9d163433c805::t_6cfcc181b72863 1-81
+results/parity/20261119T205303.json
+  s_0d9d163433c805::t_ab2b9308be72c2 1-530
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "c75b420de009e22622cbddbf5b1a9f5eb86841bb",
+  "prompts": {},
+  "humans": {
+    "h_04353115311dd2": {
+      "author": "r-chong <dev.reese.chong@gmail.com>"
+    }
+  },
+  "sessions": {
+    "s_0d9d163433c805": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "13cdd190-051a-4924-b48b-997280d71d90",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "r-chong <dev.reese.chong@gmail.com>"
+    }
+  }
+}
