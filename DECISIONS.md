@@ -94,6 +94,18 @@ decisions. Newest entries are at the bottom.
   `2026-01-04`). Its fix `bab6b42` was verified locally to recover `2026-11-16`
   from that exact prompt. That fixed version has not yet been rerun on GPU.
 
+- **Baseline rerun result (2026-11-19, run `20261120T003007Z-502c4891`, commit
+  `bab6b42`).** It ran on an H100 80GB HBM3. Prompt IDs match the fixture (82
+  tokens, date 2026-11-16). Tokens match for all 128 greedy steps, and the
+  logits are bitwise equal (max abs error 0.0). The function body took 102 s,
+  90 s of it loading weights. Peak allocation was 59.6 GB. Scope of this
+  evidence: the baseline calls Transformers' own decoder layers, embedding,
+  rotary, norm and `lm_head`. It replaces only the KV cache, masks and decode
+  loop, so bitwise equality is expected. The run validates the cache, mask
+  and loop logic, not independent forward math. With 82 + 128 = 210 positions,
+  it never crosses the 2,048-token sliding window. I reused the run already in
+  flight instead of launching a duplicate.
+
 ### Open items
 
 - Speculative decoding (target-only for now).
