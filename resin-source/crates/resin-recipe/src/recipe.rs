@@ -69,6 +69,7 @@ pub enum MediaConfig {
     Gemma(media::gemma::Config),
     Glm(media::glm::Config),
     Inkling2(media::inkling2::Config),
+    Muse(media::muse::Config),
     Qwen(media::qwen::Config),
 }
 

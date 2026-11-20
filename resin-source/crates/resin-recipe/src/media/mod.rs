@@ -9,6 +9,7 @@ pub mod deepseek;
 pub mod gemma;
 pub mod glm;
 pub mod inkling2;
+pub mod muse;
 pub mod qwen;
 
 #[derive(Clone, Debug)]
