@@ -1,0 +1,53 @@
+reports/correctness-analysis.md
+  s_0d9d163433c805::t_1a1edfd64c4c2a 1-145
+results/logits/analysis_long_window.json
+  s_0d9d163433c805::t_754ee38d5f9238 98,255
+  s_0d9d163433c805::t_b2df65f2ed7a24 1-97,99-254,256-318
+results/logits/analysis_gsm8k_test_0001.json
+  s_0d9d163433c805::t_b2df65f2ed7a24 1-20,22-28,31-166
+  s_0d9d163433c805::t_754ee38d5f9238 21,29-30
+results/logits/analysis_long_8k.json
+  s_0d9d163433c805::t_b2df65f2ed7a24 1-306
+harness/logit_analysis.py
+  s_0d9d163433c805::t_b55c2a2b7fa8e8 1-42,44-48,50-124
+  s_0d9d163433c805::t_754ee38d5f9238 43,49
+.gitignore
+  s_0d9d163433c805::t_2a9c650b2981fe 18-20
+DECISIONS.md
+  s_0d9d163433c805::t_ce3cc8de706e56 165-176
+baseline/output/3403e274230044318b789a8d6b819dcf/manifest.json
+  s_568d3678d21992::t_28fa0abdfbf3c8 1-174
+baseline/output/9a66aaec480f46cc999ed20c4a64f728/manifest.json
+  s_568d3678d21992::t_a2165320ce02c1 1-107
+results/parity/20261119T203333.json
+  s_0d9d163433c805::t_f05c8a6e5e9da9 1-956
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "08864450c4230b107ab889df48e67704ddc09412",
+  "prompts": {},
+  "humans": {
+    "h_04353115311dd2": {
+      "author": "r-chong <dev.reese.chong@gmail.com>"
+    }
+  },
+  "sessions": {
+    "s_0d9d163433c805": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "13cdd190-051a-4924-b48b-997280d71d90",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "r-chong <dev.reese.chong@gmail.com>"
+    },
+    "s_568d3678d21992": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1f653-9273-7663-a0c1-38bf597b6ae3",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "r-chong <dev.reese.chong@gmail.com>"
+    }
+  }
+}
