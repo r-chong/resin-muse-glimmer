@@ -1,0 +1,36 @@
+DECISIONS.md
+  s_0d9d163433c805::t_86502d0eeff9b4 74-79
+resin-patches/0001-feat-recipe-add-Muse-Glimmer-ATEM-recipe-and-image-p.patch
+  s_0d9d163433c805::t_f0522b3153a9df 1-1413
+resin-patches/0002-feat-py-expose-muse_glimmer-recipe-and-MuseGlimmerMe.patch
+  s_0d9d163433c805::t_4ec015572531e0 1-338
+resin-patches/0003-feat-models-torch-add-Muse-Glimmer-PyTorch-reference.patch
+  s_0d9d163433c805::t_65a26b231bf2c3 1-1278
+resin-patches/0004-feat-deploy-register-muse-glimmer-30b-torch-preset-o.patch
+  s_0d9d163433c805::t_f26264eb473739 1-98
+resin-patches/0005-test-add-Muse-Glimmer-text-parity-against-saved-HF-g.patch
+  s_0d9d163433c805::t_acb5441468929c 1-132
+resin-patches/README.md
+  s_0d9d163433c805::t_249fde74c94880 1-17
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "6a88be1deb0e47ae32c629d8759aba14f0bfa024",
+  "prompts": {},
+  "humans": {
+    "h_04353115311dd2": {
+      "author": "r-chong <dev.reese.chong@gmail.com>"
+    }
+  },
+  "sessions": {
+    "s_0d9d163433c805": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "13cdd190-051a-4924-b48b-997280d71d90",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "r-chong <dev.reese.chong@gmail.com>"
+    }
+  }
+}
