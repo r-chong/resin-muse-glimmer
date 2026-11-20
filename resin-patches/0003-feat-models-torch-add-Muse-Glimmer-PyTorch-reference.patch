@@ -1,0 +1,1278 @@
+From 21d988c7081ab05eb0036ddd83bb9c75b7105921 Mon Sep 17 00:00:00 2001
+From: r-chong <dev.reese.chong@gmail.com>
+Date: Thu, 19 Nov 2026 19:19:03 -0500
+Subject: [PATCH 3/5] feat(models-torch): add Muse Glimmer PyTorch reference
+ runner
+
+Checkpoint-shaped text decoder (sliding/NoPE layers, gated GQA, centered norms,
+softcapped logits) with request-owned state, a native vision tower, and an
+Engine Runner. Eager, unpaged, no CUDA graphs.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+---
+ .../muse_glimmer/__init__.py                  |  15 +
+ .../resin_models_torch/muse_glimmer/config.py | 176 +++++++
+ .../resin_models_torch/muse_glimmer/model.py  | 448 ++++++++++++++++++
+ .../muse_glimmer/reference.py                 | 308 ++++++++++++
+ .../resin_models_torch/muse_glimmer/vision.py | 274 +++++++++++
+ 5 files changed, 1221 insertions(+)
+ create mode 100644 models/torch/resin_models_torch/muse_glimmer/__init__.py
+ create mode 100644 models/torch/resin_models_torch/muse_glimmer/config.py
+ create mode 100644 models/torch/resin_models_torch/muse_glimmer/model.py
+ create mode 100644 models/torch/resin_models_torch/muse_glimmer/reference.py
+ create mode 100644 models/torch/resin_models_torch/muse_glimmer/vision.py
+
+diff --git a/models/torch/resin_models_torch/muse_glimmer/__init__.py b/models/torch/resin_models_torch/muse_glimmer/__init__.py
+new file mode 100644
+index 0000000..be4a25e
+--- /dev/null
++++ b/models/torch/resin_models_torch/muse_glimmer/__init__.py
+@@ -0,0 +1,15 @@
++"""Muse Glimmer model support for PyTorch."""
++
++from resin_models_torch.muse_glimmer.config import MuseGlimmerConfig
++from resin_models_torch.muse_glimmer.reference import (
++    DEFAULT_MODEL,
++    DEFAULT_REVISION,
++    MuseGlimmerTorchRunner,
++)
++
++__all__ = [
++    "DEFAULT_MODEL",
++    "DEFAULT_REVISION",
++    "MuseGlimmerConfig",
++    "MuseGlimmerTorchRunner",
++]
+diff --git a/models/torch/resin_models_torch/muse_glimmer/config.py b/models/torch/resin_models_torch/muse_glimmer/config.py
+new file mode 100644
+index 0000000..37b3561
+--- /dev/null
++++ b/models/torch/resin_models_torch/muse_glimmer/config.py
+@@ -0,0 +1,176 @@
++"""Muse Glimmer checkpoint configuration, read without Transformers."""
++
++from __future__ import annotations
++
++from collections.abc import Mapping
++from dataclasses import dataclass, field
++from typing import Any
++
++
++@dataclass(frozen=True, kw_only=True)
++class MuseGlimmerTextConfig:
++    vocab_size: int
++    hidden_size: int
++    intermediate_size: int
++    num_hidden_layers: int
++    num_attention_heads: int
++    num_key_value_heads: int
++    head_dim: int
++    rms_norm_eps: float
++    post_norm_eps: float
++    qk_scale_factor: float
++    sliding_window: int
++    layer_types: tuple[str, ...]
++    layer_rope_theta: tuple[float, ...]
++    final_logit_softcapping: float
++    output_multiplier: float
++    eos_token_ids: tuple[int, ...] = ()
++
++    def __post_init__(self) -> None:
++        if len(self.layer_types) != self.num_hidden_layers:
++            raise ValueError("layer_types must name every decoder layer")
++        if len(self.layer_rope_theta) != self.num_hidden_layers:
++            raise ValueError("layer_rope_theta must name every decoder layer")
++        if set(self.layer_types) - {"full_attention", "sliding_attention"}:
++            raise ValueError(f"unsupported Muse layer types: {set(self.layer_types)}")
++        if self.num_attention_heads % self.num_key_value_heads:
++            raise ValueError("query heads must be a multiple of key/value heads")
++        if self.sliding_window < 1:
++            raise ValueError("sliding_window must be positive")
++
++
++@dataclass(frozen=True, kw_only=True)
++class MuseGlimmerVisionConfig:
++    hidden_size: int
++    intermediate_size: int
++    num_hidden_layers: int
++    num_attention_heads: int
++    patch_size: int
++    patch_temporal: int
++    merge_size: int
++    pos_emb_height: int
++    pos_emb_width: int
++    layer_norm_eps: float
++    rope_theta: float
++    layer_types: tuple[str, ...]
++
++    def __post_init__(self) -> None:
++        if len(self.layer_types) != self.num_hidden_layers:
++            raise ValueError("vision layer_types must name every layer")
++        if set(self.layer_types) - {"full_attention", "window_attention"}:
++            raise ValueError("unsupported Muse vision layer types")
++        if self.pos_emb_height != self.pos_emb_width:
++            raise ValueError("Muse vision position tables must be square")
++
++    @property
++    def head_dim(self) -> int:
++        return self.hidden_size // self.num_attention_heads
++
++    @property
++    def patch_width(self) -> int:
++        return self.patch_temporal * 3 * self.patch_size**2
++
++    @property
++    def window_patches(self) -> int:
++        # HF: window_size = pos_emb_height * patch_size, measured in pixels,
++        # divided by patch_size with spatial_merge_size=1.
++        return self.pos_emb_height
++
++
++@dataclass(frozen=True, kw_only=True)
++class MuseGlimmerConfig:
++    text: MuseGlimmerTextConfig
++    vision: MuseGlimmerVisionConfig
++    image_token_id: int
++    video_token_id: int
++    out_hidden_size: int
++    projector_hidden_size: int
++    raw: Mapping[str, Any] = field(default_factory=dict, compare=False, repr=False)
++
++    @classmethod
++    def from_dict(
++        cls,
++        config: Mapping[str, Any],
++        generation_config: Mapping[str, Any] | None = None,
++    ) -> MuseGlimmerConfig:
++        if config.get("model_type") != "muse_glimmer":
++            raise ValueError(
++                f"expected a Muse Glimmer checkpoint, got {config.get('model_type')!r}"
++            )
++        text = config["text_config"]
++        vision = config["vision_config"]
++        if text.get("attention_bias"):
++            raise ValueError("Muse attention projections are expected to be bias-free")
++        if text.get("hidden_activation") != "silu":
++            raise ValueError("Muse text MLP is expected to use SiLU")
++        if text.get("tie_word_embeddings"):
++            raise ValueError("Muse checkpoints are expected to have an untied lm_head")
++        rope = text.get("rope_parameters") or {}
++        if rope.get("rope_type", "default") != "default":
++            raise ValueError("only default text RoPE is supported")
++        if (
++            config.get("projector_hidden_act") != "gelu"
++            or vision.get("hidden_act") != "gelu"
++        ):
++            raise ValueError("Muse vision activations are expected to be GELU")
++        eos = (generation_config or {}).get("eos_token_id", text.get("eos_token_id"))
++        eos_ids = (
++            tuple(eos) if isinstance(eos, list) else (() if eos is None else (eos,))
++        )
++        num_layers = text["num_hidden_layers"]
++        theta = rope["rope_theta"]
++        layer_types = text.get("layer_types") or [
++            "full_attention" if (num_layers - 1 - i) % 4 == 0 else "sliding_attention"
++            for i in range(num_layers)
++        ]
++        layer_theta = text.get("layer_rope_theta") or [
++            0 if (num_layers - 1 - i) % 4 == 0 else theta for i in range(num_layers)
++        ]
++        vision_layers = vision["num_hidden_layers"]
++        vision_types = vision.get("layer_types") or [
++            "full_attention"
++            if (i + 1) % 4 == 0 or i == vision_layers - 1
++            else "window_attention"
++            for i in range(vision_layers)
++        ]
++        return cls(
++            text=MuseGlimmerTextConfig(
++                vocab_size=text["vocab_size"],
++                hidden_size=text["hidden_size"],
++                intermediate_size=text["intermediate_size"],
++                num_hidden_layers=num_layers,
++                num_attention_heads=text["num_attention_heads"],
++                num_key_value_heads=text["num_key_value_heads"],
++                head_dim=text["head_dim"],
++                rms_norm_eps=text["rms_norm_eps"],
++                post_norm_eps=text["post_norm_eps"],
++                qk_scale_factor=text["qk_scale_factor"],
++                sliding_window=text["sliding_window"],
++                layer_types=tuple(layer_types),
++                layer_rope_theta=tuple(float(value) for value in layer_theta),
++                final_logit_softcapping=text["final_logit_softcapping"],
++                output_multiplier=text["output_multiplier"],
++                eos_token_ids=tuple(int(value) for value in eos_ids),
++            ),
++            vision=MuseGlimmerVisionConfig(
++                hidden_size=vision["hidden_size"],
++                intermediate_size=vision["intermediate_size"],
++                num_hidden_layers=vision_layers,
++                num_attention_heads=vision["num_attention_heads"],
++                patch_size=vision["patch_size"],
++                patch_temporal=vision["patch_temporal"],
++                merge_size=vision["merge_size"],
++                pos_emb_height=vision["pos_emb_height"],
++                pos_emb_width=vision["pos_emb_width"],
++                layer_norm_eps=vision["layer_norm_eps"],
++                rope_theta=(vision.get("rope_parameters") or {}).get(
++                    "rope_theta", 10_000.0
++                ),
++                layer_types=tuple(vision_types),
++            ),
++            image_token_id=config["image_token_id"],
++            video_token_id=config["video_token_id"],
++            out_hidden_size=config["out_hidden_size"],
++            projector_hidden_size=config["projector_hidden_size"],
++            raw=config,
++        )
+diff --git a/models/torch/resin_models_torch/muse_glimmer/model.py b/models/torch/resin_models_torch/muse_glimmer/model.py
+new file mode 100644
+index 0000000..0020fc2
+--- /dev/null
++++ b/models/torch/resin_models_torch/muse_glimmer/model.py
+@@ -0,0 +1,448 @@
++# Portions are adapted from Hugging Face Transformers (Apache-2.0),
++# src/transformers/models/muse_glimmer/modeling_muse_glimmer.py at v5.19.0.
++
++"""Readable Muse Glimmer text decoder with request-owned attention state.
++
++Module names mirror the checkpoint so safetensors stream directly into the
++tree. Numerics follow the Transformers reference: norms in FP32 cast back to
++the activation dtype, RoPE tables cast to the activation dtype, and softcapped
++logits computed in the activation dtype.
++"""
++
++from __future__ import annotations
++
++from collections.abc import Sequence
++
++import torch
++from torch import Tensor, nn
++from torch.nn import functional as F
++
++from resin_models_torch.muse_glimmer.config import (
++    MuseGlimmerConfig,
++    MuseGlimmerTextConfig,
++)
++from resin_models_torch.muse_glimmer.vision import MuseGlimmerVisionModel
++
++
++class AttentionState:
++    """Post-norm, post-RoPE keys and values for one layer of one request.
++
++    Sliding layers retain only the ``window - 1`` most recent positions, which
++    is everything a later query can attend to. ``start`` is the absolute
++    position of the first retained key.
++    """
++
++    def __init__(self, window: int | None) -> None:
++        self.window = window
++        self.keys: Tensor | None = None
++        self.values: Tensor | None = None
++        self.start = 0
++
++    @property
++    def end(self) -> int:
++        return self.start + (0 if self.keys is None else self.keys.shape[-2])
++
++    def extend(self, keys: Tensor, values: Tensor) -> tuple[Tensor, Tensor, int]:
++        """Return every retained key including the new ones, then trim."""
++
++        if self.keys is None:
++            all_keys, all_values = keys, values
++        else:
++            assert self.values is not None
++            all_keys = torch.cat((self.keys, keys), dim=-2)
++            all_values = torch.cat((self.values, values), dim=-2)
++        start = self.start
++        keep = all_keys.shape[-2]
++        if self.window is not None:
++            keep = min(keep, self.window - 1)
++        drop = all_keys.shape[-2] - keep
++        self.keys = all_keys[..., drop:, :]
++        self.values = all_values[..., drop:, :]
++        self.start = start + drop
++        return all_keys, all_values, start
++
++
++class MuseGlimmerState:
++    """One request's attention state for every decoder layer."""
++
++    def __init__(self, config: MuseGlimmerTextConfig) -> None:
++        self.layers = [
++            AttentionState(
++                config.sliding_window if kind == "sliding_attention" else None
++            )
++            for kind in config.layer_types
++        ]
++        self.length = 0
++
++
++def weightless_rms_norm(hidden: Tensor, eps: float) -> Tensor:
++    normalized = hidden.float()
++    normalized = normalized * torch.pow(
++        normalized.pow(2).mean(-1, keepdim=True) + eps, -0.5
++    )
++    return normalized.type_as(hidden)
++
++
++class ScaledRMSNorm(nn.Module):
++    """``x * w`` RMSNorm (the decoder's final norm)."""
++
++    def __init__(self, width: int, eps: float) -> None:
++        super().__init__()
++        self.weight = nn.Parameter(torch.ones(width))
++        self.eps = eps
++
++    def forward(self, hidden: Tensor) -> Tensor:
++        normalized = hidden.float()
++        normalized = normalized * torch.pow(
++            normalized.pow(2).mean(-1, keepdim=True) + self.eps, -0.5
++        )
++        return (normalized * self.weight.float()).type_as(hidden)
++
++
++class CenteredRMSNorm(nn.Module):
++    """``x * (1 + w)`` RMSNorm, computed in FP32 before the output cast."""
++
++    def __init__(self, width: int, eps: float) -> None:
++        super().__init__()
++        self.weight = nn.Parameter(torch.zeros(width))
++        self.eps = eps
++
++    def forward(self, hidden: Tensor) -> Tensor:
++        normalized = hidden.float()
++        normalized = normalized * torch.rsqrt(
++            normalized.pow(2).mean(-1, keepdim=True) + self.eps
++        )
++        return (normalized * (1.0 + self.weight.float())).type_as(hidden)
++
++
++def _rotate_half(hidden: Tensor) -> Tensor:
++    first, second = hidden.chunk(2, dim=-1)
++    return torch.cat((-second, first), dim=-1)
++
++
++class Attention(nn.Module):
++    def __init__(self, config: MuseGlimmerTextConfig, layer: int) -> None:
++        super().__init__()
++        width = config.hidden_size
++        self.num_heads = config.num_attention_heads
++        self.num_kv_heads = config.num_key_value_heads
++        self.kv_groups = self.num_heads // self.num_kv_heads
++        self.head_dim = config.head_dim
++        self.scale = self.head_dim**-0.5
++        self.eps = config.rms_norm_eps
++        self.qk_scale = config.qk_scale_factor
++        self.window = (
++            config.sliding_window
++            if config.layer_types[layer] == "sliding_attention"
++            else None
++        )
++        self.rope_theta = config.layer_rope_theta[layer]
++        heads = self.num_heads * self.head_dim
++        kv = self.num_kv_heads * self.head_dim
++        self.q_proj = nn.Linear(width, heads, bias=False)
++        self.k_proj = nn.Linear(width, kv, bias=False)
++        self.v_proj = nn.Linear(width, kv, bias=False)
++        self.gate_proj = nn.Linear(width, heads, bias=False)
++        self.o_proj = nn.Linear(heads, width, bias=False)
++        self.register_buffer("inv_freq", self._frequencies("cpu"), persistent=False)
++
++    def _frequencies(self, device) -> Tensor:
++        if not self.rope_theta:
++            return torch.empty(0, device=device)
++        exponents = torch.arange(
++            0, self.head_dim, 2, device=device, dtype=torch.float32
++        )
++        return 1.0 / self.rope_theta ** (exponents / self.head_dim)
++
++    def materialize(self, device) -> None:
++        self.inv_freq = self._frequencies(device)
++
++    def _project(
++        self, hidden: Tensor, positions: Tensor
++    ) -> tuple[Tensor, Tensor, Tensor]:
++        batch, length, _ = hidden.shape
++        queries = (
++            self.q_proj(hidden).view(batch, length, -1, self.head_dim).transpose(1, 2)
++        )
++        keys = (
++            self.k_proj(hidden).view(batch, length, -1, self.head_dim).transpose(1, 2)
++        )
++        values = (
++            self.v_proj(hidden).view(batch, length, -1, self.head_dim).transpose(1, 2)
++        )
++        queries = weightless_rms_norm(queries, self.eps) * self.qk_scale
++        keys = weightless_rms_norm(keys, self.eps)
++        if self.rope_theta:
++            angles = positions.float()[..., None] * self.inv_freq.float()
++            angles = torch.cat((angles, angles), dim=-1)
++            cos = angles.cos().to(hidden.dtype).unsqueeze(1)
++            sin = angles.sin().to(hidden.dtype).unsqueeze(1)
++            queries = queries * cos + _rotate_half(queries) * sin
++            keys = keys * cos + _rotate_half(keys) * sin
++        return queries, keys, values
++
++    def _mask(self, query_positions: Tensor, key_positions: Tensor) -> Tensor:
++        distance = query_positions[..., :, None] - key_positions[..., None, :]
++        allowed = distance >= 0
++        if self.window is not None:
++            allowed &= distance < self.window
++        return allowed
++
++    def _output(self, attended: Tensor, hidden: Tensor) -> Tensor:
++        batch, length, _ = hidden.shape
++        attended = attended.transpose(1, 2).reshape(batch, length, -1)
++        attended = attended * torch.sigmoid(self.gate_proj(hidden))
++        return self.o_proj(attended)
++
++    def forward(
++        self, hidden: Tensor, positions: Tensor, state: AttentionState
++    ) -> Tensor:
++        """Attend one contiguous chunk of a single request."""
++
++        queries, keys, values = self._project(hidden, positions)
++        keys, values, start = state.extend(keys, values)
++        key_positions = torch.arange(
++            start, start + keys.shape[-2], device=hidden.device
++        )
++        mask = self._mask(positions[0], key_positions)
++        attended = F.scaled_dot_product_attention(
++            queries,
++            keys.repeat_interleave(self.kv_groups, dim=1),
++            values.repeat_interleave(self.kv_groups, dim=1),
++            attn_mask=mask,
++            scale=self.scale,
++        )
++        return self._output(attended, hidden)
++
++    def forward_batch(
++        self, hidden: Tensor, positions: Tensor, states: Sequence[AttentionState]
++    ) -> Tensor:
++        """Decode one token for each independently cached request."""
++
++        batch, length, _ = hidden.shape
++        if length != 1 or len(states) != batch:
++            raise ValueError("batched attention requires one state and token per row")
++        queries, new_keys, new_values = self._project(hidden, positions)
++        rows = [
++            state.extend(new_keys[i : i + 1], new_values[i : i + 1])
++            for i, state in enumerate(states)
++        ]
++        width = max(keys.shape[-2] for keys, _, _ in rows)
++        padded_keys, padded_values, key_positions = [], [], []
++        for keys, values, start in rows:
++            pad = width - keys.shape[-2]
++            padded_keys.append(F.pad(keys, (0, 0, 0, pad)))
++            padded_values.append(F.pad(values, (0, 0, 0, pad)))
++            # Padding sits at future positions, which the causal mask removes.
++            key_positions.append(
++                torch.arange(start, start + width, device=hidden.device)
++                + torch.where(
++                    torch.arange(width, device=hidden.device) < keys.shape[-2],
++                    0,
++                    1 << 30,
++                )
++            )
++        mask = self._mask(positions, torch.stack(key_positions))[:, None]
++        attended = F.scaled_dot_product_attention(
++            queries,
++            torch.cat(padded_keys).repeat_interleave(self.kv_groups, dim=1),
++            torch.cat(padded_values).repeat_interleave(self.kv_groups, dim=1),
++            attn_mask=mask,
++            scale=self.scale,
++        )
++        return self._output(attended, hidden)
++
++
++class MLP(nn.Module):
++    def __init__(self, config: MuseGlimmerTextConfig) -> None:
++        super().__init__()
++        self.gate_proj = nn.Linear(
++            config.hidden_size, config.intermediate_size, bias=False
++        )
++        self.up_proj = nn.Linear(
++            config.hidden_size, config.intermediate_size, bias=False
++        )
++        self.down_proj = nn.Linear(
++            config.intermediate_size, config.hidden_size, bias=False
++        )
++
++    def forward(self, hidden: Tensor) -> Tensor:
++        return self.down_proj(F.silu(self.gate_proj(hidden)) * self.up_proj(hidden))
++
++
++class DecoderLayer(nn.Module):
++    def __init__(self, config: MuseGlimmerTextConfig, layer: int) -> None:
++        super().__init__()
++        width = config.hidden_size
++        self.self_attn = Attention(config, layer)
++        self.mlp = MLP(config)
++        self.input_layernorm = CenteredRMSNorm(width, config.rms_norm_eps)
++        self.post_attention_layernorm = CenteredRMSNorm(width, config.post_norm_eps)
++        self.pre_feedforward_layernorm = CenteredRMSNorm(width, config.rms_norm_eps)
++        self.post_feedforward_layernorm = CenteredRMSNorm(width, config.post_norm_eps)
++
++    def _feed_forward(self, hidden: Tensor) -> Tensor:
++        update = self.mlp(self.pre_feedforward_layernorm(hidden))
++        return hidden + self.post_feedforward_layernorm(update)
++
++    def forward(
++        self, hidden: Tensor, positions: Tensor, state: AttentionState
++    ) -> Tensor:
++        update = self.self_attn(self.input_layernorm(hidden), positions, state)
++        return self._feed_forward(hidden + self.post_attention_layernorm(update))
++
++    def forward_batch(
++        self, hidden: Tensor, positions: Tensor, states: Sequence[AttentionState]
++    ) -> Tensor:
++        update = self.self_attn.forward_batch(
++            self.input_layernorm(hidden), positions, states
++        )
++        return self._feed_forward(hidden + self.post_attention_layernorm(update))
++
++
++class MuseGlimmerTextModel(nn.Module):
++    def __init__(self, config: MuseGlimmerTextConfig) -> None:
++        super().__init__()
++        self.config = config
++        self.embed_tokens = nn.Embedding(config.vocab_size, config.hidden_size)
++        self.layers = nn.ModuleList(
++            DecoderLayer(config, layer) for layer in range(config.num_hidden_layers)
++        )
++        self.norm = ScaledRMSNorm(config.hidden_size, config.rms_norm_eps)
++
++    def embed(self, tokens: Tensor) -> Tensor:
++        return weightless_rms_norm(self.embed_tokens(tokens), self.config.rms_norm_eps)
++
++    def forward(
++        self, hidden: Tensor, positions: Tensor, state: MuseGlimmerState
++    ) -> Tensor:
++        for layer, layer_state in zip(self.layers, state.layers, strict=True):
++            hidden = layer(hidden, positions, layer_state)
++        return self.norm(hidden)
++
++    def forward_batch(
++        self, hidden: Tensor, positions: Tensor, states: Sequence[MuseGlimmerState]
++    ) -> Tensor:
++        for index, layer in enumerate(self.layers):
++            hidden = layer.forward_batch(
++                hidden, positions, [state.layers[index] for state in states]
++            )
++        return self.norm(hidden)
++
++
++class VisionAdapter(nn.Module):
++    def __init__(self, config: MuseGlimmerConfig) -> None:
++        super().__init__()
++        self.fc1 = nn.Linear(
++            config.out_hidden_size, config.projector_hidden_size, bias=False
++        )
++        self.fc2 = nn.Linear(
++            config.projector_hidden_size, config.projector_hidden_size, bias=False
++        )
++
++    def forward(self, hidden: Tensor) -> Tensor:
++        return F.gelu(self.fc2(F.gelu(self.fc1(hidden))))
++
++
++class MuseGlimmerModel(nn.Module):
++    def __init__(
++        self, config: MuseGlimmerConfig, *, include_vision: bool = True
++    ) -> None:
++        super().__init__()
++        self.language_model = MuseGlimmerTextModel(config.text)
++        if include_vision:
++            self.vision_tower = MuseGlimmerVisionModel(config.vision)
++            self.vision_adapter = VisionAdapter(config)
++            self.vision_projection = nn.Linear(
++                config.projector_hidden_size, config.text.hidden_size, bias=False
++            )
++
++
++class MuseGlimmerForConditionalGeneration(nn.Module):
++    """Checkpoint-shaped Muse Glimmer with a request-state text forward."""
++
++    def __init__(
++        self, config: MuseGlimmerConfig, *, include_vision: bool = True
++    ) -> None:
++        super().__init__()
++        self.config = config
++        self.include_vision = include_vision
++        self.model = MuseGlimmerModel(config, include_vision=include_vision)
++        self.lm_head = nn.Linear(
++            config.text.hidden_size, config.text.vocab_size, bias=False
++        )
++
++    def make_state(self) -> MuseGlimmerState:
++        return MuseGlimmerState(self.config.text)
++
++    def materialize_buffers(self, device) -> None:
++        for module in self.modules():
++            if isinstance(module, Attention):
++                module.materialize(device)
++
++    def image_features(self, pixel_values: Tensor, grid_thw: Tensor) -> Tensor:
++        """Project packed image patches to decoder-width embeddings."""
++
++        if not self.include_vision:
++            raise ValueError("this Muse model was loaded without its vision tower")
++        model = self.model
++        hidden = model.vision_tower(pixel_values, grid_thw)
++        hidden = model.vision_projection(model.vision_adapter(hidden))
++        return weightless_rms_norm(hidden, self.config.text.rms_norm_eps)
++
++    def embed(
++        self,
++        tokens: Tensor,
++        image_embeds: Tensor | None = None,
++        image_mask: Tensor | None = None,
++    ) -> Tensor:
++        """Embed tokens, replacing image placeholders with vision features."""
++
++        placeholders = (tokens == self.config.image_token_id) | (
++            tokens == self.config.video_token_id
++        )
++        hidden = self.model.language_model.embed(tokens.masked_fill(placeholders, 0))
++        if image_mask is not None and bool(image_mask.any()):
++            if image_embeds is None or image_embeds.shape[0] != int(image_mask.sum()):
++                raise ValueError("image features do not match image placeholder count")
++            hidden = hidden.clone()
++            hidden[image_mask] = image_embeds.to(hidden.dtype)
++        return hidden
++
++    def forward(
++        self,
++        tokens: Tensor,
++        state: MuseGlimmerState,
++        positions: Tensor,
++        *,
++        hidden: Tensor | None = None,
++    ) -> Tensor:
++        """Advance one request by a contiguous chunk and return final hidden rows."""
++
++        if tokens.ndim != 2 or tokens.shape[0] != 1:
++            raise ValueError("tokens must contain exactly one sequence")
++        if positions.shape != tokens.shape:
++            raise ValueError("positions must have the same shape as tokens")
++        if int(positions[0, 0]) != state.length:
++            raise ValueError("chunk positions must continue the request state")
++        hidden = self.embed(tokens) if hidden is None else hidden
++        output = self.model.language_model(hidden, positions, state)
++        state.length += tokens.shape[1]
++        return output
++
++    def forward_batch(
++        self, tokens: Tensor, states: Sequence[MuseGlimmerState], positions: Tensor
++    ) -> Tensor:
++        if tokens.ndim != 2 or tokens.shape[1] != 1 or tokens.shape[0] != len(states):
++            raise ValueError("batched decode requires one token and state per row")
++        output = self.model.language_model.forward_batch(
++            self.embed(tokens), positions, states
++        )
++        for state in states:
++            state.length += 1
++        return output
++
++    def logits(self, hidden: Tensor) -> Tensor:
++        cap = self.config.text.final_logit_softcapping
++        logits = self.lm_head(hidden) * self.config.text.output_multiplier
++        return torch.tanh(logits / cap) * cap
+diff --git a/models/torch/resin_models_torch/muse_glimmer/reference.py b/models/torch/resin_models_torch/muse_glimmer/reference.py
+new file mode 100644
+index 0000000..0d12052
+--- /dev/null
++++ b/models/torch/resin_models_torch/muse_glimmer/reference.py
+@@ -0,0 +1,308 @@
++"""Readable Muse Glimmer loading and Engine execution on PyTorch.
++
++This runner prioritizes a transparent, reference-correct forward pass over
++speed: request state lives in Python-owned tensors (not Engine pages), attention
++uses ``scaled_dot_product_attention`` with explicit masks, and nothing is
++graph-captured. It is the correctness baseline for an optimized CUDA runner.
++"""
++
++from __future__ import annotations
++
++import json
++from dataclasses import dataclass
++from pathlib import Path
++from typing import TYPE_CHECKING, Any, cast
++
++import numpy as np
++import torch
++
++from resin import RunnerConfig
++from resin.backend.loading import (
++    load_safetensor_weights,
++    read_config,
++    resolve_model,
++)
++from resin.backend.plans import BatchView
++from resin.backend.safetensors import indexed_tensor_files
++from resin.backend.sampling import (
++    PromptScores,
++    TorchSampler,
++    format_output,
++    prompt_scores,
++)
++from resin.backend.topology import ParallelismCapabilities
++from resin.protocols import Runner
++from resin_models_torch.muse_glimmer.config import MuseGlimmerConfig
++from resin_models_torch.muse_glimmer.model import (
++    MuseGlimmerForConditionalGeneration,
++    MuseGlimmerState,
++)
++
++if TYPE_CHECKING:
++    from resin import BatchPlan, ForwardOutput
++
++
++DEFAULT_MODEL = "meta-models/Muse-Glimmer-30B"
++DEFAULT_REVISION = "cec94fcfd6512f2cfe708138c32533b346ea4f69"
++VISION_PREFIXES = (
++    "model.vision_tower.",
++    "model.vision_adapter.",
++    "model.vision_projection.",
++)
++CHECKPOINT_FILES = (
++    "config.json",
++    "generation_config.json",
++    "model*.safetensors",
++    "model.safetensors.index.json",
++    "tokenizer.json",
++    "tokenizer_config.json",
++    "chat_template.jinja",
++    "processor_config.json",
++)
++
++
++def _download_model(repo_id: str, revision: str | None) -> Path:
++    from huggingface_hub import snapshot_download
++
++    return Path(
++        snapshot_download(
++            repo_id=repo_id, revision=revision, allow_patterns=list(CHECKPOINT_FILES)
++        )
++    )
++
++
++def resolve_model_path(model: str | Path, revision: str | None) -> Path:
++    return resolve_model(model, revision, _download_model)
++
++
++def read_muse_config(model_path: Path) -> MuseGlimmerConfig:
++    generation_path = model_path / "generation_config.json"
++    generation = (
++        json.loads(generation_path.read_text()) if generation_path.exists() else None
++    )
++    return MuseGlimmerConfig.from_dict(read_config(model_path), generation)
++
++
++def load_model(
++    model_path: Path,
++    *,
++    device: str | torch.device,
++    dtype: torch.dtype = torch.bfloat16,
++    include_vision: bool = True,
++) -> MuseGlimmerForConditionalGeneration:
++    config = read_muse_config(model_path)
++    target = torch.device(device)
++    with torch.device("meta"):
++        model = MuseGlimmerForConditionalGeneration(
++            config, include_vision=include_vision
++        )
++    keys = [
++        key
++        for key in indexed_tensor_files(model_path)
++        if include_vision or not key.startswith(VISION_PREFIXES)
++    ]
++    load_safetensor_weights(
++        model_path, model, device=target, dtype=dtype, checkpoint_keys=keys
++    )
++    if missing := {
++        name for name, tensor in model.state_dict().items() if tensor.is_meta
++    }:
++        raise ValueError(f"checkpoint did not populate: {sorted(missing)[:8]}")
++    model.materialize_buffers(target)
++    return model.eval()
++
++
++@dataclass
++class _Request:
++    state: MuseGlimmerState
++    media: Any = None
++    image_rows: dict[int, int] | None = None
++    image_embeds: torch.Tensor | None = None
++
++
++class MuseGlimmerTorchRunner(Runner):
++    """Muse Glimmer runner consuming Rust-built integer-token batches.
++
++    Uniform one-token decode steps run as one batched forward. Prefill chunks
++    and mixed steps run one request at a time.
++    """
++
++    parallelism_capabilities = ParallelismCapabilities()
++
++    def __init__(
++        self,
++        model: str | Path = DEFAULT_MODEL,
++        *,
++        revision: str | None = DEFAULT_REVISION,
++        device: str | torch.device = "cuda",
++        dtype: torch.dtype = torch.bfloat16,
++        include_vision: bool = True,
++        prefill_chunk_size: int | None = None,
++        max_batch_tokens: int | None = None,
++    ) -> None:
++        self.device = torch.device(device)
++        self.model_path = resolve_model_path(model, revision)
++        self._model = load_model(
++            self.model_path,
++            device=self.device,
++            dtype=dtype,
++            include_vision=include_vision,
++        )
++        self.config = self._model.config
++        self.include_vision = include_vision
++        self.vocab_size = self.config.text.vocab_size
++        self.eos_token_ids = self.config.text.eos_token_ids
++        self.runner_config = RunnerConfig(
++            continuation_prefill=True,
++            prefill_chunk_size=prefill_chunk_size,
++            max_batch_tokens=max_batch_tokens,
++        )
++        self._sampler = TorchSampler()
++        self._requests: dict[int, _Request] = {}
++        self.forward_calls = 0
++        self.vision_calls = 0
++
++    # -- request state -----------------------------------------------------
++
++    def _request(self, sequence_id: int, media: Any) -> _Request:
++        request = self._requests.get(sequence_id)
++        if request is None:
++            request = _Request(self._model.make_state(), media)
++            self._requests[sequence_id] = request
++        elif (
++            media is not None
++            and request.media is not None
++            and request.media is not media
++        ):
++            raise ValueError("a live Muse Glimmer request changed its media object")
++        if media is not None and request.image_rows is None:
++            self._prepare_media(request, media)
++        return request
++
++    def _prepare_media(self, request: _Request, media: Any) -> None:
++        if not self.include_vision:
++            raise ValueError("image input requires the Muse vision tower")
++        if int(media.image_token_id) != self.config.image_token_id:
++            raise ValueError("media image token does not match the checkpoint")
++        positions = tuple(int(p) for p in media.image_positions)
++        request.media = media
++        request.image_rows = {position: row for row, position in enumerate(positions)}
++        if not positions:
++            return
++        pixels = torch.from_numpy(np.asarray(media.pixel_values)).to(self.device)
++        grids = torch.from_numpy(np.asarray(media.image_grid_thw))
++        with torch.inference_mode():
++            embeds = self._model.image_features(pixels, grids)
++        self.vision_calls += 1
++        if embeds.shape[0] != len(positions):
++            raise ValueError("vision features do not match image placeholder count")
++        request.image_embeds = embeds
++
++    def release(self, request_ids: list[int]) -> None:
++        for request_id in request_ids:
++            self._requests.pop(int(request_id), None)
++
++    @property
++    def live_cache_count(self) -> int:
++        return len(self._requests)
++
++    # -- execution ---------------------------------------------------------
++
++    def _validate(self, batch: BatchView, plan: BatchPlan) -> list[_Request]:
++        media = plan.media if plan.media else (None,) * batch.num_sequences
++        requests = []
++        for index, sequence_id in enumerate(batch.sequence_ids):
++            request = self._request(int(sequence_id), media[index])
++            token_slice = batch.token_slice(index)
++            positions = batch.positions[token_slice]
++            offset = request.state.length
++            if int(batch.context_lengths[index]) != offset or (
++                len(positions) and int(positions[0]) != offset
++            ):
++                raise ValueError(
++                    f"non-contiguous positions for request {int(sequence_id)}: "
++                    f"state has {offset} tokens, plan starts at {positions[:1].tolist()}"
++                )
++            if np.any(batch.token_ids[token_slice] >= self.vocab_size):
++                raise ValueError(
++                    f"token id is out of range for request {int(sequence_id)}"
++                )
++            requests.append(request)
++        return requests
++
++    def _hidden_for(
++        self, request: _Request, tokens: torch.Tensor, positions: np.ndarray
++    ):
++        if request.image_rows:
++            rows = [request.image_rows.get(int(p), -1) for p in positions]
++            selected = [row for row in rows if row >= 0]
++            if selected:
++                assert request.image_embeds is not None
++                mask = torch.tensor([row >= 0 for row in rows], device=self.device)[
++                    None
++                ]
++                index = torch.tensor(selected, device=self.device)
++                return self._model.embed(
++                    tokens, request.image_embeds.index_select(0, index), mask
++                )
++        return self._model.embed(tokens)
++
++    def forward(self, plan: BatchPlan) -> ForwardOutput:
++        self.forward_calls += 1
++        batch = BatchView.from_plan(plan)
++        requests = self._validate(batch, plan)
++        logits_rows: list[torch.Tensor] = []
++        prompt_rows: list[PromptScores | None] = []
++        with torch.inference_mode():
++            uniform_decode = (
++                batch.num_sequences > 1
++                and bool(np.all(batch.query_lengths == 1))
++                and not plan.needs_prompt_logprobs
++                and not any(
++                    request.image_rows and int(batch.positions[i]) in request.image_rows
++                    for i, request in enumerate(requests)
++                )
++            )
++            if uniform_decode:
++                tokens = torch.as_tensor(
++                    batch.token_ids.astype(np.int64)[:, None], device=self.device
++                )
++                positions = torch.as_tensor(
++                    batch.positions.astype(np.int64)[:, None], device=self.device
++                )
++                hidden = self._model.forward_batch(
++                    tokens, [request.state for request in requests], positions
++                )
++                logits_rows.append(self._model.logits(hidden[:, -1]))
++            else:
++                for index, request in enumerate(requests):
++                    token_slice = batch.token_slice(index)
++                    row_positions = batch.positions[token_slice]
++                    tokens = torch.as_tensor(
++                        batch.token_ids[token_slice].astype(np.int64)[None],
++                        device=self.device,
++                    )
++                    positions = torch.as_tensor(
++                        row_positions.astype(np.int64)[None], device=self.device
++                    )
++                    hidden = self._model(
++                        tokens,
++                        request.state,
++                        positions,
++                        hidden=self._hidden_for(request, tokens, row_positions),
++                    )
++                    if plan.needs_prompt_logprobs:
++                        prompt_rows.append(
++                            prompt_scores(
++                                plan,
++                                hidden[0],
++                                self._model.logits,
++                                token_start=token_slice.start,
++                            )
++                        )
++                    logits_rows.append(self._model.logits(hidden[:, -1]))
++        logits = torch.cat(logits_rows).float()
++        scores = PromptScores.concat(cast(list[PromptScores], prompt_rows))
++        return format_output(
++            logits, self._sampler(logits, plan), plan, prompt_logprobs=scores
++        )
+diff --git a/models/torch/resin_models_torch/muse_glimmer/vision.py b/models/torch/resin_models_torch/muse_glimmer/vision.py
+new file mode 100644
+index 0000000..956f4e8
+--- /dev/null
++++ b/models/torch/resin_models_torch/muse_glimmer/vision.py
+@@ -0,0 +1,274 @@
++# Portions are adapted from Hugging Face Transformers (Apache-2.0),
++# src/transformers/models/muse_glimmer/modeling_muse_glimmer.py and
++# src/transformers/vision_utils.py at v5.19.0.
++
++"""Native Muse Glimmer vision tower for packed still-image patches.
++
++Input patches arrive in raster order, one row per 14x14 patch, laid out as
++temporal/channel/height/width. The tower runs window attention over 32x32
++patch windows (every fourth layer and the last are full attention per image),
++then folds each 2x2 block of patches into one decoder token.
++"""
++
++from __future__ import annotations
++
++import torch
++from torch import Tensor, nn
++from torch.nn import functional as F
++
++from resin_models_torch.muse_glimmer.config import MuseGlimmerVisionConfig
++
++
++def _rotate_half(hidden: Tensor) -> Tensor:
++    first, second = hidden.chunk(2, dim=-1)
++    return torch.cat((-second, first), dim=-1)
++
++
++def _grids(grid_thw: Tensor) -> list[tuple[int, int, int]]:
++    grids = [tuple(int(v) for v in row) for row in grid_thw.tolist()]
++    if any(t < 1 or h < 1 or w < 1 for t, h, w in grids):
++        raise ValueError("image grids must be positive")
++    return grids  # type: ignore[return-value]
++
++
++def image_segments(grid_thw: Tensor) -> list[int]:
++    """Full-attention segment lengths: one per frame of each image."""
++
++    return [h * w for t, h, w in _grids(grid_thw) for _ in range(t)]
++
++
++def window_index(grid_thw: Tensor, window: int) -> tuple[Tensor, list[int]]:
++    """Raster patches regrouped into ``window x window`` tiles, with tile sizes."""
++
++    order: list[Tensor] = []
++    lengths: list[int] = []
++    offset = 0
++    for t, h, w in _grids(grid_thw):
++        index = torch.arange(t * h * w).reshape(t, h, w)
++        pad_h = window - h % window
++        pad_w = window - w % window
++        tiles_h = (h + pad_h) // window
++        tiles_w = (w + pad_w) // window
++        padded = F.pad(index, (0, pad_w, 0, pad_h), value=-100)
++        padded = padded.reshape(t, tiles_h, window, tiles_w, window)
++        padded = padded.permute(0, 1, 3, 2, 4).reshape(t, tiles_h * tiles_w, -1)
++        for tile in padded.reshape(-1, window * window):
++            valid = tile[tile != -100]
++            if valid.numel():
++                order.append(valid + offset)
++                lengths.append(int(valid.numel()))
++        offset += t * h * w
++    return torch.cat(order), lengths
++
++
++def raster_positions(grid_thw: Tensor) -> Tensor:
++    """(row, column) of each raster patch, repeated per frame."""
++
++    rows = []
++    for t, h, w in _grids(grid_thw):
++        y, x = torch.meshgrid(torch.arange(h), torch.arange(w), indexing="ij")
++        rows.append(torch.stack((y.flatten(), x.flatten()), dim=-1).repeat(t, 1))
++    return torch.cat(rows)
++
++
++def interpolation_taps(grid_thw: Tensor, side: int) -> tuple[Tensor, Tensor]:
++    """Bilinear taps into the square position table (align_corners=False,
++    zero padding), matching ``F.grid_sample`` sampling of the learned grid."""
++
++    rows, cols, heights, widths = [], [], [], []
++    for t, h, w in _grids(grid_thw):
++        y, x = torch.meshgrid(torch.arange(h), torch.arange(w), indexing="ij")
++        rows.append(y.flatten().repeat(t))
++        cols.append(x.flatten().repeat(t))
++        heights.append(torch.full((t * h * w,), h))
++        widths.append(torch.full((t * h * w,), w))
++
++    def axis(index: Tensor, size: Tensor) -> tuple[Tensor, Tensor]:
++        source = (index.float() + 0.5) * side / size.float() - 0.5
++        floor = torch.floor(source)
++        offsets = torch.arange(2)
++        raw = floor.long()[:, None] + offsets
++        taps = raw.clamp(0, side - 1)
++        weights = (1 - (source[:, None] - floor[:, None] - offsets).abs()).clamp(min=0)
++        weights = weights * ((raw >= 0) & (raw <= side - 1))
++        return taps, weights
++
++    h_taps, h_weights = axis(torch.cat(rows), torch.cat(heights))
++    w_taps, w_weights = axis(torch.cat(cols), torch.cat(widths))
++    indices = (h_taps[:, :, None] * side + w_taps[:, None, :]).reshape(-1, 4)
++    weights = (h_weights[:, :, None] * w_weights[:, None, :]).reshape(-1, 4)
++    return indices, weights
++
++
++def merge_index(grid_thw: Tensor, merge: int) -> Tensor:
++    """Gather order that groups each ``merge x merge`` block contiguously."""
++
++    order = []
++    offset = 0
++    for t, h, w in _grids(grid_thw):
++        if h % merge or w % merge:
++            raise ValueError("image grids must be divisible by the merge size")
++        block = torch.arange(h * w).view(h // merge, merge, w // merge, merge)
++        block = block.permute(0, 2, 1, 3).reshape(-1)
++        block = (block[None] + torch.arange(t)[:, None] * h * w).reshape(-1)
++        order.append(block + offset)
++        offset += t * h * w
++    return torch.cat(order)
++
++
++class PatchEmbedder(nn.Module):
++    def __init__(self, config: MuseGlimmerVisionConfig) -> None:
++        super().__init__()
++        self.side = config.pos_emb_height
++        self.patch_embedding = nn.Linear(
++            config.patch_width, config.hidden_size, bias=False
++        )
++        self.position_embedding_table = nn.Embedding(
++            config.pos_emb_height * config.pos_emb_width, config.hidden_size
++        )
++
++    def forward(self, pixel_values: Tensor, grid_thw: Tensor) -> Tensor:
++        weight = self.patch_embedding.weight
++        embeddings = self.patch_embedding(pixel_values.to(weight.dtype))
++        indices, weights = interpolation_taps(grid_thw, self.side)
++        indices = indices.to(weight.device)
++        weights = weights.to(weight.device)
++        positions = (self.position_embedding_table(indices) * weights[:, :, None]).sum(
++            1
++        )
++        return embeddings + positions.to(embeddings.dtype)
++
++
++class VisionAttention(nn.Module):
++    def __init__(self, config: MuseGlimmerVisionConfig) -> None:
++        super().__init__()
++        width = config.hidden_size
++        self.num_heads = config.num_attention_heads
++        self.head_dim = config.head_dim
++        self.scale = self.head_dim**-0.5
++        self.q_proj = nn.Linear(width, width)
++        self.k_proj = nn.Linear(width, width)
++        self.v_proj = nn.Linear(width, width)
++        self.proj = nn.Linear(width, width)
++
++    def forward(
++        self, hidden: Tensor, segments: list[int], cos: Tensor, sin: Tensor
++    ) -> Tensor:
++        length = hidden.shape[0]
++        shape = (length, self.num_heads, self.head_dim)
++        queries = self.q_proj(hidden).view(shape)
++        keys = self.k_proj(hidden).view(shape)
++        values = self.v_proj(hidden).view(shape)
++        dtype = queries.dtype
++        rope_cos = cos.unsqueeze(-2).float()
++        rope_sin = sin.unsqueeze(-2).float()
++        queries = (
++            queries.float() * rope_cos + _rotate_half(queries.float()) * rope_sin
++        ).to(dtype)
++        keys = (keys.float() * rope_cos + _rotate_half(keys.float()) * rope_sin).to(
++            dtype
++        )
++        outputs = []
++        start = 0
++        for size in segments:
++            rows = slice(start, start + size)
++            outputs.append(
++                F.scaled_dot_product_attention(
++                    queries[rows].transpose(0, 1)[None],
++                    keys[rows].transpose(0, 1)[None],
++                    values[rows].transpose(0, 1)[None],
++                    scale=self.scale,
++                )[0].transpose(0, 1)
++            )
++            start += size
++        return self.proj(torch.cat(outputs).reshape(length, -1))
++
++
++class VisionMLP(nn.Module):
++    def __init__(self, config: MuseGlimmerVisionConfig) -> None:
++        super().__init__()
++        self.fc1 = nn.Linear(config.hidden_size, config.intermediate_size)
++        self.fc2 = nn.Linear(config.intermediate_size, config.hidden_size)
++
++    def forward(self, hidden: Tensor) -> Tensor:
++        return self.fc2(F.gelu(self.fc1(hidden)))
++
++
++class VisionLayer(nn.Module):
++    def __init__(self, config: MuseGlimmerVisionConfig) -> None:
++        super().__init__()
++        # HF hard-codes these two epsilons rather than reading the config.
++        self.norm1 = nn.LayerNorm(config.hidden_size, eps=1e-5)
++        self.norm2 = nn.LayerNorm(config.hidden_size, eps=1e-5)
++        self.attn = VisionAttention(config)
++        self.mlp = VisionMLP(config)
++
++    def forward(
++        self, hidden: Tensor, segments: list[int], cos: Tensor, sin: Tensor
++    ) -> Tensor:
++        hidden = hidden + self.attn(self.norm1(hidden), segments, cos, sin)
++        return hidden + self.mlp(self.norm2(hidden))
++
++
++class MuseGlimmerVisionModel(nn.Module):
++    def __init__(self, config: MuseGlimmerVisionConfig) -> None:
++        super().__init__()
++        self.config = config
++        self.patch_embedder = PatchEmbedder(config)
++        self.ln_pre = nn.LayerNorm(config.hidden_size, eps=config.layer_norm_eps)
++        self.layers = nn.ModuleList(
++            VisionLayer(config) for _ in range(config.num_hidden_layers)
++        )
++        self.ln_post = nn.LayerNorm(config.hidden_size, eps=config.layer_norm_eps)
++
++    def rotary(self, positions: Tensor, dtype: torch.dtype) -> tuple[Tensor, Tensor]:
++        """Axial 2-D RoPE: the same frequencies for both axes, over the full head."""
++
++        spatial = self.config.head_dim // 2
++        inv_freq = 1.0 / (
++            self.config.rope_theta
++            ** (
++                torch.arange(
++                    0, spatial, 2, dtype=torch.float32, device=positions.device
++                )
++                / spatial
++            )
++        )
++        freqs = positions.float()[..., None] * inv_freq
++        cos, sin = freqs.cos(), freqs.sin()
++
++        def recompose(table: Tensor) -> Tensor:
++            both = torch.cat((table[:, 0], table[:, 1]), dim=-1)
++            return torch.cat((both, both), dim=-1).to(dtype)
++
++        return recompose(cos), recompose(sin)
++
++    def forward(self, pixel_values: Tensor, grid_thw: Tensor) -> Tensor:
++        grid_thw = grid_thw.cpu()
++        device = self.ln_pre.weight.device
++        dtype = self.patch_embedder.patch_embedding.weight.dtype
++        order, window_segments = window_index(grid_thw, self.config.window_patches)
++        segments = image_segments(grid_thw)
++        hidden = self.ln_pre(self.patch_embedder(pixel_values.to(device), grid_thw))
++        order = order.to(device)
++        hidden = hidden[order]
++        # HF flips (row, col) to (col, row) and offsets by one before RoPE.
++        positions = (raster_positions(grid_thw).flip(-1) + 1).to(device)[order]
++        cos, sin = self.rotary(positions, dtype)
++        for layer, kind in zip(self.layers, self.config.layer_types, strict=True):
++            hidden = layer(
++                hidden,
++                segments if kind == "full_attention" else window_segments,
++                cos,
++                sin,
++            )
++        hidden = hidden[torch.argsort(order)]
++        hidden = self.ln_post(hidden)
++        merge = self.config.merge_size
++        hidden = hidden[merge_index(grid_thw, merge).to(device)]
++        width = hidden.shape[-1]
++        return (
++            hidden.view(-1, merge * merge, width)
++            .permute(0, 2, 1)
++            .reshape(-1, width * merge * merge)
++        )
+-- 
+2.50.1 (Apple Git-155)
+

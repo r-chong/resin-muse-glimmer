@@ -1,0 +1,338 @@
+From c10b32200b4c76cc1232399c863fdcfa5d1f76e7 Mon Sep 17 00:00:00 2001
+From: r-chong <dev.reese.chong@gmail.com>
+Date: Thu, 19 Nov 2026 19:19:03 -0500
+Subject: [PATCH 2/5] feat(py): expose muse_glimmer recipe and MuseGlimmerMedia
+ payload
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+---
+ crates/resin-py/src/lib.rs              |  2 +-
+ crates/resin-py/src/media_payload.rs    | 78 +++++++++++++++++++++++++
+ crates/resin-py/src/media_preprocess.rs | 30 +++++++++-
+ crates/resin-py/src/recipe.rs           | 16 +++++
+ resin/_resin.pyi                        | 32 ++++++++++
+ resin/recipe.py                         |  2 +
+ scripts/normalize_stubs.py              |  4 ++
+ 7 files changed, 161 insertions(+), 3 deletions(-)
+
+diff --git a/crates/resin-py/src/lib.rs b/crates/resin-py/src/lib.rs
+index 6b19fcb..67a6780 100644
+--- a/crates/resin-py/src/lib.rs
++++ b/crates/resin-py/src/lib.rs
+@@ -1964,7 +1964,7 @@ mod _resin {
+     #[pymodule_export]
+     use crate::media_payload::{
+         _media_from_buffers, _media_to_buffers, DeepSeekV41Image, DeepSeekV41Media, Gemma4Media,
+-        Glm53FlashMedia, Inkling2Media, Qwen35Media,
++        Glm53FlashMedia, Inkling2Media, MuseGlimmerMedia, Qwen35Media,
+     };
+ 
+     #[pymodule_export]
+diff --git a/crates/resin-py/src/media_payload.rs b/crates/resin-py/src/media_payload.rs
+index 3aa8aa8..d960452 100644
+--- a/crates/resin-py/src/media_payload.rs
++++ b/crates/resin-py/src/media_payload.rs
+@@ -285,6 +285,21 @@ macro_rules! packed_image_methods {
+ }
+ packed_image_methods!(Qwen35Media);
+ 
++#[pyclass(frozen, module = "resin._resin")]
++pub(crate) struct MuseGlimmerMedia {
++    identity: Identity,
++    positions: Vec<usize>,
++    #[pyo3(get, name = "image_token_id")]
++    marker: u32,
++    #[pyo3(get, name = "spatial_merge_size")]
++    merge: usize,
++    #[pyo3(get, name = "pixel_values")]
++    pixels: Py<PyArrayDyn<f32>>,
++    #[pyo3(get, name = "image_grid_thw")]
++    grids: Py<PyArrayDyn<i64>>,
++}
++packed_image_methods!(MuseGlimmerMedia);
++
+ #[pyclass(frozen, module = "resin._resin")]
+ pub(crate) struct Glm53FlashMedia {
+     identity: Identity,
+@@ -767,6 +782,41 @@ impl Glm53FlashMedia {
+         })
+     }
+ }
++impl MuseGlimmerMedia {
++    #[allow(clippy::too_many_arguments)]
++    pub(crate) fn build(
++        py: Python<'_>,
++        tokens: Vec<u32>,
++        positions: Vec<usize>,
++        pixels: Tensor<f32>,
++        grids: Tensor<i64>,
++        merge: usize,
++        marker: u32,
++    ) -> PyResult<Self> {
++        validate_packed_images(&tokens, &positions, &pixels, &grids, merge, marker, "Muse")?;
++        if grids
++            .data
++            .as_chunks::<3>()
++            .0
++            .iter()
++            .any(|grid| grid[0] != 1)
++        {
++            return Err(error("Muse image payload supports still images only"));
++        }
++        let mut hash = Sha256::new();
++        Digest::update(&mut hash, b"resin.muse_glimmer.media.v1");
++        hash_tensor(&mut hash, "pixels", &pixels);
++        hash_tensor(&mut hash, "grids", &grids);
++        Ok(Self {
++            identity: Identity::new(tokens, &positions, hash)?,
++            positions,
++            marker,
++            merge,
++            pixels: array(py, pixels)?,
++            grids: array(py, grids)?,
++        })
++    }
++}
+ pub(crate) fn contiguous_ranges(positions: &[usize]) -> Vec<(usize, usize)> {
+     let mut result = Vec::new();
+     for &position in positions {
+@@ -807,6 +857,11 @@ enum MediaDescriptor {
+         merge: usize,
+         marker: u32,
+     },
++    Muse {
++        positions: Vec<usize>,
++        merge: usize,
++        marker: u32,
++    },
+     Gemma {
+         images: bool,
+         videos: bool,
+@@ -888,6 +943,16 @@ pub(crate) fn _media_to_buffers(
+             merge: value.merge,
+             marker: value.marker,
+         }
++    } else if let Ok(value) = media.cast::<MuseGlimmerMedia>() {
++        let value = value.borrow();
++        push_values(media, &mut buffers, &value.identity.tokens);
++        push_buffer(py, &mut buffers, &value.pixels);
++        push_buffer(py, &mut buffers, &value.grids);
++        MediaDescriptor::Muse {
++            positions: value.positions.clone(),
++            merge: value.merge,
++            marker: value.marker,
++        }
+     } else if let Ok(value) = media.cast::<Gemma4Media>() {
+         let value = value.borrow();
+         push_values(media, &mut buffers, &value.identity.tokens);
+@@ -1000,6 +1065,19 @@ pub(crate) fn _media_from_buffers(
+             )?
+             .into_any()
+         }
++        MediaDescriptor::Muse {
++            positions,
++            merge,
++            marker,
++        } => {
++            let pixels = take_buffer(py, &mut buffers)?;
++            let grids = take_buffer(py, &mut buffers)?;
++            Py::new(
++                py,
++                MuseGlimmerMedia::build(py, tokens, positions, pixels, grids, merge, marker)?,
++            )?
++            .into_any()
++        }
+         MediaDescriptor::Gemma { images, videos } => {
+             let types = take_buffer::<u8>(py, &mut buffers)?;
+             if types.shape.len() != 1 {
+diff --git a/crates/resin-py/src/media_preprocess.rs b/crates/resin-py/src/media_preprocess.rs
+index 8499e50..1a02b10 100644
+--- a/crates/resin-py/src/media_preprocess.rs
++++ b/crates/resin-py/src/media_preprocess.rs
+@@ -18,7 +18,7 @@ use sha2::{Digest, Sha256};
+ use crate::{
+     media_payload::{
+         DeepSeekV41Image, DeepSeekV41Media, Gemma4Media, Glm53FlashMedia, Inkling2Media,
+-        Qwen35Media, error,
++        MuseGlimmerMedia, Qwen35Media, error,
+     },
+     recipe_media::MediaTokens,
+     recipe_types::MediaSources,
+@@ -31,6 +31,7 @@ enum Payload {
+     Inkling2(media::inkling2::Prepared, u32),
+     Qwen(media::qwen::Prepared, usize, u32),
+     Glm(media::qwen::Prepared, usize, u32),
++    Muse(media::qwen::Prepared, usize, u32),
+ }
+ #[derive(Clone)]
+ pub(crate) struct Prepared {
+@@ -274,6 +275,15 @@ pub(crate) fn process(
+                 Payload::Glm(prepared, config.merge_size, id),
+             )
+         }
++        MediaConfig::Muse(config) => {
++            let id = encoder.special_id("<|patch|>")?;
++            let prepared = config.process(&images)?;
++            (
++                prepared.token_counts.clone(),
++                "<|patch|>",
++                Payload::Muse(prepared, config.merge_size, id),
++            )
++        }
+         MediaConfig::Gemma(_) => unreachable!(),
+     };
+     let id = encoder.special_id(marker)?;
+@@ -327,7 +337,7 @@ impl Prepared {
+                     + tensor_bytes(&data.image_grid_thw)
+                     + vector_bytes(&data.token_counts)
+             }
+-            Payload::Qwen(data, _, _) | Payload::Glm(data, _, _) => {
++            Payload::Qwen(data, _, _) | Payload::Glm(data, _, _) | Payload::Muse(data, _, _) => {
+                 tensor_bytes(&data.pixel_values)
+                     + tensor_bytes(&data.image_grid_thw)
+                     + vector_bytes(&data.token_counts)
+@@ -367,6 +377,22 @@ impl Prepared {
+                 )?
+                 .into_any()
+             }
++            Payload::Muse(data, merge, marker) => {
++                let positions = spans.iter().flat_map(|&(p, n)| p..p + n).collect();
++                Py::new(
++                    py,
++                    MuseGlimmerMedia::build(
++                        py,
++                        tokens,
++                        positions,
++                        data.pixel_values,
++                        data.image_grid_thw,
++                        merge,
++                        marker,
++                    )?,
++                )?
++                .into_any()
++            }
+             Payload::Inkling2(data, marker) => Py::new(
+                 py,
+                 Inkling2Media::build(
+diff --git a/crates/resin-py/src/recipe.rs b/crates/resin-py/src/recipe.rs
+index 1ca8104..3faf113 100644
+--- a/crates/resin-py/src/recipe.rs
++++ b/crates/resin-py/src/recipe.rs
+@@ -749,6 +749,22 @@ pub(crate) fn get_native_recipe(
+             image_processor_params(tokenizer, params)?,
+         )?)),
+         "lfm2" => Box::new(resin_recipe::lfm2::Lfm2Recipe::new(recipe_params(params)?)),
++        "muse_glimmer" => {
++            // Transformers' template stamps `strftime_now`; pass `current_date`
++            // explicitly for reproducible prompts.
++            if params.get("current_date").is_none_or(Value::is_null) {
++                let date: String = py
++                    .import("datetime")?
++                    .getattr("date")?
++                    .call_method0("today")?
++                    .call_method0("isoformat")?
++                    .extract()?;
++                params.insert("current_date".into(), Value::String(date));
++            }
++            Box::new(resin_recipe::muse::MuseGlimmerRecipe::new(recipe_params(
++                params,
++            )?))
++        }
+         "qwen3_5" => Box::new(resin_recipe::qwen::Qwen35Recipe::new(recipe_params(
+             image_processor_params(tokenizer, params)?,
+         )?)),
+diff --git a/resin/_resin.pyi b/resin/_resin.pyi
+index 2c157fe..a885f4a 100644
+--- a/resin/_resin.pyi
++++ b/resin/_resin.pyi
+@@ -871,6 +871,38 @@ class NativeRecipe(Recipe):
+     @property
+     def tokenizer(self, /) -> RecipeTokenizer: ...
+ 
++@final
++class MuseGlimmerMedia:
++    def __new__(
++        cls,
++        /,
++        *,
++        token_ids: Sequence[int],
++        image_positions: Sequence[int],
++        pixel_values: Any,
++        image_grid_thw: Any,
++        spatial_merge_size: int,
++        image_token_id: int,
++    ) -> MuseGlimmerMedia: ...
++    @property
++    def cache_key(self, /) -> tuple[int, ...]: ...
++    @property
++    def digest(self, /) -> str: ...
++    @property
++    def image_grid_thw(self, /) -> npt.NDArray[np.int64]: ...
++    @property
++    def image_positions(self, /) -> tuple[int, ...]: ...
++    @property
++    def image_token_id(self, /) -> int: ...
++    @property
++    def pixel_values(self, /) -> npt.NDArray[np.float32]: ...
++    @property
++    def spatial_merge_size(self, /) -> int: ...
++    @property
++    def token_ids(self, /) -> tuple[int, ...]: ...
++    @property
++    def token_spans(self, /) -> tuple[MediaTokenSpan, ...]: ...
++
+ @final
+ class Parallelism:
+     """
+diff --git a/resin/recipe.py b/resin/recipe.py
+index 8b5863d..8b7a132 100644
+--- a/resin/recipe.py
++++ b/resin/recipe.py
+@@ -12,6 +12,7 @@ from resin._resin import (
+     Image,
+     Inkling2Media,
+     Message,
++    MuseGlimmerMedia,
+     NativeRecipe,
+     ParserEvent,
+     Qwen35Media,
+@@ -90,6 +91,7 @@ __all__ = [
+     "MediaInput",
+     "MediaTokenSpan",
+     "Message",
++    "MuseGlimmerMedia",
+     "NativeRecipe",
+     "ParserEvent",
+     "Qwen35Media",
+diff --git a/scripts/normalize_stubs.py b/scripts/normalize_stubs.py
+index 07a4e29..f2e3392 100644
+--- a/scripts/normalize_stubs.py
++++ b/scripts/normalize_stubs.py
+@@ -49,6 +49,7 @@ PROPERTY_TYPES = {
+             ("Inkling2Media", ("image_positions",)),
+             ("Qwen35Media", ("image_positions",)),
+             ("Glm53FlashMedia", ("image_positions",)),
++            ("MuseGlimmerMedia", ("image_positions",)),
+         )
+         for name in ("token_ids", "cache_key", *extra)
+     },
+@@ -60,6 +61,7 @@ PROPERTY_TYPES = {
+             "Inkling2Media",
+             "Qwen35Media",
+             "Glm53FlashMedia",
++            "MuseGlimmerMedia",
+         )
+     },
+     **{
+@@ -70,6 +72,8 @@ PROPERTY_TYPES = {
+             ("Qwen35Media", "pixel_values", "float32", False),
+             ("Glm53FlashMedia", "pixel_values", "float32", False),
+             ("Glm53FlashMedia", "image_grid_thw", "int64", False),
++            ("MuseGlimmerMedia", "pixel_values", "float32", False),
++            ("MuseGlimmerMedia", "image_grid_thw", "int64", False),
+             ("Qwen35Media", "image_grid_thw", "int64", False),
+             ("Qwen35Media", "position_ids", "int64", False),
+             ("Gemma4Media", "pixel_values", "float32", True),
+-- 
+2.50.1 (Apple Git-155)
+

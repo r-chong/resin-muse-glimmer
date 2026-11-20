@@ -71,6 +71,12 @@ decisions. Newest entries are at the bottom.
   (GSM8K prompt, 82 tokens, 128 greedy steps, HF 5.19.0 / torch 2.9.1 on H100).
   The first 16 steps are compared.
 
+- **Where work lives.** `resin-benchmarks` (this repo) is the repo of record.
+  Resin changes are made on branch `muse-glimmer-torch` in the gitignored
+  `resin-source/` checkout. They are exported to [`resin-patches/`](resin-patches/) as a
+  `git format-patch` series on `1fe19de`, one patch per semantic commit. The
+  HF baseline in `baseline/` is the comparison target.
+
 ### Open items
 
 - Speculative decoding (target-only for now).

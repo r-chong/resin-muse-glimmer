@@ -1,0 +1,132 @@
+From 805259e9baa6715b6dfbe14b7c0278b6b6a07d56 Mon Sep 17 00:00:00 2001
+From: r-chong <dev.reese.chong@gmail.com>
+Date: Thu, 19 Nov 2026 19:19:03 -0500
+Subject: [PATCH 5/5] test: add Muse Glimmer text parity against saved HF
+ greedy reference
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+---
+ tests/test_muse_glimmer_hf_parity.py | 111 +++++++++++++++++++++++++++
+ 1 file changed, 111 insertions(+)
+ create mode 100644 tests/test_muse_glimmer_hf_parity.py
+
+diff --git a/tests/test_muse_glimmer_hf_parity.py b/tests/test_muse_glimmer_hf_parity.py
+new file mode 100644
+index 0000000..cd8f8bb
+--- /dev/null
++++ b/tests/test_muse_glimmer_hf_parity.py
+@@ -0,0 +1,111 @@
++"""Text-only Muse Glimmer parity against a saved Transformers greedy reference.
++
++GPU-only. Set RESIN_TEST_CHECKPOINT to the pinned checkpoint directory and
++RESIN_MUSE_REFERENCE to an ``.npz`` written by ``baseline/hf_reference.py``
++(input_ids, step_logits, generated_ids). One prefill plus decode steps run
++through the Resin Engine; teacher-forced logits are compared row by row.
++"""
++
++from __future__ import annotations
++
++import json
++import os
++from pathlib import Path
++
++import numpy as np
++import pytest
++
++CHECKPOINT = os.environ.get("RESIN_TEST_CHECKPOINT")
++REFERENCE = os.environ.get("RESIN_MUSE_REFERENCE")
++STEPS = int(os.environ.get("RESIN_MUSE_STEPS", "16"))
++
++pytestmark = pytest.mark.skipif(
++    not (CHECKPOINT and REFERENCE), reason="needs a GPU checkpoint and HF reference"
++)
++
++
++@pytest.fixture(scope="module")
++def runner():
++    import torch
++
++    from resin_models_torch.muse_glimmer import MuseGlimmerTorchRunner
++
++    assert torch.cuda.is_available()
++    return MuseGlimmerTorchRunner(
++        Path(CHECKPOINT), revision=None, device="cuda", include_vision=False
++    )
++
++
++@pytest.fixture(scope="module")
++def reference():
++    data = np.load(REFERENCE)
++    return {key: data[key] for key in data.files}
++
++
++def test_engine_greedy_tokens_and_logits_match_transformers(runner, reference):
++    import torch
++
++    from resin import Engine, SamplingParams
++
++    prompt = reference["input_ids"].astype(np.int64).tolist()
++    expected_ids = reference["generated_ids"].astype(np.int64).tolist()[:STEPS]
++    expected_logits = reference["step_logits"][: len(expected_ids)].astype(np.float32)
++
++    # 1. One prefill and greedy decode steps through the Engine.
++    engine = Engine(runner, context_length=4096, max_running_requests=1)
++    lease = engine.submit(
++        prompt,
++        sampling_params=SamplingParams(
++            max_output_tokens=len(expected_ids), temperature=0.0, stop_token_ids=[]
++        ),
++    )
++    steps = 0
++    while engine.has_work():
++        engine.step()
++        steps += 1
++        assert steps <= len(expected_ids) + 8, "engine did not finish"
++    assert lease.done
++    generated = list(lease.take_result())
++    assert runner.live_cache_count == 0
++
++    # 2. Teacher-forced logits on the reference continuation, same runner model.
++    model = runner._model
++    state = model.make_state()
++    rows = []
++    with torch.inference_mode():
++        tokens = torch.tensor([prompt], device="cuda")
++        positions = torch.arange(len(prompt), device="cuda")[None]
++        hidden = model(tokens, state, positions)
++        rows.append(model.logits(hidden[:, -1]).float()[0])
++        for token in expected_ids[:-1]:
++            tokens = torch.tensor([[token]], device="cuda")
++            positions = torch.tensor([[state.length]], device="cuda")
++            hidden = model(tokens, state, positions)
++            rows.append(model.logits(hidden[:, -1]).float()[0])
++    actual_logits = torch.stack(rows).cpu().numpy()
++
++    diff = np.abs(actual_logits - expected_logits)
++    ref_sorted = np.sort(expected_logits, axis=-1)
++    report = {
++        "prompt_tokens": len(prompt),
++        "steps": len(expected_ids),
++        "engine_tokens": generated,
++        "reference_tokens": expected_ids,
++        "engine_token_matches": int(
++            sum(a == b for a, b in zip(generated, expected_ids, strict=False))
++        ),
++        "first_engine_mismatch": next(
++            (i for i, (a, b) in enumerate(zip(generated, expected_ids)) if a != b), None
++        ),
++        "teacher_forced_argmax_matches": int(
++            (actual_logits.argmax(-1) == np.array(expected_ids)).sum()
++        ),
++        "max_abs_logit_diff_per_step": [round(float(v), 4) for v in diff.max(-1)],
++        "mean_abs_logit_diff_per_step": [round(float(v), 5) for v in diff.mean(-1)],
++        "reference_top1_margin_per_step": [
++            round(float(v), 4) for v in ref_sorted[:, -1] - ref_sorted[:, -2]
++        ],
++    }
++    print("MUSE_PARITY_REPORT " + json.dumps(report))
++    assert report["teacher_forced_argmax_matches"] == len(expected_ids)
++    assert generated == expected_ids
+-- 
+2.50.1 (Apple Git-155)
+

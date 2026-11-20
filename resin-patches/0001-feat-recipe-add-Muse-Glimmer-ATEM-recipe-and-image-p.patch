@@ -1,0 +1,1413 @@
+From 0bc67a1d603dc6964ef66a23c6557dba9bfc02fb Mon Sep 17 00:00:00 2001
+From: r-chong <dev.reese.chong@gmail.com>
+Date: Thu, 19 Nov 2026 19:19:02 -0500
+Subject: [PATCH 1/5] feat(recipe): add Muse Glimmer ATEM recipe and image
+ preprocessing
+
+Native renderer/parser for the pinned chat_template.jinja (to=self reasoning,
+to=user answers, atem tool calls) with HF-template text fixtures, and still-image
+patching that reproduces smart_resize including CPython set-order tie-breaks.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+---
+ crates/resin-recipe/src/lib.rs                |   2 +
+ crates/resin-recipe/src/media/mod.rs          |   1 +
+ crates/resin-recipe/src/media/muse.rs         | 283 ++++++++
+ crates/resin-recipe/src/muse.rs               | 616 ++++++++++++++++++
+ crates/resin-recipe/src/recipe.rs             |   1 +
+ .../resin-recipe/tests/fixtures/muse_hf.json  | 287 ++++++++
+ crates/resin-recipe/tests/muse.rs             | 130 ++++
+ 7 files changed, 1320 insertions(+)
+ create mode 100644 crates/resin-recipe/src/media/muse.rs
+ create mode 100644 crates/resin-recipe/src/muse.rs
+ create mode 100644 crates/resin-recipe/tests/fixtures/muse_hf.json
+ create mode 100644 crates/resin-recipe/tests/muse.rs
+
+diff --git a/crates/resin-recipe/src/lib.rs b/crates/resin-recipe/src/lib.rs
+index 140c768..73d5b75 100644
+--- a/crates/resin-recipe/src/lib.rs
++++ b/crates/resin-recipe/src/lib.rs
+@@ -8,6 +8,7 @@ pub mod inkling2;
+ mod json;
+ pub mod lfm2;
+ pub mod media;
++pub mod muse;
+ mod parser;
+ mod prompt;
+ mod provenance;
+@@ -26,6 +27,7 @@ pub use glm::{GlmParser, GlmTokens};
+ pub use gpt_oss::{GptOssParser, GptOssTokens};
+ pub use inkling2::{Inkling2Parser, Inkling2Tokens};
+ pub use lfm2::{Lfm2Parser, Lfm2Tokens};
++pub use muse::{MuseGlimmerParser, MuseGlimmerTokens};
+ pub use prompt::{Encoder, Prompt, PromptSpan, TokenizerEncoder};
+ pub use provenance::{AttributedEvent, AttributedText, TokenSpan};
+ pub use qwen::{QwenParser, QwenTokens};
+diff --git a/crates/resin-recipe/src/media/mod.rs b/crates/resin-recipe/src/media/mod.rs
+index 4cda66e..94c3d6b 100644
+--- a/crates/resin-recipe/src/media/mod.rs
++++ b/crates/resin-recipe/src/media/mod.rs
+@@ -9,6 +9,7 @@ pub mod deepseek;
+ pub mod gemma;
+ pub mod glm;
+ pub mod inkling2;
++pub mod muse;
+ pub mod qwen;
+ 
+ #[derive(Clone, Debug)]
+diff --git a/crates/resin-recipe/src/media/muse.rs b/crates/resin-recipe/src/media/muse.rs
+new file mode 100644
+index 0000000..4ac8068
+--- /dev/null
++++ b/crates/resin-recipe/src/media/muse.rs
+@@ -0,0 +1,283 @@
++//! Muse Glimmer still-image patches.
++// Geometry follows Transformers' MuseGlimmerImageProcessor at v5.19.0 (Apache-2.0).
++
++use serde::{Deserialize, Serialize};
++
++use super::{RgbImage, Tensor, resize_filter};
++use crate::Error;
++
++#[derive(Clone, Debug, Deserialize, Serialize)]
++#[serde(default)]
++pub struct Config {
++    pub patch_size: usize,
++    pub temporal_patch_size: usize,
++    pub merge_size: usize,
++    pub max_image_tokens: usize,
++    pub do_resize: bool,
++    pub do_rescale: bool,
++    pub do_normalize: bool,
++    pub image_mean: [f32; 3],
++    pub image_std: [f32; 3],
++    pub resample: u32,
++}
++
++impl Default for Config {
++    fn default() -> Self {
++        Self {
++            patch_size: 14,
++            temporal_patch_size: 2,
++            merge_size: 2,
++            max_image_tokens: 4096,
++            do_resize: true,
++            do_rescale: true,
++            do_normalize: true,
++            image_mean: [0.5; 3],
++            image_std: [0.5; 3],
++            // PIL LANCZOS, matching the checkpoint processor_config.json.
++            resample: 1,
++        }
++    }
++}
++
++/// Packed still-image payload: `pixel_values` `[patches, temporal*3*patch*patch]` in
++/// raster patch order, `image_grid_thw` `[images, 3]`, and `<|patch|>` tokens per image.
++pub use super::qwen::Prepared;
++
++impl Config {
++    fn validate(&self) -> Result<usize, Error> {
++        if self.patch_size == 0
++            || self.temporal_patch_size == 0
++            || self.merge_size == 0
++            || self.max_image_tokens == 0
++        {
++            return Err(Error::new(
++                "Muse patch, temporal, merge sizes and token cap must be positive",
++            ));
++        }
++        if !self.do_rescale {
++            // Decoded pixels are already in [0, 1]; HF rescales from [0, 255].
++            return Err(Error::new("Muse image preprocessing requires do_rescale"));
++        }
++        if self.image_mean.iter().any(|x| !x.is_finite())
++            || self.image_std.iter().any(|x| !x.is_finite() || *x <= 0.0)
++        {
++            return Err(Error::new(
++                "Muse normalization must have finite means and positive standard deviations",
++            ));
++        }
++        Ok(self.patch_size * self.merge_size)
++    }
++
++    /// HF `smart_resize`: the integer grid of `patch * merge` cells whose aspect
++    /// ratio is closest to the input, under `max_image_tokens` cells.
++    pub fn resize_shape(&self, width: usize, height: usize) -> Result<(usize, usize), Error> {
++        let factor = self.validate()?;
++        if width == 0 || height == 0 {
++            return Err(Error::new("image dimensions must be positive"));
++        }
++        if !self.do_resize {
++            if !width.is_multiple_of(factor) || !height.is_multiple_of(factor) {
++                return Err(Error::new(
++                    "unresized Muse images must be divisible by patch_size * merge_size",
++                ));
++            }
++            return Ok((height, width));
++        }
++        let max = self.max_image_tokens as f64;
++        let mut ideal_h = height as f64 / factor as f64;
++        let mut ideal_w = width as f64 / factor as f64;
++        let ratio = ideal_w / ideal_h;
++        if ideal_h * ideal_w > max {
++            ideal_h = (max / ratio).sqrt();
++            ideal_w = ideal_h * ratio;
++        }
++        let target = height as f64 / width as f64;
++        // HF builds a Python set of the floor/ceil grids, filters it, and takes
++        // the first minimum in set iteration order. Reproduce that order.
++        let candidates = python_set_order(&[
++            (ideal_h.floor() as i64, ideal_w.floor() as i64),
++            (ideal_h.floor() as i64, ideal_w.ceil() as i64),
++            (ideal_h.ceil() as i64, ideal_w.floor() as i64),
++            (ideal_h.ceil() as i64, ideal_w.ceil() as i64),
++        ]);
++        let mut best: Option<((i64, i64), f64)> = None;
++        for (h, w) in candidates {
++            if h < 1 || w < 1 || (h * w) as f64 > max {
++                continue;
++            }
++            let error = (h as f64 / w as f64 - target).abs();
++            if best.is_none_or(|(_, e)| error < e) {
++                best = Some(((h, w), error));
++            }
++        }
++        let (grid_h, grid_w) = match best {
++            Some(((h, w), _)) => (h as usize, w as usize),
++            None => (
++                (ideal_h.round_ties_even() as usize).max(1),
++                (ideal_w.round_ties_even() as usize).max(1),
++            ),
++        };
++        Ok((grid_h * factor, grid_w * factor))
++    }
++
++    pub fn process(&self, images: &[RgbImage]) -> Result<Prepared, Error> {
++        self.validate()?;
++        let filter = resize_filter(self.resample)?;
++        let patch = self.patch_size;
++        let temporal = self.temporal_patch_size;
++        let merge = self.merge_size;
++        let patch_width = temporal * 3 * patch * patch;
++        let mut pixels = Vec::new();
++        let mut grids = Vec::with_capacity(images.len() * 3);
++        let mut token_counts = Vec::with_capacity(images.len());
++        let mut total = 0usize;
++        for image in images {
++            let (height, width) = self.resize_shape(image.width, image.height)?;
++            let resized;
++            let image = if (width, height) == (image.width, image.height) {
++                image
++            } else {
++                resized = image.resize(width, height, filter)?;
++                &resized
++            };
++            let (grid_h, grid_w) = (height / patch, width / patch);
++            let count = grid_h * grid_w;
++            total += count;
++            pixels
++                .try_reserve(count * patch_width)
++                .map_err(|_| Error::new("Muse pixel tensor is too large"))?;
++            let value = |y: usize, x: usize, c: usize| {
++                let v = image.data[(y * width + x) * 3 + c];
++                if self.do_normalize {
++                    (v - self.image_mean[c]) / self.image_std[c]
++                } else {
++                    v
++                }
++            };
++            // Raster patches, each laid out as time/channel/height/width; a
++            // still image repeats across the temporal slots.
++            for gy in 0..grid_h {
++                for gx in 0..grid_w {
++                    for _ in 0..temporal {
++                        for c in 0..3 {
++                            for y in 0..patch {
++                                for x in 0..patch {
++                                    pixels.push(value(gy * patch + y, gx * patch + x, c));
++                                }
++                            }
++                        }
++                    }
++                }
++            }
++            grids.extend([1, grid_h as i64, grid_w as i64]);
++            token_counts.push(count / (merge * merge));
++        }
++        Ok(Prepared {
++            pixel_values: Tensor::new(vec![total, patch_width], pixels)?,
++            image_grid_thw: Tensor::new(vec![images.len(), 3], grids)?,
++            token_counts,
++        })
++    }
++}
++
++/// CPython 3.8+ hash of a tuple of two small integers.
++fn python_pair_hash((a, b): (i64, i64)) -> i64 {
++    const P1: u64 = 11400714785074694791;
++    const P2: u64 = 14029467366897019727;
++    const P5: u64 = 2870177450012600261;
++    let lane = |v: i64| (if v == -1 { -2 } else { v }) as u64;
++    let mut acc = P5;
++    for item in [a, b] {
++        acc = acc.wrapping_add(lane(item).wrapping_mul(P2));
++        acc = acc.rotate_left(31);
++        acc = acc.wrapping_mul(P1);
++    }
++    acc = acc.wrapping_add(2 ^ (P5 ^ 3527539));
++    if acc as i64 == -1 {
++        1546275796
++    } else {
++        acc as i64
++    }
++}
++
++/// Iteration order of a small CPython set built from these items (8 slots,
++/// no linear probes at that size, perturbed open addressing).
++fn python_set_order(items: &[(i64, i64)]) -> Vec<(i64, i64)> {
++    const MASK: usize = 7;
++    let mut table: [Option<(i64, i64)>; 8] = [None; 8];
++    for &item in items {
++        let hash = python_pair_hash(item);
++        let mut perturb = hash as u64;
++        let mut i = (hash as u64 as usize) & MASK;
++        loop {
++            match table[i] {
++                None => {
++                    table[i] = Some(item);
++                    break;
++                }
++                Some(existing) if existing == item => break,
++                Some(_) => {
++                    perturb >>= 5;
++                    i = (i
++                        .wrapping_mul(5)
++                        .wrapping_add(1)
++                        .wrapping_add(perturb as usize))
++                        & MASK;
++                }
++            }
++        }
++    }
++    table.into_iter().flatten().collect()
++}
++
++#[cfg(test)]
++mod tests {
++    use super::*;
++
++    #[test]
++    fn smart_resize_matches_reference_grids() {
++        let config = Config::default();
++        // (width, height) -> (height, width), values computed with HF smart_resize.
++        assert_eq!(config.resize_shape(28, 28).unwrap(), (28, 28));
++        assert_eq!(config.resize_shape(640, 480).unwrap(), (476, 644));
++        assert_eq!(config.resize_shape(4000, 3000).unwrap(), (1540, 2044));
++        assert_eq!(config.resize_shape(10, 10).unwrap(), (28, 28));
++        assert_eq!(config.resize_shape(1024, 1024).unwrap(), (1036, 1036));
++        assert_eq!(config.resize_shape(1000, 1000).unwrap(), (1008, 1008));
++    }
++
++    /// (width, height, resized height, resized width) from HF `smart_resize`
++    /// on CPython 3.13, including square-image ties broken by set order.
++    #[rustfmt::skip]
++    const SMART_RESIZE_CASES: &[(usize, usize, usize, usize)] = &[(29,29,28,28),(36,36,28,28),(43,43,28,28),(50,50,28,28),(57,57,84,84),(64,64,84,84),(71,71,84,84),(78,78,84,84),(85,85,112,112),(92,92,112,112),(99,99,112,112),(106,106,112,112),(113,113,112,112),(120,120,112,112),(127,127,112,112),(134,134,112,112),(141,141,168,168),(148,148,168,168),(155,155,168,168),(162,162,168,168),(169,169,168,168),(176,176,168,168),(183,183,168,168),(190,190,168,168),(197,197,224,224),(204,204,224,224),(211,211,224,224),(218,218,224,224),(225,225,224,224),(232,232,224,224),(239,239,224,224),(246,246,224,224),(253,253,280,280),(260,260,280,280),(267,267,280,280),(274,274,280,280),(281,281,280,280),(288,288,280,280),(295,295,280,280),(302,302,280,280),(309,309,336,336),(316,316,336,336),(323,323,336,336),(330,330,336,336),(337,337,336,336),(344,344,336,336),(351,351,336,336),(358,358,336,336),(365,365,392,392),(372,372,392,392),(379,379,392,392),(386,386,392,392),(393,393,392,392),(400,400,392,392),(407,407,392,392),(414,414,392,392),(421,421,448,448),(428,428,448,448),(435,435,448,448),(442,442,448,448),(449,449,476,476),(456,456,476,476),(463,463,476,476),(470,470,476,476),(477,477,476,476),(484,484,476,476),(491,491,476,476),(498,498,476,476),(505,505,532,532),(512,512,532,532),(519,519,532,532),(526,526,532,532),(533,533,532,532),(540,540,532,532),(547,547,532,532),(554,554,532,532),(561,561,588,588),(568,568,588,588),(575,575,588,588),(582,582,588,588),(589,589,588,588),(596,596,588,588),(603,603,588,588),(610,610,588,588),(617,617,644,644),(624,624,644,644),(631,631,644,644),(638,638,644,644),(645,645,644,644),(652,652,644,644),(659,659,644,644),(666,666,644,644),(673,673,700,700),(680,680,700,700),(687,687,700,700),(694,694,700,700),(701,701,700,700),(708,708,700,700),(715,715,700,700),(722,722,700,700),(729,729,756,756),(736,736,756,756),(743,743,756,756),(750,750,756,756),(757,757,784,784),(764,764,784,784),(771,771,784,784),(778,778,784,784),(785,785,784,784),(792,792,784,784),(799,799,784,784),(806,806,784,784),(813,813,840,840),(820,820,840,840),(827,827,840,840),(834,834,840,840),(841,841,840,840),(848,848,840,840),(855,855,840,840),(862,862,840,840),(869,869,896,896),(876,876,896,896),(883,883,896,896),(890,890,896,896),(897,897,896,896),(904,904,896,896),(911,911,896,896),(918,918,896,896),(925,925,952,952),(932,932,952,952),(939,939,952,952),(946,946,952,952),(953,953,952,952),(960,960,952,952),(967,967,952,952),(974,974,952,952),(981,981,1008,1008),(988,988,1008,1008),(995,995,1008,1008),(1002,1002,1008,1008),(1009,1009,1036,1036),(1016,1016,1036,1036),(1023,1023,1036,1036),(1030,1030,1036,1036),(1037,1037,1036,1036),(1044,1044,1036,1036),(1051,1051,1036,1036),(1058,1058,1036,1036),(1065,1065,1092,1092),(1072,1072,1092,1092),(1079,1079,1092,1092),(1086,1086,1092,1092),(1093,1093,1092,1092),(1100,1100,1092,1092),(1107,1107,1092,1092),(1114,1114,1092,1092),(1121,1121,1148,1148),(1128,1128,1148,1148),(1135,1135,1148,1148),(1142,1142,1148,1148),(1149,1149,1148,1148),(1156,1156,1148,1148),(1163,1163,1148,1148),(1170,1170,1148,1148),(1177,1177,1204,1204),(1184,1184,1204,1204),(1191,1191,1204,1204),(1198,1198,1204,1204),(1205,1205,1204,1204),(1212,1212,1204,1204),(1219,1219,1204,1204),(1226,1226,1204,1204),(1233,1233,1260,1260),(1240,1240,1260,1260),(1247,1247,1260,1260),(1254,1254,1260,1260),(1261,1261,1260,1260),(1268,1268,1260,1260),(1275,1275,1260,1260),(1282,1282,1260,1260),(1289,1289,1316,1316),(1296,1296,1316,1316),(1303,1303,1316,1316),(1310,1310,1316,1316),(1317,1317,1316,1316),(1324,1324,1316,1316),(1331,1331,1316,1316),(1338,1338,1316,1316),(1345,1345,1372,1372),(1352,1352,1372,1372),(1359,1359,1372,1372),(1366,1366,1372,1372),(1373,1373,1400,1400),(1380,1380,1400,1400),(1387,1387,1400,1400),(1394,1394,1400,1400),(1401,1401,1400,1400),(1408,1408,1400,1400),(1415,1415,1400,1400),(1422,1422,1400,1400),(1429,1429,1456,1456),(1436,1436,1456,1456),(1443,1443,1456,1456),(1450,1450,1456,1456),(1457,1457,1456,1456),(1464,1464,1456,1456),(1471,1471,1456,1456),(1478,1478,1456,1456),(1485,1485,1512,1512),(1492,1492,1512,1512),(1499,1499,1512,1512),(2653,1236,1204,2604),(3235,5333,2296,1372),(396,594,588,392),(4390,772,728,4256),(2996,4775,2240,1400),(476,4157,4144,476),(1759,308,308,1764),(705,3553,3528,700),(3426,573,560,3416),(1972,744,756,1988),(4515,3478,1568,2044),(485,4633,4620,476),(1015,1829,1820,1008),(5167,5140,1792,1792),(4776,507,504,4760),(4728,4797,1792,1764),(3250,407,420,3276),(1812,382,392,1820),(4561,1091,868,3640),(2373,3434,2156,1484),(1182,4430,3472,924),(965,4677,3948,812),(2528,4590,2408,1316),(5587,1481,924,3472),(845,4765,4228,756),(4680,5234,1876,1680),(1540,3051,2520,1260),(799,4488,4228,756),(5834,515,504,5824),(4624,489,504,4648),(5071,1688,1036,3080),(4067,5574,2072,1512),(4356,3503,1596,1988),(2574,3815,2156,1456),(4797,3713,1568,2016),(2963,2456,1624,1960),(2036,1473,1456,2016),(5727,2000,1036,3024),(671,4706,4704,672),(2460,4303,2352,1344),(4056,2814,1484,2128),(5976,3677,1400,2268),(2359,4989,2604,1232),(600,968,952,588),(4194,3426,1596,1960),(1352,2803,2576,1232),(1246,4006,3192,980),(3455,322,336,3472),(5475,636,588,5236),(4572,4695,1820,1764),(2571,2787,1848,1708),(5696,2869,1260,2520),(4870,4069,1624,1960),(4751,3738,1568,2016),(564,767,756,560),(2212,3884,2352,1344),(5711,5441,1736,1820),(533,498,504,532),(5990,5747,1736,1820),(2537,5302,2576,1232),(4735,5581,1932,1652),(3651,2332,1428,2240),(5871,3161,1316,2436),(5478,2843,1288,2492),(185,3783,3808,196),(2912,1377,1232,2604),(5005,960,784,4088),(4045,483,476,4032),(1788,2355,2044,1540),(1060,2029,2044,1064),(3260,3203,1764,1792),(4068,661,672,4088),(1363,3680,2940,1092),(3291,4502,2072,1512),(2277,1122,1120,2268),(3527,4508,2016,1568),(2281,5787,2828,1120),(3403,2940,1652,1904),(5593,3117,1316,2380),(1891,1237,1232,1876),(680,1444,1428,672),(1240,1901,1876,1232),(5395,1912,1064,2996),(99,3973,3976,112),(4827,1494,980,3220),(2153,2310,1848,1736),(34,1194,1176,28),(3433,4380,2016,1568),(3025,4996,2296,1372),(4640,2611,1344,2380),(1029,5657,4200,756),(4223,5060,1960,1624),(5366,5540,1820,1764),(443,3741,3752,448),(5576,4582,1624,1960),(3215,3261,1792,1764),(3269,3229,1764,1792),(849,3945,3836,812),(5197,3281,1428,2240),(510,1562,1540,504),(552,1711,1736,560),(3610,1330,1092,2940),(901,2786,2772,896),(4922,431,420,4900),(839,2,28,840),(4644,1240,924,3472),(4396,832,756,4116),(2979,5028,2324,1372),(209,577,560,196),(1704,5031,3052,1036),(3083,1217,1120,2828),(5198,2067,1120,2828),(2846,4934,2352,1344),(2984,3885,2044,1568),(1007,945,924,980),(3999,3818,1736,1820),(3936,3964,1792,1792),(2555,704,700,2548),(1181,838,840,1176),(2807,2169,1568,2016),(3921,5670,2156,1484),(1323,4230,3192,980),(190,1682,1708,196),(4328,2964,1484,2156),(1201,5654,3864,812),(4450,222,224,4452),(4327,2442,1344,2380),(5267,746,672,4760),(5704,2140,1092,2912),(4247,3005,1484,2128),(1369,2914,2604,1232),(1826,4363,2744,1148),(4437,4119,1708,1848),(2701,5214,2492,1288),(1828,5024,2968,1064),(1599,1962,1960,1596),(3283,1858,1344,2380),(1638,4241,2856,1092),(4037,2913,1512,2100),(5989,238,224,5964),(229,2289,2268,224),(3869,2124,1316,2408),(1587,5674,3388,924),(4958,2821,1344,2352),(3664,5924,2268,1400),(2864,2988,1820,1736),(660,1807,1820,672),(837,1859,1876,840),(3851,1612,1148,2744),(2767,1675,1372,2296),(3954,5113,2016,1568),(5000,16,28,5012),(3928,5350,2072,1512),(2819,5269,2436,1316),(695,5412,4984,644),(983,3183,3164,980),(5829,1633,952,3360),(3917,1463,1092,2912),(3555,5209,2156,1484),(2724,711,700,2716),(5914,3243,1316,2408),(3795,3289,1652,1904),(696,5938,5208,616),(1302,1393,1372,1288),(1041,226,224,1036),(1239,4840,3528,896),(3813,5373,2100,1484),(1198,5011,3640,868),(4882,3886,1596,1988),(5385,2871,1288,2436),(1278,4495,3360,952),(4492,1074,868,3640),(176,117,112,168),(5951,5323,1680,1876),(842,4314,4032,784),(1141,3554,3136,1008),(1596,1729,1736,1596),(230,2064,2044,224),(1744,2400,2100,1512),(4106,1971,1232,2576),(4805,2671,1316,2380),(2125,4460,2576,1232),(3433,1074,980,3192),(499,2899,2912,504),(3754,5427,2156,1484),(4779,4234,1680,1904),(3446,4110,1932,1624),(1072,4357,3612,868),(1244,4289,3304,952),(4183,154,168,4200),(3606,1501,1148,2772),(4986,33,28,4984),(1228,1412,1428,1232),(1160,3879,3276,980),(5072,5941,1932,1652),(986,4559,3836,812),(506,2671,2660,504),(5590,4247,1540,2044),(4348,4551,1820,1736),(3953,870,840,3808),(4590,466,476,4592),(2036,1568,1568,2044),(2269,346,336,2268),(801,4160,4060,784),(3705,4602,1988,1596),(229,520,504,224),(3632,2668,1512,2072),(5018,4142,1624,1960),(4966,4196,1624,1932),(1634,5675,3332,952),(2271,3706,2268,1400),(4163,4369,1820,1736),(3917,4160,1848,1736),(2029,5728,2996,1064),(4287,2127,1260,2548),(4584,1660,1064,2968),(3667,1124,980,3220),(3414,997,952,3304),(3215,3622,1904,1680),(2589,595,588,2576),(5499,1972,1064,2968),(3509,600,588,3500),(1743,5485,3164,1008),(2481,1003,1008,2492),(1266,5867,3836,812),(5272,5409,1820,1764),(3000,1172,1120,2856),(2074,1125,1120,2072),(3832,1799,1232,2604),(772,3263,3276,784),(3992,1334,1036,3080),(5471,1833,1036,3080),(1323,5787,3724,840),(3536,4224,1932,1624),(3309,2779,1624,1932),(3452,1604,1204,2604),(2922,2610,1680,1876),(756,5916,5012,616),(2998,160,168,3024),(2769,4539,2268,1372),(3758,3609,1736,1820),(5761,149,140,5740),(3149,2716,1652,1904),(4239,5112,1960,1624),(2421,4197,2352,1344),(527,925,924,532),(1873,859,868,1876),(689,2176,2184,700),(2228,325,336,2240),(1488,2216,2184,1456),(1062,3460,3220,980),(5538,2119,1092,2884),(3326,1224,1092,2940),(4396,4218,1736,1820),(4675,4052,1652,1904),(5738,2680,1204,2604),(733,2287,2268,728),(472,5638,5656,476),(1502,3485,2716,1176),(594,2204,2184,588),(138,5198,5208,140),(726,2135,2128,728),(687,4983,4816,644),(1822,546,560,1848),(2167,997,1008,2184),(3718,95,84,3696),(2779,4531,2268,1400),(3423,2195,1428,2240),(5093,1059,812,3920),(354,4317,4340,364),(5813,1954,1036,3080),(897,1323,1316,896),(2146,413,420,2156),(1484,1653,1652,1484),(2556,5151,2548,1260),(2499,4351,2352,1344),(1687,2376,2100,1484),(3652,4097,1876,1680),(5507,1458,924,3472),(2217,2843,2016,1568),(149,2052,2044,140),(303,126,112,280),(152,4143,4116,140),(4515,1553,1036,3052),(4213,3890,1708,1848),(2013,3663,2408,1316),(871,5393,4452,700),(5326,3541,1456,2184),(5379,4056,1540,2044),(4473,3221,1512,2100),(4151,2522,1372,2296),(5634,1763,980,3192),(1881,2808,2184,1456),(1628,5790,3360,952),(5971,5210,1652,1904),(1145,3316,3024,1036),(2848,446,448,2856),(1064,117,112,1064),(580,5124,5124,588),(2094,3529,2324,1372)];
++
++    #[test]
++    fn smart_resize_matches_cpython_tie_order() {
++        let config = Config::default();
++        for &(w, h, rh, rw) in SMART_RESIZE_CASES {
++            assert_eq!(config.resize_shape(w, h).unwrap(), (rh, rw), "{w}x{h}");
++        }
++    }
++
++    #[test]
++    fn patches_are_raster_time_channel_height_width() {
++        let config = Config {
++            do_normalize: false,
++            ..Config::default()
++        };
++        let (w, h) = (56, 28);
++        let data = (0..w * h * 3)
++            .map(|i| (i % 251) as f32 / 251.0)
++            .collect::<Vec<_>>();
++        let image = RgbImage::new(w, h, data.clone()).unwrap();
++        let prepared = config.process(&[image]).unwrap();
++        assert_eq!(prepared.pixel_values.shape, vec![8, 1176]);
++        assert_eq!(prepared.image_grid_thw.data, vec![1, 2, 4]);
++        assert_eq!(prepared.token_counts, vec![2]);
++        // Patch 5 is row 1, column 1; element (t=1, c=2, y=3, x=4).
++        let row = &prepared.pixel_values.data[5 * 1176..6 * 1176];
++        let offset = 588 + 2 * 196 + 3 * 14 + 4;
++        assert_eq!(row[offset], data[((14 + 3) * w + 14 + 4) * 3 + 2]);
++        assert_eq!(row[..588], row[588..]);
++    }
++}
+diff --git a/crates/resin-recipe/src/muse.rs b/crates/resin-recipe/src/muse.rs
+new file mode 100644
+index 0000000..57653c6
+--- /dev/null
++++ b/crates/resin-recipe/src/muse.rs
+@@ -0,0 +1,616 @@
++//! Muse Glimmer's ATEM conversation format.
++//! Source: meta-models/Muse-Glimmer-30B@cec94fcfd6512f2cfe708138c32533b346ea4f69
++//! `chat_template.jinja` and `tokenizer_config.json` `response_template`.
++//!
++//! Messages are `<|start|>{role}[ to={recipient}]<|message|>{body}<|eot|>`.
++//! Assistant reasoning is addressed `to=self` and closed by `<|eom|>`; the
++//! answer is addressed `to=user`; tool calls are addressed to the function and
++//! carry an `<atem:function_calls>` XML body.
++
++use serde_json::{Map, Value};
++
++use crate::parser::{EventSink, Grammar, Parser, emit_tool, tokens};
++use crate::render::{function, list, messages};
++use crate::{AttributedText, Decoder, Error, FinishReason, Prompt, ResponseParser};
++
++const DEFAULT_SYSTEM: &str = "You are a helpful AI assistant.";
++const DEFAULT_CUTOFF: &str = "2026-01-04";
++const TOOL_PREAMBLE: &str = concat!(
++    "In this environment you have access to a set of tools you can use to answer the user's question.\n\n",
++    "You can invoke a function by writing a \"<atem:function_calls>\" block like the following:\n",
++    "<atem:function_calls>\n<atem:invoke name=\"$FUNCTION_NAME\">\n<atem:parameter name=\"$PARAMETER_NAME\">$PARAMETER_VALUE</atem:parameter>\n...\n</atem:invoke>\n</atem:function_calls>\n\n",
++    "String and scalar parameters should be specified as is, while lists and objects should use JSON format. Note that spaces for string values are not stripped. The output is not expected to be valid XML and is parsed with regular expressions.\n",
++    "Here are the functions available in JSONSchema format:\n",
++    "// Tool metadata\n",
++);
++const TOOL_EXAMPLE: &str = concat!(
++    "\n\nHere's an example of how to call a function in the tool set:\n",
++    "(If the tool namespace is not specified, invoke the function directly as `example_function_name` rather than `example_tool_name.example_function_name`)\n\n",
++    "to=example_tool_name.example_function_name\n\n",
++    "<atem:function_calls>\n<atem:invoke name=\"example_tool_name.example_function_name\">\n",
++    "<atem:parameter name=\"example_parameter_1\">value_1</atem:parameter>\n",
++    "<atem:parameter name=\"example_parameter_2\">This is the value for the second parameter\nthat can span\n\"multiple\" lines\n</atem:parameter>\n",
++    "</atem:invoke>\n</atem:function_calls>",
++);
++
++/// Rendering defaults. `current_date` mirrors the template's `strftime_now`
++/// line; the Python factory fills today's date when it is omitted, as
++/// Transformers does. Pass it explicitly for reproducible prompts.
++#[derive(Clone, Debug, Default, serde::Deserialize, serde::Serialize)]
++#[serde(default, deny_unknown_fields)]
++pub struct MuseGlimmerRecipeParams {
++    pub add_generation_prompt: Option<bool>,
++    pub reasoning_strength: Option<String>,
++    /// OpenAI-style alias for `reasoning_strength`.
++    pub reasoning_effort: Option<String>,
++    pub knowledge_cutoff: Option<String>,
++    pub current_date: Option<String>,
++    pub tool_namespace_descriptions: Option<Map<String, Value>>,
++    #[serde(skip_serializing)]
++    pub media_config: Option<crate::media::muse::Config>,
++}
++
++#[derive(Clone, Debug, Default)]
++pub struct MuseGlimmerRecipe {
++    params: MuseGlimmerRecipeParams,
++}
++
++impl MuseGlimmerRecipe {
++    pub fn new(params: MuseGlimmerRecipeParams) -> Self {
++        Self { params }
++    }
++}
++
++fn json(value: &Value) -> String {
++    crate::json::spaced(value)
++}
++
++/// `render_content`: text verbatim, one image slot per image part.
++fn content(prompt: &mut Prompt, value: Option<&Value>) -> Result<(), Error> {
++    match value {
++        None | Some(Value::Null) => {}
++        Some(Value::String(text)) => {
++            prompt.text(text);
++        }
++        Some(Value::Array(parts)) => {
++            for part in parts {
++                match part.get("type").and_then(Value::as_str) {
++                    Some("text") => {
++                        prompt.text(
++                            part.get("text")
++                                .and_then(Value::as_str)
++                                .ok_or_else(|| Error::new("Muse text content must be a string"))?,
++                        );
++                    }
++                    // The processor expands each `<|patch|>` slot to
++                    // `<|image_start|>` + N `<|patch|>` + `<|image_end|>`.
++                    Some("image" | "image_url") => {
++                        prompt
++                            .special("<|image_start|>")
++                            .special("<|patch|>")
++                            .special("<|image_end|>");
++                    }
++                    Some("video" | "video_url") => {
++                        return Err(Error::new("Muse video input is not supported"));
++                    }
++                    _ => {}
++                }
++            }
++        }
++        Some(_) => return Err(Error::new("Muse content must be text or content blocks")),
++    }
++    Ok(())
++}
++
++fn plain(value: Option<&Value>) -> String {
++    match value {
++        Some(Value::String(text)) => text.clone(),
++        Some(Value::Array(parts)) => parts
++            .iter()
++            .filter(|part| part.get("type").and_then(Value::as_str) == Some("text"))
++            .filter_map(|part| part.get("text").and_then(Value::as_str))
++            .collect(),
++        _ => String::new(),
++    }
++}
++
++fn namespaces(tools: &[Value]) -> Vec<String> {
++    let mut seen = Vec::<String>::new();
++    for tool in tools {
++        let name = function(tool)
++            .get("name")
++            .and_then(Value::as_str)
++            .unwrap_or("");
++        let namespace = name.split('.').next().unwrap_or("").to_owned();
++        if !seen.contains(&namespace) {
++            seen.push(namespace);
++        }
++    }
++    seen
++}
++
++fn tool_definitions(tools: &[Value], descriptions: Option<&Map<String, Value>>) -> String {
++    let mut out = TOOL_PREAMBLE.to_owned();
++    for namespace in namespaces(tools) {
++        let description = descriptions
++            .and_then(|map| map.get(&namespace))
++            .cloned()
++            .unwrap_or_else(|| Value::String(String::new()));
++        out.push_str(&format!(
++            "{{\"name\": {}, \"description\": {}}}\n",
++            json(&Value::String(namespace)),
++            json(&description)
++        ));
++    }
++    out.push_str("// Function schemas");
++    for tool in tools {
++        let tool = function(tool);
++        let field = |key| tool.get(key).cloned().unwrap_or(Value::Null);
++        out.push_str(&format!(
++            "\n{{\"name\": {}, \"description\": {}, \"parameters\": {}}}",
++            json(&field("name")),
++            json(&field("description")),
++            json(&field("parameters"))
++        ));
++    }
++    out.push_str(TOOL_EXAMPLE);
++    out
++}
++
++fn system_meta(tools: &[Value]) -> String {
++    let mut recipients = vec!["\"self\"".to_owned()];
++    if !tools.is_empty() {
++        recipients.extend(
++            namespaces(tools)
++                .into_iter()
++                .map(|ns| format!("\"{ns}.*\"")),
++        );
++    }
++    recipients.push("\"user\"".into());
++    format!("# Valid recipients: {}.", recipients.join(", "))
++}
++
++fn atem_call(call: &Value) -> Result<String, Error> {
++    let call = function(call);
++    let name = call.get("name").and_then(Value::as_str).unwrap_or("");
++    let arguments = match call.get("arguments") {
++        Some(Value::Object(arguments)) => arguments.clone(),
++        Some(Value::String(text)) => serde_json::from_str::<Map<String, Value>>(text)
++            .map_err(|_| Error::new("Muse tool call arguments must be a JSON object"))?,
++        None | Some(Value::Null) => Map::new(),
++        _ => return Err(Error::new("Muse tool call arguments must be a JSON object")),
++    };
++    let mut out = format!("<atem:function_calls>\n<atem:invoke name=\"{name}\">\n");
++    for (key, value) in &arguments {
++        let value = match value {
++            Value::Bool(true) => "true".to_owned(),
++            Value::Bool(false) => "false".to_owned(),
++            Value::Null => "null".to_owned(),
++            Value::String(text) => text.clone(),
++            Value::Object(_) | Value::Array(_) | Value::Number(_) => json(value),
++        };
++        out.push_str(&format!(
++            "<atem:parameter name=\"{key}\">{value}</atem:parameter>\n"
++        ));
++    }
++    out.push_str("</atem:invoke>\n</atem:function_calls>");
++    Ok(out)
++}
++
++/// The result's `name`, else the function whose call ID matches (the last
++/// match wins, as in the template), else the bare call ID.
++fn tool_result_name(message: &Value, messages: &[Value]) -> String {
++    if let Some(name) = message
++        .get("name")
++        .and_then(Value::as_str)
++        .filter(|n| !n.is_empty())
++    {
++        return name.to_owned();
++    }
++    let id = message.get("tool_call_id").and_then(Value::as_str);
++    let mut name = id.unwrap_or("").to_owned();
++    if let Some(id) = id {
++        for call in messages.iter().flat_map(|m| list(&m["tool_calls"])) {
++            if call.get("id").and_then(Value::as_str) == Some(id) {
++                name = function(call)
++                    .get("name")
++                    .and_then(Value::as_str)
++                    .unwrap_or("")
++                    .to_owned();
++            }
++        }
++    }
++    name
++}
++
++fn normalize_reasoning_directive(text: &str) -> String {
++    text.replace("Reasoning effort", "Reasoning strength")
++        .replace("Reasoning Effort", "Reasoning Strength")
++        .replace("reasoning effort", "reasoning strength")
++        .replace("REASONING EFFORT", "REASONING STRENGTH")
++}
++
++impl crate::Recipe for MuseGlimmerRecipe {
++    fn media_config(&self) -> Option<crate::MediaConfig> {
++        Some(crate::MediaConfig::Muse(
++            self.params.media_config.clone().unwrap_or_default(),
++        ))
++    }
++    fn message_policy(&self) -> crate::MessagePolicy {
++        crate::MessagePolicy {
++            roles: &["system", "user", "assistant", "tool"],
++            ..crate::MessagePolicy::STANDARD
++        }
++    }
++    fn render(&self, request: &Value) -> Result<Prompt, Error> {
++        let options = crate::recipe::options("muse_glimmer", &self.params, request)?;
++        let messages = messages(request, "Muse Glimmer")?;
++        let tools = list(&request["tools"]);
++        let strength = options
++            .reasoning_strength
++            .as_deref()
++            .or(options.reasoning_effort.as_deref())
++            .filter(|value| !value.is_empty())
++            .unwrap_or("high");
++        let reasoning = format!("Reasoning strength: {strength}.");
++        let descriptions = options.tool_namespace_descriptions.as_ref();
++        fn system_tail(
++            prompt: &mut Prompt,
++            tools: &[Value],
++            descriptions: Option<&Map<String, Value>>,
++        ) {
++            if !tools.is_empty() {
++                prompt.text("\n\n");
++                prompt.text(tool_definitions(tools, descriptions));
++            }
++            prompt.text("\n\n");
++            prompt.text(system_meta(tools));
++            prompt.special("<|eot|>");
++        }
++        fn role(message: &Value) -> &str {
++            message.get("role").and_then(Value::as_str).unwrap_or("")
++        }
++
++        let mut prompt = Prompt::new();
++        prompt.special("<|begin_of_text|>");
++        if !messages.iter().any(|message| role(message) == "system") {
++            prompt.special("<|start|>");
++            prompt.text("system");
++            prompt.special("<|message|>");
++            let cutoff = options
++                .knowledge_cutoff
++                .as_deref()
++                .filter(|value| !value.is_empty())
++                .unwrap_or(DEFAULT_CUTOFF);
++            let mut text = format!("{DEFAULT_SYSTEM}\nKnowledge cutoff: {cutoff}.");
++            if let Some(date) = options.current_date.as_deref().filter(|d| !d.is_empty()) {
++                text.push_str(&format!("\nCurrent date: {date}."));
++            }
++            text.push_str("\n\n");
++            text.push_str(&reasoning);
++            prompt.text(text);
++            system_tail(&mut prompt, tools, descriptions);
++        }
++        for (index, message) in messages.iter().enumerate() {
++            let this_role = role(message);
++            let end_token = if messages
++                .get(index + 1)
++                .is_some_and(|next| role(next) == this_role)
++            {
++                "<|eom|>"
++            } else {
++                "<|eot|>"
++            };
++            match this_role {
++                "system" => {
++                    let text = normalize_reasoning_directive(&plain(message.get("content")));
++                    prompt.special("<|start|>");
++                    prompt.text("system");
++                    prompt.special("<|message|>");
++                    prompt.text(&text);
++                    if !text.to_lowercase().contains("reasoning strength") {
++                        prompt.text("\n\n");
++                        prompt.text(&reasoning);
++                    }
++                    system_tail(&mut prompt, tools, descriptions);
++                }
++                "user" => {
++                    prompt.special("<|start|>");
++                    prompt.text("user");
++                    prompt.special("<|message|>");
++                    content(&mut prompt, message.get("content"))?;
++                    prompt.special("<|eot|>");
++                }
++                "tool" => {
++                    let name = tool_result_name(message, messages);
++                    prompt.special("<|start|>");
++                    prompt.text(format!("tool {name}"));
++                    prompt.special("<|message|>");
++                    prompt.text(format!("<tool_output name=\"{name}\">\n"));
++                    content(&mut prompt, message.get("content"))?;
++                    prompt.text("\n</tool_output>");
++                    prompt.special("<|eot|>");
++                }
++                "assistant" => {
++                    if let Some(reasoning) = message
++                        .get("reasoning_content")
++                        .and_then(Value::as_str)
++                        .filter(|text| !text.is_empty())
++                    {
++                        prompt.special("<|start|>");
++                        prompt.text("assistant to=self");
++                        prompt.special("<|message|>");
++                        prompt.text(reasoning);
++                        prompt.special("<|eom|>");
++                    }
++                    let calls = list(&message["tool_calls"]);
++                    if !calls.is_empty() {
++                        for (call_index, call) in calls.iter().enumerate() {
++                            let name = function(call)
++                                .get("name")
++                                .and_then(Value::as_str)
++                                .unwrap_or("");
++                            prompt.special("<|start|>");
++                            prompt.text(format!("assistant to={name}"));
++                            prompt.special("<|message|>");
++                            prompt.text(atem_call(call)?);
++                            prompt.special(if call_index + 1 == calls.len() {
++                                end_token
++                            } else {
++                                "<|eom|>"
++                            });
++                        }
++                    } else {
++                        let recipient = message
++                            .get("recipient")
++                            .and_then(Value::as_str)
++                            .filter(|r| !r.is_empty())
++                            .unwrap_or("user");
++                        let end_turn = message
++                            .get("end_turn")
++                            .and_then(Value::as_bool)
++                            .unwrap_or(recipient == "user");
++                        prompt.special("<|start|>");
++                        prompt.text(format!("assistant to={recipient}"));
++                        prompt.special("<|message|>");
++                        content(&mut prompt, message.get("content"))?;
++                        prompt.special(if end_turn { "<|eot|>" } else { "<|eom|>" });
++                    }
++                }
++                other => {
++                    return Err(Error::new(format!("Muse does not support role {other:?}")));
++                }
++            }
++        }
++        if options.add_generation_prompt.unwrap_or(true) {
++            prompt.special("<|start|>");
++            prompt.text("assistant");
++        }
++        Ok(prompt)
++    }
++    fn create_parser(
++        &self,
++        encoder: &dyn crate::Encoder,
++        decoder: Box<dyn Decoder>,
++        _request: &Value,
++        prompt_ids: &[u32],
++    ) -> Result<Box<dyn crate::ResponseParser>, Error> {
++        Ok(Box::new(MuseGlimmerParser::new(
++            MuseGlimmerTokens::resolve(encoder)?,
++            decoder,
++            prompt_ids,
++        )?))
++    }
++    fn stop_token_ids(&self, encoder: &dyn crate::Encoder) -> Result<Vec<u32>, Error> {
++        Ok(vec![
++            crate::parser::resolve(encoder, &["<|eot|>"])?,
++            crate::parser::resolve(encoder, &["<|end_of_text|>"])?,
++        ])
++    }
++}
++
++tokens! { MuseGlimmerTokens {
++    start => ["<|start|>"],
++    message => ["<|message|>"],
++    eom => ["<|eom|>"],
++    eot => ["<|eot|>"],
++    end_of_text => ["<|end_of_text|>"],
++}}
++
++enum State {
++    Header,
++    Text,
++    Reasoning,
++    Tool,
++    Ignore,
++}
++
++/// ATEM headers and bodies. A tool call commits when its message closes.
++pub type MuseGlimmerParser = Parser<MuseGlimmerGrammar>;
++pub struct MuseGlimmerGrammar {
++    tokens: MuseGlimmerTokens,
++    state: State,
++    header: String,
++    body: String,
++    tool_index: usize,
++    ended: bool,
++}
++
++impl MuseGlimmerParser {
++    pub fn new(
++        tokens: MuseGlimmerTokens,
++        decoder: Box<dyn Decoder>,
++        prompt_ids: &[u32],
++    ) -> Result<Self, Error> {
++        tokens.validate()?;
++        let mut parser = Self::with_grammar(
++            MuseGlimmerGrammar {
++                tokens,
++                state: State::Text,
++                header: String::new(),
++                body: String::new(),
++                tool_index: 0,
++                ended: false,
++            },
++            decoder,
++        );
++        // Seed only the generation prompt's open header, never earlier turns.
++        if let Some(start) = prompt_ids.iter().rposition(|&id| id == tokens.start) {
++            let tail = &prompt_ids[start..];
++            let end = tail.iter().position(|&id| id == tokens.message);
++            parser.feed(&tail[..end.map_or(tail.len(), |end| end + 1)])?;
++        }
++        parser.next_token_index = 0;
++        Ok(parser)
++    }
++}
++
++/// Parse `<atem:invoke name="…">` blocks into (name, JSON-object arguments).
++/// Parameter values that parse as JSON keep that type; others are strings.
++pub fn parse_atem_calls(body: &str) -> Vec<(String, String)> {
++    let mut calls = Vec::new();
++    let mut rest = body;
++    while let Some(open) = rest.find("<atem:invoke") {
++        rest = &rest[open..];
++        let Some(name_at) = rest.find("name=\"") else {
++            break;
++        };
++        let after_name = &rest[name_at + 6..];
++        let Some(name_end) = after_name.find('"') else {
++            break;
++        };
++        let name = after_name[..name_end].to_owned();
++        let Some(tag_end) = after_name[name_end..].find('>') else {
++            break;
++        };
++        let inner_start = &after_name[name_end + tag_end + 1..];
++        let Some(close) = inner_start.find("</atem:invoke>") else {
++            break;
++        };
++        let inner = &inner_start[..close];
++        let mut arguments = Map::new();
++        let mut params = inner;
++        while let Some(p) = params.find("<atem:parameter") {
++            params = &params[p..];
++            let Some(key_at) = params.find("name=\"") else {
++                break;
++            };
++            let after_key = &params[key_at + 6..];
++            let Some(key_end) = after_key.find('"') else {
++                break;
++            };
++            let key = after_key[..key_end].to_owned();
++            let Some(gt) = after_key[key_end..].find('>') else {
++                break;
++            };
++            let value_start = &after_key[key_end + gt + 1..];
++            let Some(value_end) = value_start.find("</atem:parameter>") else {
++                break;
++            };
++            let raw = &value_start[..value_end];
++            let value = serde_json::from_str::<Value>(raw)
++                .unwrap_or_else(|_| Value::String(raw.to_owned()));
++            arguments.insert(key, value);
++            params = &value_start[value_end + "</atem:parameter>".len()..];
++        }
++        calls.push((name, Value::Object(arguments).to_string()));
++        rest = &inner_start[close + "</atem:invoke>".len()..];
++    }
++    calls
++}
++
++impl MuseGlimmerGrammar {
++    fn open_body(&mut self) {
++        let mut words = self.header.split_whitespace();
++        let role = words.next().unwrap_or("");
++        let recipient = self
++            .header
++            .split_whitespace()
++            .find_map(|word| word.strip_prefix("to="));
++        self.body.clear();
++        self.state = if role != "assistant" {
++            State::Ignore
++        } else {
++            match recipient {
++                Some("self") => State::Reasoning,
++                None | Some("user") | Some("all") => State::Text,
++                Some(_) => State::Tool,
++            }
++        };
++    }
++    fn close_body(&mut self, events: &mut EventSink) {
++        if matches!(self.state, State::Tool) {
++            for (name, arguments) in parse_atem_calls(&self.body) {
++                emit_tool(&mut self.tool_index, name, arguments, events);
++            }
++        }
++        self.body.clear();
++        self.state = State::Ignore;
++    }
++}
++
++impl Grammar for MuseGlimmerGrammar {
++    fn channel(&self) -> Option<&'static str> {
++        match self.state {
++            State::Text => Some("content"),
++            State::Reasoning => Some("reasoning"),
++            State::Tool => Some("tool"),
++            _ => None,
++        }
++    }
++    fn is_control(&self, id: u32) -> bool {
++        self.tokens.ids().contains(&id)
++    }
++    fn ended(&self) -> bool {
++        self.ended
++    }
++    fn text(&mut self, text: AttributedText, events: &mut EventSink) -> Result<(), Error> {
++        if !text.is_empty() {
++            match self.state {
++                State::Header => self.header.push_str(&text),
++                State::Text => events.text(text, false),
++                State::Reasoning => events.text(text, true),
++                State::Tool => self.body.push_str(&text),
++                State::Ignore => {}
++            }
++        }
++        Ok(())
++    }
++    fn control(&mut self, id: u32, events: &mut EventSink) -> Result<(), Error> {
++        if id == self.tokens.start {
++            self.body.clear();
++            self.header.clear();
++            self.state = State::Header;
++        } else if id == self.tokens.message && matches!(self.state, State::Header) {
++            self.open_body();
++        } else if id == self.tokens.eom {
++            self.close_body(events);
++        } else if id == self.tokens.eot || id == self.tokens.end_of_text {
++            self.close_body(events);
++            self.ended = true;
++        }
++        Ok(())
++    }
++    fn finish(&mut self, _reason: FinishReason, _events: &mut EventSink) -> Result<(), Error> {
++        self.body.clear();
++        Ok(())
++    }
++}
++
++#[cfg(test)]
++mod tests {
++    use super::*;
++
++    #[test]
++    fn atem_calls_keep_json_types_and_raw_strings() {
++        let body = "<atem:function_calls>\n<atem:invoke name=\"weather.get\">\n<atem:parameter name=\"city\">東京</atem:parameter>\n<atem:parameter name=\"days\">3</atem:parameter>\n<atem:parameter name=\"opts\">{\"unit\": \"c\"}</atem:parameter>\n</atem:invoke>\n</atem:function_calls>";
++        assert_eq!(
++            parse_atem_calls(body),
++            vec![(
++                "weather.get".to_owned(),
++                r#"{"city":"東京","days":3,"opts":{"unit":"c"}}"#.to_owned()
++            )]
++        );
++        assert!(parse_atem_calls("<atem:invoke name=\"x\">unterminated").is_empty());
++    }
++}
+diff --git a/crates/resin-recipe/src/recipe.rs b/crates/resin-recipe/src/recipe.rs
+index 48d5057..3c8a409 100644
+--- a/crates/resin-recipe/src/recipe.rs
++++ b/crates/resin-recipe/src/recipe.rs
+@@ -69,6 +69,7 @@ pub enum MediaConfig {
+     Gemma(media::gemma::Config),
+     Glm(media::glm::Config),
+     Inkling2(media::inkling2::Config),
++    Muse(media::muse::Config),
+     Qwen(media::qwen::Config),
+ }
+ 
+diff --git a/crates/resin-recipe/tests/fixtures/muse_hf.json b/crates/resin-recipe/tests/fixtures/muse_hf.json
+new file mode 100644
+index 0000000..57531d4
+--- /dev/null
++++ b/crates/resin-recipe/tests/fixtures/muse_hf.json
+@@ -0,0 +1,287 @@
++{
++ "source": "meta-models/Muse-Glimmer-30B@cec94fcfd6512f2cfe708138c32533b346ea4f69 chat_template.jinja",
++ "renderer": "jinja2 ImmutableSandboxedEnvironment(trim_blocks, lstrip_blocks), no strftime_now",
++ "cases": [
++  {
++   "name": "plain_user",
++   "request": {
++    "messages": [
++     {
++      "role": "user",
++      "content": "Reply with exactly one word: banana"
++     }
++    ]
++   },
++   "text": "<|begin_of_text|><|start|>system<|message|>You are a helpful AI assistant.\nKnowledge cutoff: 2026-01-04.\n\nReasoning strength: high.\n\n# Valid recipients: \"self\", \"user\".<|eot|><|start|>user<|message|>Reply with exactly one word: banana<|eot|><|start|>assistant"
++  },
++  {
++   "name": "dated_low",
++   "request": {
++    "messages": [
++     {
++      "role": "user",
++      "content": "Hi"
++     }
++    ],
++    "extra": {
++     "current_date": "2026-11-19",
++     "reasoning_strength": "low",
++     "knowledge_cutoff": "2025-06-01"
++    }
++   },
++   "text": "<|begin_of_text|><|start|>system<|message|>You are a helpful AI assistant.\nKnowledge cutoff: 2025-06-01.\nCurrent date: 2026-11-19.\n\nReasoning strength: low.\n\n# Valid recipients: \"self\", \"user\".<|eot|><|start|>user<|message|>Hi<|eot|><|start|>assistant"
++  },
++  {
++   "name": "system_prompt",
++   "request": {
++    "messages": [
++     {
++      "role": "system",
++      "content": "You are terse."
++     },
++     {
++      "role": "user",
++      "content": "2+2?"
++     }
++    ]
++   },
++   "text": "<|begin_of_text|><|start|>system<|message|>You are terse.\n\nReasoning strength: high.\n\n# Valid recipients: \"self\", \"user\".<|eot|><|start|>user<|message|>2+2?<|eot|><|start|>assistant"
++  },
++  {
++   "name": "system_reasoning_effort",
++   "request": {
++    "messages": [
++     {
++      "role": "system",
++      "content": "Be careful. Reasoning effort: medium."
++     },
++     {
++      "role": "user",
++      "content": "2+2?"
++     }
++    ]
++   },
++   "text": "<|begin_of_text|><|start|>system<|message|>Be careful. Reasoning strength: medium.\n\n# Valid recipients: \"self\", \"user\".<|eot|><|start|>user<|message|>2+2?<|eot|><|start|>assistant"
++  },
++  {
++   "name": "history_reasoning",
++   "request": {
++    "messages": [
++     {
++      "role": "user",
++      "content": "Pick a color."
++     },
++     {
++      "role": "assistant",
++      "reasoning_content": "Blue is fine.",
++      "content": "Blue."
++     },
++     {
++      "role": "user",
++      "content": "Why?"
++     }
++    ],
++    "extra": {
++     "current_date": "2026-11-19"
++    }
++   },
++   "text": "<|begin_of_text|><|start|>system<|message|>You are a helpful AI assistant.\nKnowledge cutoff: 2026-01-04.\nCurrent date: 2026-11-19.\n\nReasoning strength: high.\n\n# Valid recipients: \"self\", \"user\".<|eot|><|start|>user<|message|>Pick a color.<|eot|><|start|>assistant to=self<|message|>Blue is fine.<|eom|><|start|>assistant to=user<|message|>Blue.<|eot|><|start|>user<|message|>Why?<|eot|><|start|>assistant"
++  },
++  {
++   "name": "consecutive_users",
++   "request": {
++    "messages": [
++     {
++      "role": "user",
++      "content": "One."
++     },
++     {
++      "role": "user",
++      "content": "Two."
++     }
++    ]
++   },
++   "text": "<|begin_of_text|><|start|>system<|message|>You are a helpful AI assistant.\nKnowledge cutoff: 2026-01-04.\n\nReasoning strength: high.\n\n# Valid recipients: \"self\", \"user\".<|eot|><|start|>user<|message|>One.<|eot|><|start|>user<|message|>Two.<|eot|><|start|>assistant"
++  },
++  {
++   "name": "tools_roundtrip",
++   "request": {
++    "messages": [
++     {
++      "role": "user",
++      "content": "Weather in 東京 for 3 days?"
++     },
++     {
++      "role": "assistant",
++      "tool_calls": [
++       {
++        "id": "c0",
++        "type": "function",
++        "function": {
++         "name": "weather.get",
++         "arguments": {
++          "city": "東京",
++          "days": 3,
++          "detail": true,
++          "extra": null,
++          "opts": {
++           "unit": "c"
++          },
++          "ratio": 0.5
++         }
++        }
++       }
++      ]
++     },
++     {
++      "role": "tool",
++      "tool_call_id": "c0",
++      "content": "{\"temp\": 18}"
++     },
++     {
++      "role": "user",
++      "content": "Thanks"
++     }
++    ],
++    "tools": [
++     {
++      "type": "function",
++      "function": {
++       "name": "weather.get",
++       "description": "Get weather for a city.",
++       "parameters": {
++        "type": "object",
++        "properties": {
++         "city": {
++          "type": "string"
++         },
++         "days": {
++          "type": "integer"
++         }
++        },
++        "required": [
++         "city"
++        ]
++       }
++      }
++     },
++     {
++      "type": "function",
++      "function": {
++       "name": "search",
++       "description": "Search the web.",
++       "parameters": {
++        "type": "object",
++        "properties": {
++         "q": {
++          "type": "string"
++         }
++        }
++       }
++      }
++     }
++    ],
++    "extra": {
++     "current_date": "2026-11-19"
++    }
++   },
++   "text": "<|begin_of_text|><|start|>system<|message|>You are a helpful AI assistant.\nKnowledge cutoff: 2026-01-04.\nCurrent date: 2026-11-19.\n\nReasoning strength: high.\n\nIn this environment you have access to a set of tools you can use to answer the user's question.\n\nYou can invoke a function by writing a \"<atem:function_calls>\" block like the following:\n<atem:function_calls>\n<atem:invoke name=\"$FUNCTION_NAME\">\n<atem:parameter name=\"$PARAMETER_NAME\">$PARAMETER_VALUE</atem:parameter>\n...\n</atem:invoke>\n</atem:function_calls>\n\nString and scalar parameters should be specified as is, while lists and objects should use JSON format. Note that spaces for string values are not stripped. The output is not expected to be valid XML and is parsed with regular expressions.\nHere are the functions available in JSONSchema format:\n// Tool metadata\n{\"name\": \"weather\", \"description\": \"\"}\n{\"name\": \"search\", \"description\": \"\"}\n// Function schemas\n{\"name\": \"weather.get\", \"description\": \"Get weather for a city.\", \"parameters\": {\"type\": \"object\", \"properties\": {\"city\": {\"type\": \"string\"}, \"days\": {\"type\": \"integer\"}}, \"required\": [\"city\"]}}\n{\"name\": \"search\", \"description\": \"Search the web.\", \"parameters\": {\"type\": \"object\", \"properties\": {\"q\": {\"type\": \"string\"}}}}\n\nHere's an example of how to call a function in the tool set:\n(If the tool namespace is not specified, invoke the function directly as `example_function_name` rather than `example_tool_name.example_function_name`)\n\nto=example_tool_name.example_function_name\n\n<atem:function_calls>\n<atem:invoke name=\"example_tool_name.example_function_name\">\n<atem:parameter name=\"example_parameter_1\">value_1</atem:parameter>\n<atem:parameter name=\"example_parameter_2\">This is the value for the second parameter\nthat can span\n\"multiple\" lines\n</atem:parameter>\n</atem:invoke>\n</atem:function_calls>\n\n# Valid recipients: \"self\", \"weather.*\", \"search.*\", \"user\".<|eot|><|start|>user<|message|>Weather in 東京 for 3 days?<|eot|><|start|>assistant to=weather.get<|message|><atem:function_calls>\n<atem:invoke name=\"weather.get\">\n<atem:parameter name=\"city\">東京</atem:parameter>\n<atem:parameter name=\"days\">3</atem:parameter>\n<atem:parameter name=\"detail\">true</atem:parameter>\n<atem:parameter name=\"extra\">null</atem:parameter>\n<atem:parameter name=\"opts\">{\"unit\": \"c\"}</atem:parameter>\n<atem:parameter name=\"ratio\">0.5</atem:parameter>\n</atem:invoke>\n</atem:function_calls><|eot|><|start|>tool weather.get<|message|><tool_output name=\"weather.get\">\n{\"temp\": 18}\n</tool_output><|eot|><|start|>user<|message|>Thanks<|eot|><|start|>assistant"
++  },
++  {
++   "name": "tool_namespaces",
++   "request": {
++    "messages": [
++     {
++      "role": "user",
++      "content": "go"
++     }
++    ],
++    "tools": [
++     {
++      "type": "function",
++      "function": {
++       "name": "weather.get",
++       "description": "Get weather for a city.",
++       "parameters": {
++        "type": "object",
++        "properties": {
++         "city": {
++          "type": "string"
++         },
++         "days": {
++          "type": "integer"
++         }
++        },
++        "required": [
++         "city"
++        ]
++       }
++      }
++     },
++     {
++      "type": "function",
++      "function": {
++       "name": "search",
++       "description": "Search the web.",
++       "parameters": {
++        "type": "object",
++        "properties": {
++         "q": {
++          "type": "string"
++         }
++        }
++       }
++      }
++     }
++    ],
++    "extra": {
++     "tool_namespace_descriptions": {
++      "weather": "Weather tools"
++     }
++    }
++   },
++   "text": "<|begin_of_text|><|start|>system<|message|>You are a helpful AI assistant.\nKnowledge cutoff: 2026-01-04.\n\nReasoning strength: high.\n\nIn this environment you have access to a set of tools you can use to answer the user's question.\n\nYou can invoke a function by writing a \"<atem:function_calls>\" block like the following:\n<atem:function_calls>\n<atem:invoke name=\"$FUNCTION_NAME\">\n<atem:parameter name=\"$PARAMETER_NAME\">$PARAMETER_VALUE</atem:parameter>\n...\n</atem:invoke>\n</atem:function_calls>\n\nString and scalar parameters should be specified as is, while lists and objects should use JSON format. Note that spaces for string values are not stripped. The output is not expected to be valid XML and is parsed with regular expressions.\nHere are the functions available in JSONSchema format:\n// Tool metadata\n{\"name\": \"weather\", \"description\": \"Weather tools\"}\n{\"name\": \"search\", \"description\": \"\"}\n// Function schemas\n{\"name\": \"weather.get\", \"description\": \"Get weather for a city.\", \"parameters\": {\"type\": \"object\", \"properties\": {\"city\": {\"type\": \"string\"}, \"days\": {\"type\": \"integer\"}}, \"required\": [\"city\"]}}\n{\"name\": \"search\", \"description\": \"Search the web.\", \"parameters\": {\"type\": \"object\", \"properties\": {\"q\": {\"type\": \"string\"}}}}\n\nHere's an example of how to call a function in the tool set:\n(If the tool namespace is not specified, invoke the function directly as `example_function_name` rather than `example_tool_name.example_function_name`)\n\nto=example_tool_name.example_function_name\n\n<atem:function_calls>\n<atem:invoke name=\"example_tool_name.example_function_name\">\n<atem:parameter name=\"example_parameter_1\">value_1</atem:parameter>\n<atem:parameter name=\"example_parameter_2\">This is the value for the second parameter\nthat can span\n\"multiple\" lines\n</atem:parameter>\n</atem:invoke>\n</atem:function_calls>\n\n# Valid recipients: \"self\", \"weather.*\", \"search.*\", \"user\".<|eot|><|start|>user<|message|>go<|eot|><|start|>assistant"
++  },
++  {
++   "name": "image_text",
++   "request": {
++    "messages": [
++     {
++      "role": "user",
++      "content": [
++       {
++        "type": "image"
++       },
++       {
++        "type": "text",
++        "text": "What is this?"
++       }
++      ]
++     }
++    ]
++   },
++   "text": "<|begin_of_text|><|start|>system<|message|>You are a helpful AI assistant.\nKnowledge cutoff: 2026-01-04.\n\nReasoning strength: high.\n\n# Valid recipients: \"self\", \"user\".<|eot|><|start|>user<|message|><|patch|>What is this?<|eot|><|start|>assistant"
++  },
++  {
++   "name": "recipient_not_ending",
++   "request": {
++    "messages": [
++     {
++      "role": "user",
++      "content": "x"
++     },
++     {
++      "role": "assistant",
++      "recipient": "user",
++      "end_turn": false,
++      "content": "partial"
++     }
++    ],
++    "extra": {
++     "add_generation_prompt": false
++    }
++   },
++   "text": "<|begin_of_text|><|start|>system<|message|>You are a helpful AI assistant.\nKnowledge cutoff: 2026-01-04.\n\nReasoning strength: high.\n\n# Valid recipients: \"self\", \"user\".<|eot|><|start|>user<|message|>x<|eot|><|start|>assistant to=user<|message|>partial<|eom|>"
++  }
++ ]
++}
+\ No newline at end of file
+diff --git a/crates/resin-recipe/tests/muse.rs b/crates/resin-recipe/tests/muse.rs
+new file mode 100644
+index 0000000..49994f2
+--- /dev/null
++++ b/crates/resin-recipe/tests/muse.rs
+@@ -0,0 +1,130 @@
++use resin_recipe::{
++    Event, FinishReason, MuseGlimmerParser, MuseGlimmerTokens, Recipe, muse::MuseGlimmerRecipe,
++};
++use serde_json::{Value, json};
++mod common;
++use common::{ByteDecoder, SemanticParser, bytes, coalesce};
++
++const TOKENS: MuseGlimmerTokens = MuseGlimmerTokens {
++    start: 1000,
++    message: 1001,
++    eom: 1002,
++    eot: 1003,
++    end_of_text: 1004,
++};
++
++fn header(recipient: &str) -> Vec<u32> {
++    let mut ids = vec![TOKENS.start];
++    ids.extend(bytes(&format!("assistant to={recipient}")));
++    ids.push(TOKENS.message);
++    ids
++}
++
++#[test]
++fn pinned_hf_template_matches_system_reasoning_tools_and_media_slots() {
++    let fixture: Value = serde_json::from_str(include_str!("fixtures/muse_hf.json")).unwrap();
++    for case in fixture["cases"].as_array().unwrap() {
++        let actual = MuseGlimmerRecipe::default()
++            .render(&case["request"])
++            .unwrap();
++        let mut text = actual.rendered_text();
++        // HF's template emits one `<|patch|>` per image; the processor adds the
++        // image start/end markers around its expansion, which the recipe renders.
++        text = text.replace("<|image_start|><|patch|><|image_end|>", "<|patch|>");
++        assert_eq!(text, case["text"].as_str().unwrap(), "{}", case["name"]);
++    }
++}
++
++#[test]
++fn unknown_options_and_video_fail() {
++    let recipe = MuseGlimmerRecipe::default();
++    let messages = json!([{"role": "user", "content": "hi"}]);
++    assert!(
++        recipe
++            .render(&json!({"messages": messages, "extra": {"temperature_hint": 1}}))
++            .is_err()
++    );
++    assert!(
++        recipe
++            .render(&json!({"messages": [{"role": "user", "content": [{"type": "video"}]}]}))
++            .is_err()
++    );
++}
++
++#[test]
++fn reasoning_answer_and_tool_calls_are_independent_of_chunk_boundaries() {
++    // The generation prompt ends with an open `<|start|>assistant` header.
++    let prompt = {
++        let mut ids = vec![TOKENS.start];
++        ids.extend(bytes("assistant"));
++        ids
++    };
++    let mut ids = bytes(" to=self");
++    ids.push(TOKENS.message);
++    ids.extend(bytes("Think 🦀."));
++    ids.push(TOKENS.eom);
++    ids.extend(header("weather.get"));
++    ids.extend(bytes(
++        "<atem:function_calls>\n<atem:invoke name=\"weather.get\">\n<atem:parameter name=\"city\">東京</atem:parameter>\n<atem:parameter name=\"days\">3</atem:parameter>\n</atem:invoke>\n</atem:function_calls>",
++    ));
++    ids.push(TOKENS.eom);
++    ids.extend(header("user"));
++    ids.extend(bytes("Sunny. <|eot|> stays literal."));
++    ids.push(TOKENS.eot);
++    ids.extend(bytes("ignored"));
++    let expected = vec![
++        Event::ReasoningDelta {
++            delta: "Think 🦀.".into(),
++        },
++        Event::ToolCallStart {
++            index: 0,
++            id: "call_0".into(),
++            name: "weather.get".into(),
++        },
++        Event::ToolCallArgumentsDelta {
++            index: 0,
++            delta: r#"{"city":"東京","days":3}"#.into(),
++        },
++        Event::TextDelta {
++            delta: "Sunny. <|eot|> stays literal.".into(),
++        },
++    ];
++    for width in 1..=ids.len() {
++        let mut parser =
++            MuseGlimmerParser::new(TOKENS, Box::<ByteDecoder>::default(), &prompt).unwrap();
++        let mut events = Vec::new();
++        for chunk in ids.chunks(width) {
++            events.extend(parser.semantic_feed(chunk).unwrap());
++        }
++        events.extend(parser.semantic_finish(FinishReason::Stop).unwrap());
++        assert_eq!(coalesce(events), expected, "chunk width {width}");
++    }
++}
++
++#[test]
++fn headerless_message_and_truncated_tool_call() {
++    let mut prompt = vec![TOKENS.start];
++    prompt.extend(bytes("assistant"));
++    let mut parser =
++        MuseGlimmerParser::new(TOKENS, Box::<ByteDecoder>::default(), &prompt).unwrap();
++    let mut ids = vec![TOKENS.message];
++    ids.extend(bytes("Direct."));
++    ids.push(TOKENS.eom);
++    ids.extend(header("search"));
++    ids.extend(bytes(
++        "<atem:function_calls>\n<atem:invoke name=\"search\">",
++    ));
++    let events = parser.semantic_feed(&ids).unwrap();
++    assert_eq!(
++        coalesce(events),
++        vec![Event::TextDelta {
++            delta: "Direct.".into()
++        }]
++    );
++    assert!(
++        parser
++            .semantic_finish(FinishReason::Length)
++            .unwrap()
++            .is_empty()
++    );
++}
+-- 
+2.50.1 (Apple Git-155)
+
