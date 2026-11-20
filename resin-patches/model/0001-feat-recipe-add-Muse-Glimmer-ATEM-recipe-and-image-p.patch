@@ -1,7 +1,7 @@
-From 0bc67a1d603dc6964ef66a23c6557dba9bfc02fb Mon Sep 17 00:00:00 2001
+From bc63b8e3cceaf70eab9bbb0210c5321e1e74a584 Mon Sep 17 00:00:00 2001
 From: r-chong <dev.reese.chong@gmail.com>
 Date: Thu, 19 Nov 2026 19:19:02 -0500
-Subject: [PATCH 1/6] feat(recipe): add Muse Glimmer ATEM recipe and image
+Subject: [PATCH 1/5] feat(recipe): add Muse Glimmer ATEM recipe and image
  preprocessing
 
 Native renderer/parser for the pinned chat_template.jinja (to=self reasoning,

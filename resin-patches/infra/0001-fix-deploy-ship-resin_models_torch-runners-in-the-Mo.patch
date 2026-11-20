@@ -1,7 +1,7 @@
-From cdaa69f86b3c44a9634493b863d02bc97a4cd453 Mon Sep 17 00:00:00 2001
+From c176778e4b44343dc0d6e10d9506f2152da85261 Mon Sep 17 00:00:00 2001
 From: r-chong <dev.reese.chong@gmail.com>
 Date: Thu, 19 Nov 2026 19:49:47 -0500
-Subject: [PATCH 6/6] fix(deploy): ship resin_models_torch runners in the Modal
+Subject: [PATCH] fix(deploy): ship resin_models_torch runners in the Modal
  image
 
 The image copied only the package __init__, so torch-backend presets such as
