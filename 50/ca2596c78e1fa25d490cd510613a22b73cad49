@@ -1,0 +1,38 @@
+baseline/output/69d7fbf49c4f4dd4a3fabcb4de81e17f/manifest.json
+  s_0d9d163433c805::t_41bd04b91ded12 1-107
+harness/muse_parity.py
+  s_0d9d163433c805::t_7e452472d67051 8-9,29,48,50-54
+resin-patches/model/0001-feat-recipe-add-Muse-Glimmer-ATEM-recipe-and-image-p.patch
+  s_0d9d163433c805::t_41e7420461a88f 4
+resin-patches/model/0002-feat-py-expose-muse_glimmer-recipe-and-MuseGlimmerMe.patch
+  s_0d9d163433c805::t_4b6ad6bfe4bf14 4
+resin-patches/model/0003-feat-models-torch-add-Muse-Glimmer-PyTorch-reference.patch
+  s_0d9d163433c805::t_ba16683aeb3c0b 4
+resin-patches/model/0004-feat-deploy-register-muse-glimmer-30b-torch-preset-o.patch
+  s_0d9d163433c805::t_b5abb70f156b5c 4
+resin-patches/model/0005-test-add-Muse-Glimmer-text-parity-against-saved-HF-g.patch
+  s_0d9d163433c805::t_274bbfb3750fc8 4
+resin-patches/model/0006-test-cover-sliding-window-probes-chunked-prefill-and.patch
+  s_0d9d163433c805::t_19eafb79b9b3f1 1-307
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "50ca2596c78e1fa25d490cd510613a22b73cad49",
+  "prompts": {},
+  "humans": {
+    "h_04353115311dd2": {
+      "author": "r-chong <dev.reese.chong@gmail.com>"
+    }
+  },
+  "sessions": {
+    "s_0d9d163433c805": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "13cdd190-051a-4924-b48b-997280d71d90",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "r-chong <dev.reese.chong@gmail.com>"
+    }
+  }
+}
