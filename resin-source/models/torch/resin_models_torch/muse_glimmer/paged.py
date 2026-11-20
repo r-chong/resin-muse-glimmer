@@ -89,9 +89,14 @@ class MuseKvArena:
     """One device allocation, viewed per group. Slab 0 is the null slab."""
 
     def __init__(
-        self, geometry: MuseCacheGeometry, parent_capacity: int, *, device, dtype
+        self, geometry: MuseCacheGeometry, parent_capacity: int, *, device, dtype,
+        native_decode: bool = False, num_query_heads: int | None = None,
     ):
         self.geometry = geometry
+        self.native_decode = native_decode
+        self.num_query_heads = num_query_heads
+        self._native_decoder = None
+        self.decode_attention = None
         g = geometry
         slabs = parent_capacity + 1
         self.storage = torch.zeros(
@@ -120,6 +125,23 @@ class MuseKvArena:
         group, index = self._slot[layer]
         table = self.history if group == HISTORY_GROUP else self.window
         return group, table[:, index, 0], table[:, index, 1]
+
+    def prepare_forward(self, rows, query_length: int) -> None:
+        """Plan native one-token attention once before running all layers."""
+        self.decode_attention = None
+        if not self.native_decode or query_length != 1:
+            return
+        if self._native_decoder is None:
+            from resin_models_torch.muse_glimmer.flashinfer import FlashinferPagedDecode
+
+            if self.num_query_heads is None:
+                raise ValueError("native decode needs the model's query-head count")
+            self._native_decoder = FlashinferPagedDecode(
+                self.geometry, self.num_query_heads,
+                device=self.storage.device, dtype=self.storage.dtype,
+            )
+        self._native_decoder.plan(rows)
+        self.decode_attention = self._native_decoder
 
 
 @dataclass(frozen=True)

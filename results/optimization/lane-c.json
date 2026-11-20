@@ -1,0 +1,46 @@
+{
+  "lane": "C",
+  "branch": "codex/resin-opt-c",
+  "base_commit": "73532b9aa69f15d91b232dc47191c6a2cf077dbd",
+  "record_created_utc": "2026-11-20T02:35:29.284502+00:00",
+  "approved_scope": "direct native paged attention over existing Engine-managed BF16 KV; no graph/compile or model-math change",
+  "status": "candidate-ready-for-centralized-GPU-qualification",
+  "attempts": [
+    {
+      "candidate": "flashinfer-fa2-decode",
+      "hypothesis": "Removing dense history gathering, padding, explicit masks and GQA head expansion from one-token attention may reduce decode latency. This has not been profiled or benchmarked yet.",
+      "changes": [
+        "FlashInfer FA2 tensor-core decode wrapper per cache group, planned once per text forward",
+        "Existing Engine-owned arena, append addresses, layout and retention unchanged",
+        "One-token queries only; existing prefill, local-KV and CPU paths preserved",
+        "Unused future pages omitted and final live-page lengths explicitly planned",
+        "Read-window 2048 represented by window_left=2047; full attention uses -1; QK norm/RoPE applied by unchanged Torch projection"
+      ],
+      "local_checks": {
+        "command": "PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=<lane>/resin-source:<lane>/resin-source/models/torch <base-venv>/bin/python -m pytest -p no:cacheprovider resin-source/tests/test_muse_glimmer_flashinfer.py resin-source/models/torch/tests/test_muse_glimmer_paged.py -q",
+        "result": "4 passed, 1 skipped in 5.87s",
+        "skipped": "CUDA primitive; no local CUDA",
+        "diff_check": "passed"
+      },
+      "gpu_requested": {
+        "first": "tests/test_muse_glimmer_flashinfer.py",
+        "then": "unchanged existing HF parity at 16 steps for all references/concurrency",
+        "if_passing": "same benchmark workload: prefill 4096/8192 b1, decode8192 b1/2/4/8, 5 warmup+250 measured"
+      },
+      "gpu_runs": [],
+      "performance_claim": null
+    }
+  ],
+  "risks": [
+    "Kernel rounding may alter exact greedy tokens, so full-checkpoint parity must pass",
+    "Strided K/V arena interface must be checked against actual pinned FlashInfer 0.7.1 on H100",
+    "Plan overhead may erode kernel savings; full benchmark required"
+  ],
+  "paid_resources_launched_by_lane": false,
+  "human_interventions": [],
+  "references": [
+    "https://raw.githubusercontent.com/flashinfer-ai/flashinfer/v0.7.1/flashinfer/decode.py",
+    "https://docs.flashinfer.ai/tutorials/kv_layout.html",
+    "resin-source/models/cuda/resin_models_cuda/gemma4/cuda.py"
+  ]
+}

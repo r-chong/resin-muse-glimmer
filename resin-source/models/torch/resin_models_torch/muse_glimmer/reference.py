@@ -226,6 +226,8 @@ class MuseGlimmerTorchRunner(Runner):
             capacity,
             device=self.device,
             dtype=self._model.lm_head.weight.dtype,
+            native_decode=self.device.type == "cuda",
+            num_query_heads=self.config.text.num_attention_heads,
         )
         self._binding = CachePoolBinding(self.cache_layout, resource="Muse Glimmer KV")
 

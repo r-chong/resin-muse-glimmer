@@ -273,6 +273,11 @@ class Attention(nn.Module):
             value_pages[cache.append_pages, cache.append_offsets] = values[
                 index
             ].transpose(0, 1)
+        if arena.decode_attention is not None:
+            attended = arena.decode_attention.run(
+                group, queries[:, :, 0, :].contiguous(), key_pages, value_pages
+            )
+            return self._output(attended.unsqueeze(2), hidden)
         for row in rows:
             cache = row.groups[group]
             row_keys = key_pages[cache.pages].flatten(0, 1).transpose(0, 1)
@@ -387,6 +392,7 @@ class MuseGlimmerTextModel(nn.Module):
         return self.norm(hidden)
 
     def forward_paged(self, hidden: Tensor, positions: Tensor, rows, arena) -> Tensor:
+        arena.prepare_forward(rows, hidden.shape[1])
         for layer in self.layers:
             hidden = layer.forward_paged(hidden, positions, rows, arena)
         return self.norm(hidden)
