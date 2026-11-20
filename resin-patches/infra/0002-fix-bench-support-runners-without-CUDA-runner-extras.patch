@@ -1,0 +1,50 @@
+From 07e680315fc91c2138f454ac11c60a49ee895020 Mon Sep 17 00:00:00 2001
+From: r-chong <dev.reese.chong@gmail.com>
+Date: Thu, 19 Nov 2026 20:13:49 -0500
+Subject: [PATCH] fix(bench): support runners without CUDA-runner extras
+
+bench.py required RunnerConfig.max_batch_tokens (optional by contract) and
+called capture_cuda_graphs() on every non-MLX runner, so eager runners such as
+the PyTorch reference runners crashed before measuring. Treat an unset batch
+limit as unbounded and capture graphs only when the runner provides them.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+---
+ scripts/bench.py | 12 ++++++++----
+ 1 file changed, 8 insertions(+), 4 deletions(-)
+
+diff --git a/scripts/bench.py b/scripts/bench.py
+index ab74bf0..71e4b24 100644
+--- a/scripts/bench.py
++++ b/scripts/bench.py
+@@ -365,7 +365,9 @@ def _rank(
+     )
+     # A batch is a cohort per attention replica; never exceed the runner's
+     # supported flattened row count when prefill spans several requests.
+-    prefill_budget = min(prefill_budget, raw.runner_config.max_batch_tokens)
++    # RunnerConfig.max_batch_tokens is optional; None means no runner limit.
++    if raw.runner_config.max_batch_tokens is not None:
++        prefill_budget = min(prefill_budget, raw.runner_config.max_batch_tokens)
+     cases, capacity_skips = _cache_preflight(raw, cases, options, groups)
+     observed = BenchmarkRunner(
+         raw,
+@@ -380,11 +382,13 @@ def _rank(
+             flush=True,
+         )
+     started = time.perf_counter()
+-    if not apple:
+-        raw.capture_cuda_graphs()
++    # Eager runners (for example PyTorch reference runners) have no graphs.
++    capture = None if apple else getattr(raw, "capture_cuda_graphs", None)
++    if capture is not None:
++        capture()
+     synchronize()
+     capture_seconds = time.perf_counter() - started
+-    if rank == 0 and not apple:
++    if rank == 0 and capture is not None:
+         print(f"[bench] graphs ready in {capture_seconds:.1f}s", flush=True)
+     overlap = options.get("overlap", True) and callable(getattr(raw, "enqueue", None))
+     metadata = {
+-- 
+2.50.1 (Apple Git-155)
+

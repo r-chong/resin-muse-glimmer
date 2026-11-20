@@ -151,9 +151,21 @@ decisions. Newest entries are at the bottom.
   - Limits: 16 decode steps, greedy only, BF16 batch-shape numerics not
     stressed beyond these cases, no prompt of 8,192 or more tokens.
 
+- **Benchmark (2026-11-19, `results/bench/20261119T201630.jsonl`).** Run through
+  `harness/muse_bench.sh`, which calls Resin's `bench.py` with the brief's
+  workload. Prompts are **synthetic token controls** (agent choice: content
+  does not change dense-model compute for fixed lengths; no corpus download).
+  Use a chat corpus if you want it. Results are in
+  [`reports/implementation-log.md`](reports/implementation-log.md#performance-pytorch-reference-runner-1-h100-80gb-hbm3-bf16).
+  Headline: TTFT 0.48 s at 4K and 1.04 s at 8K. Decode is 8.4 output tok/s/GPU
+  at batch 1 (TPOT 120 ms) and 43.9 at batch 8 (per-user 5.5 tok/s).
+- **Infra patch 0002** (`bench.py`) landed after the model commits; see
+  `resin-patches/README.md`.
+
 ### Open items
 
 - Speculative decoding (target-only for now).
 - Image path: implemented in recipe and runner, but not yet validated on GPU.
 - Sliding-window boundary and long-context parity: not yet tested.
-- Optimized CUDA runner and benchmarks: deferred.
+- Optimized CUDA runner: deferred (owner decision). No external baseline
+  (vLLM/SGLang/from-scratch) has been measured under the same workload.

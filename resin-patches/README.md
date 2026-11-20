@@ -42,6 +42,7 @@ If a new infrastructure fix lands after model commits, list it separately
 | Patch | Implementation | Tests | Fixtures |
 | --- | ---: | ---: | ---: |
 | infra 0001 ship torch runners in Modal image | 8 | | |
+| infra 0002 bench supports runners without CUDA-runner extras (after model commits in history) | ~10 | | |
 | model 0001 Rust ATEM recipe and image preprocessing | 903¹ | 130 | 287 |
 | model 0002 Python bindings (recipe factory, media payload, stubs) | 161 | | |
 | model 0003 PyTorch runner (config, text model, vision, Engine runner) | 1,221 | | |
