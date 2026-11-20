@@ -365,7 +365,9 @@ def _rank(
     )
     # A batch is a cohort per attention replica; never exceed the runner's
     # supported flattened row count when prefill spans several requests.
-    prefill_budget = min(prefill_budget, raw.runner_config.max_batch_tokens)
+    # RunnerConfig.max_batch_tokens is optional; None means no runner limit.
+    if raw.runner_config.max_batch_tokens is not None:
+        prefill_budget = min(prefill_budget, raw.runner_config.max_batch_tokens)
     cases, capacity_skips = _cache_preflight(raw, cases, options, groups)
     observed = BenchmarkRunner(
         raw,
@@ -380,11 +382,13 @@ def _rank(
             flush=True,
         )
     started = time.perf_counter()
-    if not apple:
-        raw.capture_cuda_graphs()
+    # Eager runners (for example PyTorch reference runners) have no graphs.
+    capture = None if apple else getattr(raw, "capture_cuda_graphs", None)
+    if capture is not None:
+        capture()
     synchronize()
     capture_seconds = time.perf_counter() - started
-    if rank == 0 and not apple:
+    if rank == 0 and capture is not None:
         print(f"[bench] graphs ready in {capture_seconds:.1f}s", flush=True)
     overlap = options.get("overlap", True) and callable(getattr(raw, "enqueue", None))
     metadata = {
