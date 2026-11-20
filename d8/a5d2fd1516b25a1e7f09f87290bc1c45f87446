@@ -1,0 +1,25 @@
+harness/optimization/analyze_parallel.py
+  s_fde809a6b235c8::t_20da454c7a820d 331-340
+results/optimization/parallel-20261119/SHA256.json
+  s_fde809a6b235c8::t_c339d92179ecf1 84,114
+results/optimization/parallel-20261119/analysis.json
+  s_fde809a6b235c8::t_b97cb52e9b121c 3182-3188
+results/optimization/parallel-20261119/shared/reproduction.json
+  s_fde809a6b235c8::t_bc13358272daa9 4,8-10
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "d8a5d2fd1516b25a1e7f09f87290bc1c45f87446",
+  "prompts": {},
+  "sessions": {
+    "s_fde809a6b235c8": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1f6c2-b4d7-71e0-b3fa-c7d633aa35e4",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "r-chong <dev.reese.chong@gmail.com>"
+    }
+  }
+}
