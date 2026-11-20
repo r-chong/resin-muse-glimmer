@@ -3179,7 +3179,13 @@
     "GSM8K prompt parity is not dataset-level GSM8K accuracy.",
     "Images, prefix caching, speculation, overlap and memory pressure are outside the qualified scope.",
     "Stock vLLM and Resin use their own pinned dependency stacks and separate physical H100s for the external reference. Resin internal finalists share a physical H100.",
-    "Stock vLLM disables image/video inputs; Resin benchmark retains unused vision weights. Both execute the same text-only forward workload."
+    "Stock vLLM disables image/video inputs; Resin benchmark retains unused vision weights. Both execute the same text-only forward workload.",
+    "Engine-construction startup_s is not a matched cold-start comparison: C initializes native attention lazily during untimed references/warmup, while vLLM constructs and compiles its engine eagerly.",
+    "CUDA allocator peaks are process scoped; vLLM workers use a child process, so driver-process peaks are not compared as total engine memory.",
+    "Actual-runner diagnostics cover the three saved reference prompts. Exact greedy/argmax checks pass; no new numerical acceptance threshold or dataset-level quality score is claimed.",
+    "A1 timing is an initial unpaired measurement. A2 cumulative gains are paired against frozen control; the incremental A1-to-A2 contribution was not isolated on one GPU.",
+    "Model-code diff size excludes tests and shared evaluation tooling. Shared setup, image builds and GPU queue delays are included in the recorded wall time; active agent runtime was not separately instrumented.",
+    "No from-scratch performance comparison or vLLM/SGLang customization productivity experiment was performed."
   ],
   "fresh_baseline": {
     "hardware": "NVIDIA H100 80GB HBM3, GPU-af527ab5-55a3-6da6-cfef-54c76ef67ac7, 610.57.04",

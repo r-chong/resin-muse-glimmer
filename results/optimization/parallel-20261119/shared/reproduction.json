@@ -1,13 +1,13 @@
 {
   "analyze": [
     "python3",
-    "/private/tmp/resin-benchmark-d/harness/analyze_parallel.py",
+    "/private/tmp/resin-benchmark-d/harness/optimization/analyze_parallel.py",
     "/Users/reese/code/resin/results/optimization/parallel-20261119"
   ],
   "initial_candidate_driver": "parallel_modal.py: --source <immutable snapshot>/resin-source --qualify --bench --batches1,8; B env RESIN_MUSE_DECODE_EXECUTION=graphs; B/C extra primitive tests",
-  "paired_driver": "paired_short.py: --candidate A2|B1|C --job-id <unique> --output <new directory> --timeout900",
-  "completion_driver": "completion_pair.py: --completion-only --job-id <unique> --output <new directory> --timeout900",
-  "stock_driver": "vllm_modal.py: --job-id <unique> --output <new directory>; released vllm==0.34.0 wheel, no engine patch",
+  "paired_driver": "harness/optimization/paired.py --candidate A2|B1|C --snapshots-root <snapshots> --job-id <unique> --output <new directory> --timeout900",
+  "completion_driver": "harness/optimization/paired.py --completion-only --snapshots-root <snapshots> --job-id <unique> --output <new directory> --timeout900",
+  "stock_driver": "harness/optimization/vllm_modal.py --job-id <unique> --output <new directory>",
   "source_snapshot_creation": "git archive <commit> extracted into /private/tmp/resin-opt-snapshots/<name>; commits and source-file SHA256 in request.json and shared/source-manifest.json",
   "snapshot_names": {
     "baseline": "73532b9",

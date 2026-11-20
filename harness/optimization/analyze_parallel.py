@@ -328,6 +328,16 @@ def main():
             for v in completions.values()
         ):
             report["status"] = "complete"
+    report["limitations"].extend(
+        [
+            "Engine-construction startup_s is not a matched cold-start comparison: C initializes native attention lazily during untimed references/warmup, while vLLM constructs and compiles its engine eagerly.",
+            "CUDA allocator peaks are process scoped; vLLM workers use a child process, so driver-process peaks are not compared as total engine memory.",
+            "Actual-runner diagnostics cover the three saved reference prompts. Exact greedy/argmax checks pass; no new numerical acceptance threshold or dataset-level quality score is claimed.",
+            "A1 timing is an initial unpaired measurement. A2 cumulative gains are paired against frozen control; the incremental A1-to-A2 contribution was not isolated on one GPU.",
+            "Model-code diff size excludes tests and shared evaluation tooling. Shared setup, image builds and GPU queue delays are included in the recorded wall time; active agent runtime was not separately instrumented.",
+            "No from-scratch performance comparison or vLLM/SGLang customization productivity experiment was performed.",
+        ]
+    )
     report["protocol"] = json.loads((root / "protocol.json").read_text())
     (root / "analysis.json").write_text(json.dumps(report, indent=2) + "\n")
     print(
