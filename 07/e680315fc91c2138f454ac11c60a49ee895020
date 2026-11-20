@@ -1,0 +1,25 @@
+resin-source/scripts/bench.py
+  s_0d9d163433c805::t_aa0bf65a62add6 385-388,391
+  s_0d9d163433c805::t_326a4c17b8e1bc 368-370
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "07e680315fc91c2138f454ac11c60a49ee895020",
+  "prompts": {},
+  "humans": {
+    "h_04353115311dd2": {
+      "author": "r-chong <dev.reese.chong@gmail.com>"
+    }
+  },
+  "sessions": {
+    "s_0d9d163433c805": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "13cdd190-051a-4924-b48b-997280d71d90",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": null
+    }
+  }
+}
