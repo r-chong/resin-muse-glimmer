@@ -1,0 +1,36 @@
+resin-source/crates/resin-recipe/src/recipe.rs
+  s_0d9d163433c805::t_6bc10334d4e641 72
+resin-source/crates/resin-recipe/src/muse.rs
+  s_0d9d163433c805::t_6bc10334d4e641 1-616
+resin-source/crates/resin-recipe/tests/fixtures/muse_hf.json
+  s_0d9d163433c805::t_6bc10334d4e641 1-287
+resin-source/crates/resin-recipe/src/media/mod.rs
+  s_0d9d163433c805::t_6bc10334d4e641 12
+resin-source/crates/resin-recipe/src/media/muse.rs
+  s_0d9d163433c805::t_6bc10334d4e641 1-283
+resin-source/crates/resin-recipe/src/lib.rs
+  s_0d9d163433c805::t_6bc10334d4e641 11,30
+resin-source/crates/resin-recipe/tests/muse.rs
+  s_0d9d163433c805::t_6bc10334d4e641 1-130
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "7a8788f7e2043f74e60bd3e99595c3886f180803",
+  "prompts": {},
+  "humans": {
+    "h_04353115311dd2": {
+      "author": "r-chong <dev.reese.chong@gmail.com>"
+    }
+  },
+  "sessions": {
+    "s_0d9d163433c805": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "13cdd190-051a-4924-b48b-997280d71d90",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "r-chong <dev.reese.chong@gmail.com>"
+    }
+  }
+}
