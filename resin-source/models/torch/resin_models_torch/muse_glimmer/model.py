@@ -275,9 +275,21 @@ class Attention(nn.Module):
             ].transpose(0, 1)
         for row in rows:
             cache = row.groups[group]
-            row_keys = key_pages[cache.pages].flatten(0, 1).transpose(0, 1)
-            row_values = value_pages[cache.pages].flatten(0, 1).transpose(0, 1)
-            key_positions = cache.first_position + torch.arange(
+            first_block = 0
+            if self.window is not None:
+                # Allocation retains enough history for the largest prefill
+                # chunk. A shorter query only reads its own sliding window;
+                # avoid gathering/expanding older, entirely masked blocks.
+                first_query = row.end - hidden.shape[1]
+                first_read = first_query - self.window + 1
+                first_block = max(
+                    0, (first_read - cache.first_position) // key_pages.shape[1]
+                )
+            pages = cache.pages[first_block:]
+            row_keys = key_pages[pages].flatten(0, 1).transpose(0, 1)
+            row_values = value_pages[pages].flatten(0, 1).transpose(0, 1)
+            first_position = cache.first_position + first_block * key_pages.shape[1]
+            key_positions = first_position + torch.arange(
                 row_keys.shape[1], device=hidden.device
             )
             # Unwritten (reserved) slots move to the far future: always masked.

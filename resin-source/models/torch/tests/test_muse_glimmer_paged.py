@@ -122,7 +122,11 @@ def _reference_tokens(model, prompt, steps):
 def _generate(runner, prompts, steps):
     from resin import Engine, SamplingParams
 
-    engine = Engine(runner, context_length=128, max_running_requests=len(prompts))
+    engine = Engine(
+        runner,
+        context_length=max(map(len, prompts)) + steps + 8,
+        max_running_requests=len(prompts),
+    )
     leases = [
         engine.submit(
             prompt,
@@ -153,9 +157,9 @@ def test_engine_layout_matches_muse_geometry(model):
 @pytest.mark.parametrize("chunk", [5, 64])
 def test_engine_pages_match_local_state_and_reference(model, chunk):
     prompts = [
-        [(7 * i + 3) % 90 + 1 for i in range(30)],  # crosses the 8-token window
+        [(7 * i + 3) % 90 + 1 for i in range(130)],  # crosses 64-token pages
         [(5 * i + 1) % 90 + 1 for i in range(3)],  # shorter than one block
-        [(3 * i + 2) % 90 + 1 for i in range(17)],
+        [(3 * i + 2) % 90 + 1 for i in range(67)],
     ]
     steps = 12
     expected = [_reference_tokens(model, prompt, steps) for prompt in prompts]
