@@ -1,0 +1,111 @@
+{
+  "repo_commit": "c75b420de009e22622cbddbf5b1a9f5eb86841bb",
+  "resin_source_dirty": false,
+  "reference": [
+    "/bench-traces/muse-reference/e0b3ae6b/gsm8k_test_0001.npz",
+    "/bench-traces/muse-reference/69d7fbf4/long_window.npz",
+    "/bench-traces/muse-reference/69d7fbf4/long_8k.npz"
+  ],
+  "steps": 16,
+  "dump_dir": null,
+  "select": "concurrent",
+  "returncode": 0,
+  "elapsed_s": 56.238361731,
+  "report": [
+    {
+      "test": "concurrent",
+      "concurrency": 2,
+      "batched_decode_calls": 15,
+      "max_decode_batch": 2,
+      "requests": [
+        {
+          "reference": "gsm8k_test_0001",
+          "matches": 16,
+          "first_mismatch": null
+        },
+        {
+          "reference": "long_window",
+          "matches": 16,
+          "first_mismatch": null
+        }
+      ]
+    },
+    {
+      "test": "concurrent",
+      "concurrency": 4,
+      "batched_decode_calls": 15,
+      "max_decode_batch": 4,
+      "requests": [
+        {
+          "reference": "gsm8k_test_0001",
+          "matches": 16,
+          "first_mismatch": null
+        },
+        {
+          "reference": "long_window",
+          "matches": 16,
+          "first_mismatch": null
+        },
+        {
+          "reference": "long_8k",
+          "matches": 16,
+          "first_mismatch": null
+        },
+        {
+          "reference": "gsm8k_test_0001",
+          "matches": 16,
+          "first_mismatch": null
+        }
+      ]
+    },
+    {
+      "test": "concurrent",
+      "concurrency": 8,
+      "batched_decode_calls": 15,
+      "max_decode_batch": 8,
+      "requests": [
+        {
+          "reference": "gsm8k_test_0001",
+          "matches": 16,
+          "first_mismatch": null
+        },
+        {
+          "reference": "long_window",
+          "matches": 16,
+          "first_mismatch": null
+        },
+        {
+          "reference": "long_8k",
+          "matches": 16,
+          "first_mismatch": null
+        },
+        {
+          "reference": "gsm8k_test_0001",
+          "matches": 16,
+          "first_mismatch": null
+        },
+        {
+          "reference": "long_window",
+          "matches": 16,
+          "first_mismatch": null
+        },
+        {
+          "reference": "long_8k",
+          "matches": 16,
+          "first_mismatch": null
+        },
+        {
+          "reference": "gsm8k_test_0001",
+          "matches": 16,
+          "first_mismatch": null
+        },
+        {
+          "reference": "long_window",
+          "matches": 16,
+          "first_mismatch": null
+        }
+      ]
+    }
+  ],
+  "output": "============================= test session starts ==============================\nplatform linux -- Python 3.12.1, pytest-8.4.2, pluggy-1.7.0 -- /opt/resin-deps/.venv/bin/python\ncachedir: .pytest_cache\nrootdir: /opt/resin\nconfigfile: pyproject.toml\nplugins: anyio-4.14.2\ncollecting ... collected 5 items / 2 deselected / 3 selected\n\n../opt/resin/tests/test_muse_glimmer_hf_parity.py::test_concurrent_requests_batch_and_match_reference[2] MUSE_PARITY_REPORT {\"test\": \"concurrent\", \"concurrency\": 2, \"batched_decode_calls\": 15, \"max_decode_batch\": 2, \"requests\": [{\"reference\": \"gsm8k_test_0001\", \"matches\": 16, \"first_mismatch\": null}, {\"reference\": \"long_window\", \"matches\": 16, \"first_mismatch\": null}]}\nPASSED\n../opt/resin/tests/test_muse_glimmer_hf_parity.py::test_concurrent_requests_batch_and_match_reference[4] MUSE_PARITY_REPORT {\"test\": \"concurrent\", \"concurrency\": 4, \"batched_decode_calls\": 15, \"max_decode_batch\": 4, \"requests\": [{\"reference\": \"gsm8k_test_0001\", \"matches\": 16, \"first_mismatch\": null}, {\"reference\": \"long_window\", \"matches\": 16, \"first_mismatch\": null}, {\"reference\": \"long_8k\", \"matches\": 16, \"first_mismatch\": null}, {\"reference\": \"gsm8k_test_0001\", \"matches\": 16, \"first_mismatch\": null}]}\nPASSED\n../opt/resin/tests/test_muse_glimmer_hf_parity.py::test_concurrent_requests_batch_and_match_reference[8] MUSE_PARITY_REPORT {\"test\": \"concurrent\", \"concurrency\": 8, \"batched_decode_calls\": 15, \"max_decode_batch\": 8, \"requests\": [{\"reference\": \"gsm8k_test_0001\", \"matches\": 16, \"first_mismatch\": null}, {\"reference\": \"long_window\", \"matches\": 16, \"first_mismatch\": null}, {\"reference\": \"long_8k\", \"matches\": 16, \"first_mismatch\": null}, {\"reference\": \"gsm8k_test_0001\", \"matches\": 16, \"first_mismatch\": null}, {\"reference\": \"long_window\", \"matches\": 16, \"first_mismatch\": null}, {\"reference\": \"long_8k\", \"matches\": 16, \"first_mismatch\": null}, {\"reference\": \"gsm8k_test_0001\", \"matches\": 16, \"first_mismatch\": null}, {\"reference\": \"long_window\", \"matches\": 16, \"first_mismatch\": null}]}\nPASSED\n\n======================= 3 passed, 2 deselected in 53.42s =======================\n"
+}
