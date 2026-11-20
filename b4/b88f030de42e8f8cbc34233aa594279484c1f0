@@ -1,0 +1,40 @@
+resin-source/models/torch/resin_models_torch/muse_glimmer/reference.py
+  s_0d9d163433c805::t_f56029be9e6527 225-228,233-240,243-246
+  s_0d9d163433c805::t_78297eb01b50ad 204-217
+  s_0d9d163433c805::t_4a3bb2bb3ccec0 302-303,307
+  s_0d9d163433c805::t_95b61ec1b19a5e 40-44,133-136,151-154,156-157,170-181,186,193-203,218-224,229-232,241-242,247-248,305-306,341-346,366-373,386-394
+resin-source/deploy/models.py
+  s_0d9d163433c805::t_f56029be9e6527 690
+resin-source/models/torch/resin_models_torch/muse_glimmer/paged.py
+  s_0d9d163433c805::t_4a3bb2bb3ccec0 42-44,49-51,91-93,111-113,164-165
+  s_0d9d163433c805::t_771797788fae74 1-41,45-48,52-90,94-110,114-163,166-171
+resin-source/models/torch/tests/test_muse_glimmer_paged.py
+  s_0d9d163433c805::t_523513dcbe47af 1-167
+resin-source/tests/test_muse_glimmer_hf_parity.py
+  s_0d9d163433c805::t_f56029be9e6527 51-54,65-67,94-98,141-143,159-161,170-174,184-189,195-198,213-217,265-267
+resin-source/models/torch/resin_models_torch/muse_glimmer/model.py
+  s_0d9d163433c805::t_4a3bb2bb3ccec0 270-275,287-289
+  s_0d9d163433c805::t_8830396d6fcabe 127,256-269,276-286,290-305,353-358,389-391
+  s_0d9d163433c805::t_1262248e73e046 392-393
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "b4b88f030de42e8f8cbc34233aa594279484c1f0",
+  "prompts": {},
+  "humans": {
+    "h_04353115311dd2": {
+      "author": "r-chong <dev.reese.chong@gmail.com>"
+    }
+  },
+  "sessions": {
+    "s_0d9d163433c805": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "13cdd190-051a-4924-b48b-997280d71d90",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "r-chong <dev.reese.chong@gmail.com>"
+    }
+  }
+}
