@@ -1,0 +1,24 @@
+baseline/hf_reference.py
+  s_33f782902c2035::t_6fdff75f72850e 111,125-126,129-136
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "42e00055cc18b118a6e907fef97a0c6f39a028e6",
+  "prompts": {},
+  "humans": {
+    "h_04353115311dd2": {
+      "author": "r-chong <dev.reese.chong@gmail.com>"
+    }
+  },
+  "sessions": {
+    "s_33f782902c2035": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1e5fa-24fb-7a61-90b7-ce752162345f",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "r-chong <dev.reese.chong@gmail.com>"
+    }
+  }
+}
