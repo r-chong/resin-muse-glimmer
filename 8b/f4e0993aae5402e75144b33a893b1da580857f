@@ -1,0 +1,27 @@
+resin-source/models/torch/resin_models_torch/muse_glimmer/reference.py
+  s_fde809a6b235c8::t_caf723d1fd9272 12,138-143,165-177,208
+resin-source/models/torch/tests/test_muse_glimmer_delivery.py
+  s_fde809a6b235c8::t_d811249960ebf4 1-45,48-83,85,87,89-94,96-107,109-110,114,116-117,121-196
+  s_fde809a6b235c8::t_8740724d8b5e9c 46-47
+  s_fde809a6b235c8::t_921b84c1c1730a 118-120
+  s_fde809a6b235c8::t_a9b06d0f5237aa 84,86,88,95,108,115
+  s_fde809a6b235c8::t_585dada2672813 111-113
+results/optimization/round2-delivery.json
+  s_fde809a6b235c8::t_dfc637b33ff258 1-90
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "8bf4e0993aae5402e75144b33a893b1da580857f",
+  "prompts": {},
+  "sessions": {
+    "s_fde809a6b235c8": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1f6c2-b4d7-71e0-b3fa-c7d633aa35e4",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "r-chong <dev.reese.chong@gmail.com>"
+    }
+  }
+}
