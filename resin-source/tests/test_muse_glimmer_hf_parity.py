@@ -231,15 +231,21 @@ def test_chunked_prefill_across_window_matches_reference(runner, references):
 @pytest.mark.parametrize("concurrency", [2, 4, 8])
 def test_concurrent_requests_batch_and_match_reference(runner, references, concurrency):
     """Concurrent greedy requests (mixed prompt lengths) through one Engine."""
-    model = runner._model
-    original = model.forward_batch
+    import numpy as np
+
+    from resin.backend.plans import BatchView
+
+    original = runner.forward
     batch_sizes: list[int] = []
 
-    def counted(tokens, states, positions):
-        batch_sizes.append(len(states))
-        return original(tokens, states, positions)
+    def counted(plan):
+        # Record Engine decode batching independently of the KV path.
+        batch = BatchView.from_plan(plan)
+        if batch.num_sequences and np.all(batch.query_lengths == 1):
+            batch_sizes.append(batch.num_sequences)
+        return original(plan)
 
-    model.forward_batch = counted
+    runner.forward = counted
     try:
         chosen = [references[i % len(references)] for i in range(concurrency)]
         outputs = _generate(
@@ -249,7 +255,7 @@ def test_concurrent_requests_batch_and_match_reference(runner, references, concu
             max_running=concurrency,
         )
     finally:
-        model.forward_batch = original
+        del runner.forward
     results = [
         {"reference": ref["name"], **_token_summary(out, ref["tokens"])}
         for ref, out in zip(chosen, outputs)
