@@ -342,6 +342,35 @@ MODEL_SPECS.update(
             recipe="ornith",
             text_only=True,
         ),
+        "muse-glimmer-30b": ModelSpec(
+            name="muse-glimmer-30b",
+            family="muse_glimmer",
+            checkpoint=Checkpoint(
+                repo_id="meta-models/Muse-Glimmer-30B",
+                revision="cec94fcfd6512f2cfe708138c32533b346ea4f69",
+                directory="",
+                required_files=(
+                    "config.json",
+                    "generation_config.json",
+                    "chat_template.jinja",
+                    "tokenizer.json",
+                    "tokenizer_config.json",
+                    "processor_config.json",
+                    "model.safetensors.index.json",
+                ),
+            ),
+            # Plain-PyTorch reference runner: no CUDA graphs or paged cache.
+            backend="torch",
+            model_mount="/models/resin-muse-glimmer-30b",
+            model_volume="resin-muse-glimmer-30b-models-v1",
+            gpu="H100!",
+            label="muse-glimmer-30b-bf16",
+            context_length=16_384,
+            max_batch_size=8,
+            prefill_chunk_size=8192,
+            gpu_memory_utilization=0.90,
+            memory=128 * 1024,
+        ),
         "inkling2": ModelSpec(
             name="inkling2",
             family="inkling2",
@@ -641,6 +670,24 @@ def create_runner(
             max_batch_size=max_batch_size,
             include_vision=not spec.text_only,
         )
+    if spec.backend == "torch":
+        if spec.family != "muse_glimmer":
+            raise ValueError(f"no PyTorch runner for {spec.family}")
+        from resin_models_torch.muse_glimmer import MuseGlimmerTorchRunner
+
+        if draft_tokens:
+            raise ValueError("the Muse Glimmer PyTorch runner is target-only")
+        if groups is not None:
+            raise ValueError("the Muse Glimmer PyTorch runner uses one GPU")
+        # Graph modes, graph batch shapes, memory fraction and expert options
+        # do not apply to this eager runner.
+        return MuseGlimmerTorchRunner(
+            checkpoint,
+            revision=None,
+            device=device,
+            include_vision=not spec.text_only,
+            prefill_chunk_size=prefill_chunk_size,
+        )
     common: dict[str, Any] = dict(
         device=device, cuda_graph_prefill=prefill_graph, cuda_graph_decode=decode_graph
     )
@@ -777,6 +824,18 @@ def create_recipe(
 
         return get_native_recipe(
             spec.family, Tokenizer.from_file(str(path / "tokenizer.json"))
+        )
+    if spec.family == "muse_glimmer":
+        import json
+
+        from tokenizers import Tokenizer
+
+        # Transformers 5.14 predates Muse, so read the processor config directly.
+        processor = json.loads((path / "processor_config.json").read_text())
+        return get_native_recipe(
+            "muse_glimmer",
+            Tokenizer.from_file(str(path / "tokenizer.json")),
+            media_config=processor["image_processor"],
         )
     if spec.family == "gpt_oss":
         from transformers import AutoTokenizer
