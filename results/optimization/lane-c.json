@@ -14,13 +14,16 @@
         "Existing Engine-owned arena, append addresses, layout and retention unchanged",
         "One-token queries only; existing prefill, local-KV and CPU paths preserved",
         "Unused future pages omitted and final live-page lengths explicitly planned",
-        "Read-window 2048 represented by window_left=2047; full attention uses -1; QK norm/RoPE applied by unchanged Torch projection"
+        "Read-window 2048 represented by window_left=2047; full attention uses -1; QK norm/RoPE applied by unchanged Torch projection",
+        "Existing CudaFailureGuard wraps a native forward after plan validation, before in-place KV writes; failed execution quarantines state"
       ],
       "local_checks": {
         "command": "PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=<lane>/resin-source:<lane>/resin-source/models/torch <base-venv>/bin/python -m pytest -p no:cacheprovider resin-source/tests/test_muse_glimmer_flashinfer.py resin-source/models/torch/tests/test_muse_glimmer_paged.py -q",
-        "result": "4 passed, 1 skipped in 5.87s",
+        "result": "4 passed, 1 skipped in 5.87s; repeated after failure-guard integration",
         "skipped": "CUDA primitive; no local CUDA",
-        "diff_check": "passed"
+        "diff_check": "passed",
+        "ruff_lint": "passed for touched Python files",
+        "ruff_format": "passed for touched Python files"
       },
       "gpu_requested": {
         "first": "tests/test_muse_glimmer_flashinfer.py",
@@ -42,5 +45,6 @@
     "https://raw.githubusercontent.com/flashinfer-ai/flashinfer/v0.7.1/flashinfer/decode.py",
     "https://docs.flashinfer.ai/tutorials/kv_layout.html",
     "resin-source/models/cuda/resin_models_cuda/gemma4/cuda.py"
-  ]
+  ],
+  "last_updated_utc": "2026-11-20T02:42:05.658901+00:00"
 }

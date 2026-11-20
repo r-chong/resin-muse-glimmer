@@ -12,6 +12,7 @@ logits computed in the activation dtype.
 from __future__ import annotations
 
 from collections.abc import Sequence
+from contextlib import nullcontext
 
 import torch
 from torch import Tensor, nn
@@ -393,9 +394,20 @@ class MuseGlimmerTextModel(nn.Module):
 
     def forward_paged(self, hidden: Tensor, positions: Tensor, rows, arena) -> Tensor:
         arena.prepare_forward(rows, hidden.shape[1])
-        for layer in self.layers:
-            hidden = layer.forward_paged(hidden, positions, rows, arena)
-        return self.norm(hidden)
+        guard = nullcontext()
+        if arena.decode_attention is not None:
+            from resin.backend.cuda.failures import CudaFailureGuard
+
+            # A failed kernel may follow successful in-place K/V writes; the
+            # Engine must quarantine those resources rather than retry them.
+            guard = CudaFailureGuard(
+                lambda: torch.cuda.synchronize(hidden.device),
+                label="Muse native paged decode",
+            )
+        with guard:
+            for layer in self.layers:
+                hidden = layer.forward_paged(hidden, positions, rows, arena)
+            return self.norm(hidden)
 
 
 class VisionAdapter(nn.Module):
