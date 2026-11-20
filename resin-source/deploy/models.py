@@ -69,6 +69,8 @@ class ModelSpec:
     image_warmup: bool = False
     text_only: bool = False
     recipe: str | None = None
+    # PyTorch runners only: "engine" (Resin CacheLayout pages) or "local".
+    kv_cache: str = "engine"
 
     @property
     def repo_id(self) -> str:
@@ -359,12 +361,42 @@ MODEL_SPECS.update(
                     "model.safetensors.index.json",
                 ),
             ),
-            # Plain-PyTorch reference runner: no CUDA graphs or paged cache.
+            # Plain-PyTorch reference runner, Engine-managed paged KV, no graphs.
             backend="torch",
             model_mount="/models/resin-muse-glimmer-30b",
             model_volume="resin-muse-glimmer-30b-models-v1",
             gpu="H100!",
             label="muse-glimmer-30b-bf16",
+            context_length=16_384,
+            max_batch_size=8,
+            prefill_chunk_size=8192,
+            gpu_memory_utilization=0.90,
+            memory=128 * 1024,
+        ),
+        "muse-glimmer-30b-local-kv": ModelSpec(
+            name="muse-glimmer-30b-local-kv",
+            family="muse_glimmer",
+            checkpoint=Checkpoint(
+                repo_id="meta-models/Muse-Glimmer-30B",
+                revision="cec94fcfd6512f2cfe708138c32533b346ea4f69",
+                directory="",
+                required_files=(
+                    "config.json",
+                    "generation_config.json",
+                    "chat_template.jinja",
+                    "tokenizer.json",
+                    "tokenizer_config.json",
+                    "processor_config.json",
+                    "model.safetensors.index.json",
+                ),
+            ),
+            # Comparison preset: request-owned Python KV instead of Engine pages.
+            backend="torch",
+            model_mount="/models/resin-muse-glimmer-30b",
+            model_volume="resin-muse-glimmer-30b-models-v1",
+            gpu="H100!",
+            label="muse-glimmer-30b-bf16-local-kv",
+            kv_cache="local",
             context_length=16_384,
             max_batch_size=8,
             prefill_chunk_size=8192,
@@ -688,6 +720,7 @@ def create_runner(
             include_vision=not spec.text_only,
             prefill_chunk_size=prefill_chunk_size,
             gpu_memory_utilization=memory,
+            kv_cache=spec.kv_cache,
         )
     common: dict[str, Any] = dict(
         device=device, cuda_graph_prefill=prefill_graph, cuda_graph_decode=decode_graph
