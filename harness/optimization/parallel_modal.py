@@ -213,6 +213,11 @@ def main():
         .add_local_file(
             source / "scripts/bench.py", "/root/scripts/bench.py", copy=True
         )
+        .add_local_file(
+            source / "scripts/merge_bench_traces.py",
+            "/root/scripts/merge_bench_traces.py",
+            copy=True,
+        )
         .uv_pip_install("pytest>=8,<9")
         .add_local_dir(source / "tests", "/opt/resin/tests", copy=True)
         .add_local_dir(
@@ -237,7 +242,7 @@ def main():
         image=image,
         gpu="H100!",
         cpu=32,
-        memory=262144,
+        memory=(131072, 262144),
         timeout=args.timeout,
         retries=0,
         max_containers=1,
