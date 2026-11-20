@@ -1,0 +1,22 @@
+resin-source/models/torch/resin_models_torch/muse_glimmer/paged.py
+  s_fde809a6b235c8::t_7d403030683bd5 141-192
+resin-source/models/torch/resin_models_torch/muse_glimmer/model.py
+  s_fde809a6b235c8::t_7d403030683bd5 24,257-259,270,280,283-284,301,353-355,357,392,394
+  s_fde809a6b235c8::t_77771def3f451e 286-289,292-295
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "e1424dc8e7329e10c93854438491f91b7b965ccd",
+  "prompts": {},
+  "sessions": {
+    "s_fde809a6b235c8": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1f6c2-b4d7-71e0-b3fa-c7d633aa35e4",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "r-chong <dev.reese.chong@gmail.com>"
+    }
+  }
+}
