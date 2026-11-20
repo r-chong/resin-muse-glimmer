@@ -1,0 +1,29 @@
+harness/muse_parity.py
+  s_0d9d163433c805::t_1c5c43efc956a6 31-32,51-56,68-69
+baseline/hf_reference_cases.py
+  s_0d9d163433c805::t_1c5c43efc956a6 22,77-78,106,177,194-195,201
+  s_0d9d163433c805::t_c235f20bc21af0 96-97
+resin-patches/model/0007-test-optionally-dump-full-teacher-forced-logits-for-.patch
+  s_0d9d163433c805::t_38a2427575e766 1-44
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "9a48a5fcf10b3566078d485945b6fa9e642461e0",
+  "prompts": {},
+  "humans": {
+    "h_04353115311dd2": {
+      "author": "r-chong <dev.reese.chong@gmail.com>"
+    }
+  },
+  "sessions": {
+    "s_0d9d163433c805": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "13cdd190-051a-4924-b48b-997280d71d90",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "r-chong <dev.reese.chong@gmail.com>"
+    }
+  }
+}
