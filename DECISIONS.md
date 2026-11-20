@@ -77,6 +77,14 @@ decisions. Newest entries are at the bottom.
   `git format-patch` series on `1fe19de`, one patch per semantic commit. The
   HF baseline in `baseline/` is the comparison target.
 
+- **Modal image builder.** The active Modal profile is `resin`; its default image
+  builder is 2026.10. Resin's locked `modal==1.5.3` rejects that version, so
+  Resin launches set `MODAL_IMAGE_BUILDER_VERSION=2025.06`, its newest supported
+  version. Resin's lock is unchanged.
+- **Parity harness.** [`harness/muse_parity.py`](harness/muse_parity.py) runs
+  Resin's own `qualify` Modal function on `H100!` with the parity test. The raw
+  result goes to `results/parity/`.
+
 ### Open items
 
 - Speculative decoding (target-only for now).
