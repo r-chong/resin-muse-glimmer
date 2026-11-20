@@ -75,9 +75,11 @@ def runner():
     from resin_models_torch.muse_glimmer import MuseGlimmerTorchRunner
 
     assert torch.cuda.is_available()
-    return MuseGlimmerTorchRunner(
+    runner = MuseGlimmerTorchRunner(
         Path(CHECKPOINT), revision=None, device="cuda", include_vision=False
     )
+    runner.capture_cuda_graphs()
+    return runner
 
 
 @pytest.fixture(scope="module")

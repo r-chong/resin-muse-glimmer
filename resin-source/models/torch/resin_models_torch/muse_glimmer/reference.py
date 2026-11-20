@@ -9,6 +9,7 @@ graph-captured. It is the correctness baseline for an optimized CUDA runner.
 from __future__ import annotations
 
 import json
+import os
 from dataclasses import dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, cast
@@ -152,6 +153,7 @@ class MuseGlimmerTorchRunner(Runner):
         gpu_memory_utilization: float = 0.90,
         kv_workspace_bytes: int = 8 << 30,
         cache_parent_capacity: int | None = None,
+        decode_execution: str | None = None,
     ) -> None:
         if kv_cache not in ("engine", "local"):
             raise ValueError("kv_cache must be 'engine' or 'local'")
@@ -189,6 +191,60 @@ class MuseGlimmerTorchRunner(Runner):
         self._requests: dict[int, _Request] = {}
         self.forward_calls = 0
         self.vision_calls = 0
+        self.decode_execution = decode_execution or os.environ.get(
+            "RESIN_MUSE_DECODE_EXECUTION", "eager"
+        )
+        if self.decode_execution not in ("eager", "graphs"):
+            raise ValueError("decode_execution must be 'eager' or 'graphs'")
+        self._decode_graphs = None
+        if self.decode_execution == "graphs":
+            from resin_models_torch.muse_glimmer.execution import MuseDecodeGraphs
+
+            self._decode_graphs = MuseDecodeGraphs(self._model)
+
+    def capture_cuda_graphs(self):
+        if self._decode_graphs is not None:
+            return self._decode_graphs.capture()
+        return {}
+
+    @property
+    def cuda_graph_counts(self):
+        graphs = getattr(self, "_decode_graphs", None)
+        return {} if graphs is None else graphs.counts
+
+    @property
+    def cuda_graph_stats(self):
+        graphs = getattr(self, "_decode_graphs", None)
+        return {} if graphs is None else graphs.stats
+
+    @property
+    def benchmark_counters(self):
+        # Read by Resin's harness outside the timed interval. Rebinding an
+        # Engine may replace the arena, but each forward uses one fixed arena.
+        arena = getattr(self, "_arena", None)
+        decoder = getattr(arena, "_native_decoder", None)
+        return {
+            "native_decode.plan_calls": 0 if decoder is None else decoder.plan_calls,
+            "native_decode.layer_calls": 0 if decoder is None else decoder.layer_calls,
+        }
+
+    @property
+    def benchmark_metadata(self):
+        graphs = getattr(self, "_decode_graphs", None)
+        return {
+            "graphs": {
+                "prefill": "disabled",
+                "decode": "disabled" if graphs is None else "stateless_regions",
+            },
+            "decode_execution": getattr(self, "decode_execution", "eager"),
+            "decode_graph_batches": [] if graphs is None else list(graphs.batches),
+            "attention": {
+                "decode": "flashinfer_paged_fa2"
+                if getattr(getattr(self, "_arena", None), "native_decode", False)
+                else "torch_sdpa",
+                "prefill": "torch_sdpa",
+            },
+        }
 
     # -- Engine-managed cache ----------------------------------------------
 
@@ -226,6 +282,8 @@ class MuseGlimmerTorchRunner(Runner):
             capacity,
             device=self.device,
             dtype=self._model.lm_head.weight.dtype,
+            native_decode=self.device.type == "cuda",
+            num_query_heads=self.config.text.num_attention_heads,
         )
         self._binding = CachePoolBinding(self.cache_layout, resource="Muse Glimmer KV")
 
