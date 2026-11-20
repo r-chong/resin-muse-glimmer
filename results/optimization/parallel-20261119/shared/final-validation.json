@@ -1,0 +1,8 @@
+{
+  "internal_case_records": 108,
+  "completion_case_records": 54,
+  "all_graph_replay_counts_exact": true,
+  "all_decode_batches_full": true,
+  "all_references_passed": true,
+  "original_files_unchanged": true
+}

@@ -1,0 +1,195 @@
+diff --git a/resin-source/models/torch/resin_models_torch/muse_glimmer/model.py b/resin-source/models/torch/resin_models_torch/muse_glimmer/model.py
+index 3c2617e..d38c90a 100644
+--- a/resin-source/models/torch/resin_models_torch/muse_glimmer/model.py
++++ b/resin-source/models/torch/resin_models_torch/muse_glimmer/model.py
+@@ -21,6 +21,7 @@ from resin_models_torch.muse_glimmer.config import (
+     MuseGlimmerConfig,
+     MuseGlimmerTextConfig,
+ )
++from resin_models_torch.muse_glimmer.paged import prepare_paged_attention
+ from resin_models_torch.muse_glimmer.vision import MuseGlimmerVisionModel
+ 
+ 
+@@ -253,7 +254,9 @@ class Attention(nn.Module):
+         )
+         return self._output(attended, hidden)
+ 
+-    def forward_paged(self, hidden: Tensor, positions: Tensor, rows, arena) -> Tensor:
++    def forward_paged(
++        self, hidden: Tensor, positions: Tensor, rows, arena, metadata
++    ) -> Tensor:
+         """Attend using Engine-managed pages (see ``paged.py``).
+ 
+         ``hidden`` is ``[rows, length, width]``: one prefill chunk (one row) or
+@@ -264,6 +267,7 @@ class Attention(nn.Module):
+ 
+         queries, keys, values = self._project(hidden, positions)
+         group, key_pages, value_pages = arena.layer_views(self.layer)
++        prepared = metadata[group]
+         gathered = []
+         for index, row in enumerate(rows):
+             cache = row.groups[group]
+@@ -273,32 +277,28 @@ class Attention(nn.Module):
+             value_pages[cache.append_pages, cache.append_offsets] = values[
+                 index
+             ].transpose(0, 1)
+-        for row in rows:
+-            cache = row.groups[group]
+-            row_keys = key_pages[cache.pages].flatten(0, 1).transpose(0, 1)
+-            row_values = value_pages[cache.pages].flatten(0, 1).transpose(0, 1)
+-            key_positions = cache.first_position + torch.arange(
+-                row_keys.shape[1], device=hidden.device
+-            )
+-            # Unwritten (reserved) slots move to the far future: always masked.
+-            key_positions = torch.where(key_positions < row.end, key_positions, 1 << 30)
+-            gathered.append((row_keys, row_values, key_positions))
+-        width = max(k.shape[1] for k, _, _ in gathered)
++        for pages in prepared.pages:
++            row_keys = key_pages[pages].flatten(0, 1).transpose(0, 1)
++            row_values = value_pages[pages].flatten(0, 1).transpose(0, 1)
++            gathered.append((row_keys, row_values))
++        width = prepared.width
+         padded_keys = torch.stack(
+-            [F.pad(k, (0, 0, 0, width - k.shape[1])) for k, _, _ in gathered]
++            [
++                k if k.shape[1] == width else F.pad(k, (0, 0, 0, width - k.shape[1]))
++                for k, _ in gathered
++            ]
+         )
+         padded_values = torch.stack(
+-            [F.pad(v, (0, 0, 0, width - v.shape[1])) for _, v, _ in gathered]
++            [
++                v if v.shape[1] == width else F.pad(v, (0, 0, 0, width - v.shape[1]))
++                for _, v in gathered
++            ]
+         )
+-        key_positions = torch.stack(
+-            [F.pad(p, (0, width - p.shape[0]), value=1 << 30) for _, _, p in gathered]
+-        )
+-        mask = self._mask(positions, key_positions)[:, None]
+         attended = F.scaled_dot_product_attention(
+             queries,
+             padded_keys.repeat_interleave(self.kv_groups, dim=1),
+             padded_values.repeat_interleave(self.kv_groups, dim=1),
+-            attn_mask=mask,
++            attn_mask=prepared.mask,
+             scale=self.scale,
+         )
+         return self._output(attended, hidden)
+@@ -350,9 +350,11 @@ class DecoderLayer(nn.Module):
+         )
+         return self._feed_forward(hidden + self.post_attention_layernorm(update))
+ 
+-    def forward_paged(self, hidden: Tensor, positions: Tensor, rows, arena) -> Tensor:
++    def forward_paged(
++        self, hidden: Tensor, positions: Tensor, rows, arena, metadata
++    ) -> Tensor:
+         update = self.self_attn.forward_paged(
+-            self.input_layernorm(hidden), positions, rows, arena
++            self.input_layernorm(hidden), positions, rows, arena, metadata
+         )
+         return self._feed_forward(hidden + self.post_attention_layernorm(update))
+ 
+@@ -387,8 +389,9 @@ class MuseGlimmerTextModel(nn.Module):
+         return self.norm(hidden)
+ 
+     def forward_paged(self, hidden: Tensor, positions: Tensor, rows, arena) -> Tensor:
++        metadata = prepare_paged_attention(rows, positions, arena.geometry.read_window)
+         for layer in self.layers:
+-            hidden = layer.forward_paged(hidden, positions, rows, arena)
++            hidden = layer.forward_paged(hidden, positions, rows, arena, metadata)
+         return self.norm(hidden)
+ 
+ 
+diff --git a/resin-source/models/torch/resin_models_torch/muse_glimmer/paged.py b/resin-source/models/torch/resin_models_torch/muse_glimmer/paged.py
+index e4f21e1..1b5c3f7 100644
+--- a/resin-source/models/torch/resin_models_torch/muse_glimmer/paged.py
++++ b/resin-source/models/torch/resin_models_torch/muse_glimmer/paged.py
+@@ -138,6 +138,58 @@ class PagedRow:
+     end: int  # context + query length: positions >= end are unwritten
+ 
+ 
++@dataclass(frozen=True)
++class PagedAttentionGroup:
++    """Page selection and attention mask shared by every layer in a group."""
++
++    pages: tuple[Tensor, ...]
++    width: int
++    mask: Tensor
++
++
++def prepare_paged_attention(
++    rows: list[PagedRow], positions: Tensor, read_window: int
++) -> tuple[PagedAttentionGroup, PagedAttentionGroup]:
++    """Prepare batch-dependent metadata once, with no persistent input cache.
++
++    Every full layer reads the same history addresses and every sliding layer
++    reads the same window addresses. Layer weights and K/V values do not affect
++    page selection, padding or masks.
++    """
++
++    groups = []
++    query_length = positions.shape[1]
++    for group, window in ((HISTORY_GROUP, None), (WINDOW_GROUP, read_window)):
++        pages, starts, lengths = [], [], []
++        for row in rows:
++            cache = row.groups[group]
++            first_block = 0
++            if window is not None:
++                first_read = row.end - query_length - window + 1
++                first_block = max(
++                    0, (first_read - cache.first_position) // BLOCK_TOKENS
++                )
++            selected = cache.pages[first_block:]
++            pages.append(selected)
++            starts.append(cache.first_position + first_block * BLOCK_TOKENS)
++            lengths.append(selected.numel() * BLOCK_TOKENS)
++        width = max(lengths)
++        offsets = torch.arange(width, device=positions.device)
++        starts_tensor = torch.tensor(starts, device=positions.device)
++        ends_tensor = torch.tensor([row.end for row in rows], device=positions.device)
++        lengths_tensor = torch.tensor(lengths, device=positions.device)
++        key_positions = starts_tensor[:, None] + offsets
++        valid = (offsets < lengths_tensor[:, None]) & (
++            key_positions < ends_tensor[:, None]
++        )
++        distance = positions[:, :, None] - key_positions[:, None]
++        allowed = (distance >= 0) & valid[:, None]
++        if window is not None:
++            allowed &= distance < window
++        groups.append(PagedAttentionGroup(tuple(pages), width, allowed[:, None]))
++    return groups[0], groups[1]
++
++
+ def paged_rows(batch: BatchView, parent_capacity: int, device) -> list[PagedRow]:
+     views = [
+         CacheGroupView.from_plan(
+diff --git a/resin-source/models/torch/tests/test_muse_glimmer_paged.py b/resin-source/models/torch/tests/test_muse_glimmer_paged.py
+index f2e963b..887d434 100644
+--- a/resin-source/models/torch/tests/test_muse_glimmer_paged.py
++++ b/resin-source/models/torch/tests/test_muse_glimmer_paged.py
+@@ -122,7 +122,11 @@ def _reference_tokens(model, prompt, steps):
+ def _generate(runner, prompts, steps):
+     from resin import Engine, SamplingParams
+ 
+-    engine = Engine(runner, context_length=128, max_running_requests=len(prompts))
++    engine = Engine(
++        runner,
++        context_length=max(map(len, prompts)) + steps + 8,
++        max_running_requests=len(prompts),
++    )
+     leases = [
+         engine.submit(
+             prompt,
+@@ -153,9 +157,9 @@ def test_engine_layout_matches_muse_geometry(model):
+ @pytest.mark.parametrize("chunk", [5, 64])
+ def test_engine_pages_match_local_state_and_reference(model, chunk):
+     prompts = [
+-        [(7 * i + 3) % 90 + 1 for i in range(30)],  # crosses the 8-token window
++        [(7 * i + 3) % 90 + 1 for i in range(130)],  # crosses 64-token pages
+         [(5 * i + 1) % 90 + 1 for i in range(3)],  # shorter than one block
+-        [(3 * i + 2) % 90 + 1 for i in range(17)],
++        [(3 * i + 2) % 90 + 1 for i in range(67)],
+     ]
+     steps = 12
+     expected = [_reference_tokens(model, prompt, steps) for prompt in prompts]

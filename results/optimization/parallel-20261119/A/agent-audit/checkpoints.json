@@ -1,0 +1,105 @@
+{
+  "lane": "A",
+  "base_commit": "73532b9aa69f15d91b232dc47191c6a2cf077dbd",
+  "scope": "Eager PyTorch overhead; retain Engine paged KV and SDPA",
+  "gpu_launched_by_lane": false,
+  "hypotheses": [
+    {
+      "id": "A1",
+      "status": "central-H100-qualified; paired-performance-validation-pending",
+      "hypothesis": "Current sliding decode gathers and expands retained blocks that are completely outside the readable window. Omitting these blocks reduces memory copies without changing logical attention.",
+      "runtime_files": [
+        "resin-source/models/torch/resin_models_torch/muse_glimmer/model.py"
+      ],
+      "profiling_evidence": "Source inspection only; central baseline trace pending.",
+      "changes": "Compute earliest readable query position from row.end minus query length and sliding window, then omit complete older blocks from gather. Cache allocation/retention unchanged.",
+      "checks": [
+        {
+          "command": "CPU Engine paged/local/full-context tests before changes",
+          "result": "3 passed in 6.55s"
+        },
+        {
+          "command": "git diff --check",
+          "result": "pass"
+        },
+        {
+          "command": "expanded CPU Engine paged/local/full-context tests after A1",
+          "result": "3 passed in 6.21s"
+        },
+        {
+          "command": "Central H100 qualification including optimized-path logit diagnostics",
+          "result": "6 checks passed",
+          "provenance": "Coordinator follow-up message; raw candidate outputs not read by lane A"
+        }
+      ],
+      "commit": "cbf557e",
+      "unpaired_performance": {
+        "output_tokens_per_second_per_gpu": {
+          "batch1": 16.779,
+          "batch8": 77.042
+        },
+        "provenance": "Coordinator follow-up message",
+        "limitation": "Own allocation, not paired with the repeated current control; not evidence of a causal speedup by itself."
+      }
+    },
+    {
+      "id": "A2",
+      "parent": "A1",
+      "status": "implemented-awaiting-GPU",
+      "hypothesis": "Every layer repeats masks and key-position construction shared by just two cache groups. Hoisting per forward should remove repeated eager launches; skipping zero-padding copies avoids redundant K/V copies.",
+      "runtime_files": [
+        "resin-source/models/torch/resin_models_torch/muse_glimmer/model.py",
+        "resin-source/models/torch/resin_models_torch/muse_glimmer/paged.py"
+      ],
+      "profiling_evidence": "Source inspection; central baseline trace pending.",
+      "changes": "Per-forward PagedAttentionGroup metadata for HISTORY/WINDOW, reused across 52 layers. No persistent memoization. Logical attention and dense SDPA data shapes unchanged from A1.",
+      "checks": [
+        {
+          "command": "expanded CPU Engine paged/local/full-context tests",
+          "result": "3 passed in 2.46s"
+        },
+        {
+          "command": "ruff check model.py paged.py",
+          "result": "pass"
+        },
+        {
+          "command": "git diff --check",
+          "result": "pass"
+        },
+        {
+          "command": "independent visible-key set check",
+          "result": "pass: 9 batches x 3 ragged rows; query lengths 1/7/64, windows 8/63/128, reserved tails and nonzero retained starts",
+          "artifact": "results/optimization/lane-a/mask-check.json"
+        }
+      ],
+      "commit": "e1424dc"
+    }
+  ],
+  "human_interventions": [],
+  "paid_cost": 0,
+  "record_created_at": "2026-11-19T21:32:20.863656-05:00",
+  "lane_start_time_source": "Coordinator experiment log; initial lane tool-call timestamps",
+  "status": "Runtime branch held stable; A1 central qualification passed; A2 paired validation queued",
+  "branch": "codex/resin-opt-a",
+  "head": "e1424dc",
+  "gpu_request": {
+    "checkpoint_order": [
+      "cbf557e",
+      "e1424dc"
+    ],
+    "correctness": "existing H100 parity: all three references, 16 steps, chunked prefill, concurrency 2/4/8; coordinator optimized-path logit capture",
+    "performance": "8K context, b1/b8 representative first, unchanged 5 warmup + 250 measured; full approved curve if candidate survives",
+    "estimated_gpu_minutes": "3\u20136 per checkpoint including loading and qualification"
+  },
+  "diagnostics": {
+    "status": "central coordinator implementation",
+    "note": "Lane drafted and discarded an uncommitted test-only hook after coordinator requested a single shared diagnostic. No test harness change remains in branch."
+  },
+  "baseline_profile_analysis": {
+    "artifact": "results/optimization/lane-a/baseline-profile-analysis.json",
+    "script": "results/optimization/lane-a/analyze_baseline_traces.py",
+    "source_scope": "Only the four shared frozen baseline traces supplied by the coordinator",
+    "complete_forwards_per_trace": 2,
+    "runtime_changes_after_profile": false
+  }
+}

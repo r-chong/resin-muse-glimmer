@@ -1,0 +1,58 @@
+{
+  "lane": "B",
+  "base_commit": "73532b9aa69f15d91b232dc47191c6a2cf077dbd",
+  "checkpoint": "stateless-decode-region-graphs-v1",
+  "recorded_at": "2026-11-20T02:35:10.714282+00:00",
+  "hypothesis": "Stateless tensor-region graph capture reduces eager launch overhead while leaving paged KV and SDPA unchanged; not yet profiled or GPU-measured.",
+  "configuration": {
+    "activation": "RESIN_MUSE_DECODE_EXECUTION=graphs",
+    "graph_batches": [
+      1,
+      2,
+      4,
+      8
+    ],
+    "padding": false,
+    "prefill": "eager",
+    "attention": "unchanged eager SDPA",
+    "sampling": "unchanged eager",
+    "torch_compile": false
+  },
+  "changes": [
+    "models/torch/resin_models_torch/muse_glimmer/execution.py",
+    "models/torch/resin_models_torch/muse_glimmer/reference.py",
+    "models/torch/tests/test_muse_glimmer_graphs.py",
+    "tests/test_muse_glimmer_hf_parity.py"
+  ],
+  "tests": [
+    {
+      "command": "pytest test_muse_glimmer_paged.py test_muse_glimmer_graphs.py",
+      "result": "3 passed, 2 skipped (CUDA unavailable)"
+    },
+    {
+      "command": "ruff check",
+      "result": "passed after import ordering fix"
+    },
+    {
+      "command": "compileall",
+      "result": "passed"
+    },
+    {
+      "command": "git diff --check",
+      "result": "passed"
+    }
+  ],
+  "setup_events": [
+    {
+      "kind": "local-test-environment",
+      "event": "PYTHONPATH correctly selected lane source but native resin extension was missing. Copied the unchanged baseline resin/_resin.abi3.so into this worktree; base env and source were not modified."
+    }
+  ],
+  "gpu_requests": [],
+  "gpu_results": [],
+  "human_interventions": [],
+  "limitations": [
+    "CUDA capture/replay and speed unmeasured until centralized H100 run",
+    "Teacher-forced reference diagnostics remain on the local path; Engine greedy-token checks exercise the actual graphed paged path."
+  ]
+}

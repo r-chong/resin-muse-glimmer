@@ -1,0 +1,23 @@
+{
+  "protocol_record_start": "2026-11-20T02:31:47.952669+00:00",
+  "runs_complete": "2026-11-20T03:42:39.468152+00:00",
+  "protocol_to_runs_complete_minutes": 70.85859138333333,
+  "human_interventions_after_approval": 0,
+  "agent_active_runtime": "Not independently instrumented; commit timestamps, job wall time and GPU function time are retained separately.",
+  "shared_setup_and_gpu_waiting_included_in_wall_time": true,
+  "model_checkpoints": {
+    "A": [
+      "cbf557ed81ea5600097f3609e85542247c873406 2026-11-19T21:32:44-05:00 perf(muse): skip unreadable sliding-window page gathers",
+      "e1424dc8e7329e10c93854438491f91b7b965ccd 2026-11-19T21:35:04-05:00 perf(muse): prepare paged attention masks once per group"
+    ],
+    "B": [
+      "3baaa0f6b300b3b5408c50893f3cc41e0796ec9f 2026-11-19T21:35:27-05:00 perf(muse): capture stateless decode regions at exact batch sizes"
+    ],
+    "C": [
+      "ba76cccbdbea8888ef755c6b18dca0ad52d4bed3 2026-11-19T21:35:29-05:00 perf(muse): decode directly from Engine pages with FlashInfer",
+      "b391d0367ea08ed2280fdc973fd43c17d29877d1 2026-11-19T21:40:49-05:00 style(muse): format native paged decode adapter checks",
+      "66bb70a63470581f1ced548265e839da374836aa 2026-11-19T21:42:05-05:00 fix(muse): quarantine failed native paged decode state"
+    ]
+  },
+  "benchmark_harness_commit": "b4279da56acc7002be9fa0c791a4d291bfb1f989"
+}

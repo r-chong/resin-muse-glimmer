@@ -1,0 +1,16 @@
+{
+  "check": "Logical visible-key sets for prepared masks, including reserved tails, ragged rows, nonzero starts, and page-crossing windows",
+  "batches": 9,
+  "rows_per_batch": 3,
+  "query_lengths": [
+    1,
+    7,
+    64
+  ],
+  "read_windows": [
+    8,
+    63,
+    128
+  ],
+  "result": "pass"
+}

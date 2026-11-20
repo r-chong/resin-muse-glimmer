@@ -1,0 +1,114 @@
+{
+  "schema_version": 1,
+  "lane": "B",
+  "implementation_commit": "3baaa0f",
+  "recorded_at": "2026-11-20T02:44:24.935879+00:00",
+  "implementation_changed_since_first_qualification": false,
+  "qualification_observation": {
+    "reported_by": "root coordinator",
+    "passed_tests": 8,
+    "hardware": "H100",
+    "scope": [
+      "graph primitive changed-input/position checks",
+      "tiny Engine paged generation",
+      "existing HF parity",
+      "central actual-runner-logit diagnostics"
+    ],
+    "raw_artifact_path": "await coordinator result artifact"
+  },
+  "audit": {
+    "ownership": [
+      "Captured operations retain parameter references and fixed staging/output tensors; they capture no KV arena or request-owned page metadata.",
+      "QKV outputs are consumed by attention before the next projection graph reuses their shared buffers.",
+      "Feed-forward output is consumed by the next attention/residual operations before its buffer is overwritten; the final norm returns a separate tensor.",
+      "Current synchronous same-stream runner sequencing provides the required ordering. Concurrent forwards or multiple live Engines are outside the supported contract.",
+      "Sequential Engine rebinding does not invalidate these stateless graphs; the graph test covers reuse with different arenas."
+    ],
+    "rounding": [
+      "Graph buckets retain the exact batch geometry; no token padding or new fused/compiled arithmetic is introduced.",
+      "The captured functions are the original eager bound methods. No norm accumulator, softcap, attention scale, or dtype is changed.",
+      "Startup graph checks compare replay with eager output; nonzero changed-input H100 primitive checks and full actual-runner diagnostics passed according to coordinator."
+    ],
+    "reporting": [
+      "This is CUDA graph capture, not torch.compile or native paged attention.",
+      "Capture/startup duration is excluded from steady-state timing but must be reported separately.",
+      "Eligibility is one query token per row with exact batches 1/2/4/8, including a possible one-token prefill chunk. The 4K/8K prefill benchmark cases remain eager.",
+      "Unsupported row counts or query widths fall back eagerly and increment shape_or_layout; decode timing at the four configured batches should have no such fallbacks.",
+      "Per-shape capture memory deltas share a private pool; they must not be summed as total retained graph memory.",
+      "Memory totals should come from actual worker allocation/reservation and peak statistics; graph close is explicit on the helper, and worker termination currently owns runner teardown."
+    ]
+  },
+  "final_validation": {
+    "dispatch_authority": "root coordinator only",
+    "baseline_commit": "73532b9aa69f15d91b232dc47191c6a2cf077dbd",
+    "baseline_environment": {
+      "RESIN_MUSE_DECODE_EXECUTION": "eager"
+    },
+    "candidate_environment": {
+      "RESIN_MUSE_DECODE_EXECUTION": "graphs"
+    },
+    "comparison": "three paired rounds on the same physical H100 allocation; record UUID and varied seeded order; fresh worker state per leg",
+    "prefill": {
+      "context_tokens": [
+        4096,
+        8192
+      ],
+      "batch_sizes": [
+        1
+      ],
+      "warmup_cohorts": 1,
+      "measured_cohorts": 3
+    },
+    "decode": {
+      "context_tokens": 8192,
+      "batch_sizes": [
+        1,
+        2,
+        4,
+        8
+      ],
+      "warmup_steps": 5,
+      "measure_steps": 250
+    },
+    "metadata": [
+      "source hashes",
+      "runtime versions",
+      "GPU UUID",
+      "capture seconds",
+      "configured and captured graph catalog",
+      "allocation/reservation/peak memory",
+      "sampling",
+      "timing boundary",
+      "actual context window"
+    ],
+    "assertions": [
+      "416 captured graphs for the full 52-layer model",
+      "no poison error",
+      "104 region replays per measured decode step, hence 26000 for 250 steps",
+      "zero decode-region eager fallbacks in measured exact-batch decode cases",
+      "committed token count and full cohort width unchanged",
+      "same correctness and diagnostic criteria; no relaxed tolerance"
+    ],
+    "reported_results": [
+      "per-case absolute throughput",
+      "per-case mean and p90 token latency",
+      "prefill TTFT",
+      "median and range over three runs",
+      "paired relative differences",
+      "capture/startup cost",
+      "memory trade-off",
+      "failed or skipped checks"
+    ],
+    "next_qualification": "No source change since passing B1; retain the existing 8-test qualification result and rerun if runtime/source/transport changes invalidate that provenance."
+  },
+  "unsupported_claims": [
+    "whole-model graph capture",
+    "torch compilation",
+    "overlap scheduling",
+    "multimodal qualification",
+    "prefix-cache qualification",
+    "memory-pressure qualification",
+    "general superiority over another framework"
+  ],
+  "paid_resources_launched_by_lane": false
+}
