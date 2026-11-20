@@ -161,6 +161,14 @@ def build_modal_image(
             ignore=["tests", *_PYTHON_SOURCE_IGNORE, *cuda_source_ignore],
         )
         .uv_pip_install(_SOURCE_ROOT, extra_options="--no-deps")
+        # Ship the PyTorch reference runners (for example Muse Glimmer), not
+        # just the package shell. Placed after the Rust build to reuse its layer.
+        .add_local_dir(
+            root / "models/torch/resin_models_torch",
+            f"{_SOURCE_ROOT}/models/torch/resin_models_torch",
+            copy=True,
+            ignore=list(_PYTHON_SOURCE_IGNORE),
+        )
         .uv_pip_install(f"{_SOURCE_ROOT}/models/torch", extra_options="--no-deps")
         .uv_pip_install(f"{_SOURCE_ROOT}/models/cuda", extra_options="--no-deps")
         .env(env or {})
