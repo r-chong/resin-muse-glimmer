@@ -1,0 +1,802 @@
+From b4b88f030de42e8f8cbc34233aa594279484c1f0 Mon Sep 17 00:00:00 2001
+From: r-chong <dev.reese.chong@gmail.com>
+Date: Thu, 19 Nov 2026 20:46:38 -0500
+Subject: [PATCH] feat(models-torch): Engine-managed paged KV for Muse Glimmer
+ via Resin CacheLayout
+
+Declare a two-group CacheLayout (13 full-attention layers as HISTORY, 39
+sliding layers as WINDOW with read window 2048; 39 = 3 x 13 so one slab holds
+one window block or three history blocks), size the pool with
+plan_cache_capacity, bind via CachePoolBinding, and route Engine plans through
+a page-table attention path. The request-owned path stays as kv_cache='local'.
+CPU tests run a tiny Muse-shaped model through the real Engine in both modes.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+---
+ deploy/models.py                              |   1 +
+ .../resin_models_torch/muse_glimmer/model.py  |  62 +++++++
+ .../resin_models_torch/muse_glimmer/paged.py  | 171 ++++++++++++++++++
+ .../muse_glimmer/reference.py                 | 123 +++++++++++--
+ models/torch/tests/test_muse_glimmer_paged.py | 167 +++++++++++++++++
+ tests/test_muse_glimmer_hf_parity.py          |  53 ++++--
+ 6 files changed, 554 insertions(+), 23 deletions(-)
+ create mode 100644 resin-source/models/torch/resin_models_torch/muse_glimmer/paged.py
+ create mode 100644 resin-source/models/torch/tests/test_muse_glimmer_paged.py
+
+diff --git a/deploy/models.py b/deploy/models.py
+index 8b23204..7b20cf2 100644
+--- a/deploy/models.py
++++ b/deploy/models.py
+@@ -687,6 +687,7 @@ def create_runner(
+             device=device,
+             include_vision=not spec.text_only,
+             prefill_chunk_size=prefill_chunk_size,
++            gpu_memory_utilization=memory,
+         )
+     common: dict[str, Any] = dict(
+         device=device, cuda_graph_prefill=prefill_graph, cuda_graph_decode=decode_graph
+diff --git a/models/torch/resin_models_torch/muse_glimmer/model.py b/models/torch/resin_models_torch/muse_glimmer/model.py
+index 0020fc2..3c2617e 100644
+--- a/models/torch/resin_models_torch/muse_glimmer/model.py
++++ b/models/torch/resin_models_torch/muse_glimmer/model.py
+@@ -124,6 +124,7 @@ class Attention(nn.Module):
+     def __init__(self, config: MuseGlimmerTextConfig, layer: int) -> None:
+         super().__init__()
+         width = config.hidden_size
++        self.layer = layer
+         self.num_heads = config.num_attention_heads
+         self.num_kv_heads = config.num_key_value_heads
+         self.kv_groups = self.num_heads // self.num_kv_heads
+@@ -252,6 +253,56 @@ class Attention(nn.Module):
+         )
+         return self._output(attended, hidden)
+ 
++    def forward_paged(self, hidden: Tensor, positions: Tensor, rows, arena) -> Tensor:
++        """Attend using Engine-managed pages (see ``paged.py``).
++
++        ``hidden`` is ``[rows, length, width]``: one prefill chunk (one row) or
++        one decode token per row. New keys/values are written to the Engine's
++        append addresses first, then each row gathers its pages in block-table
++        order. Positions at or after ``row.end`` are reserved but unwritten.
++        """
++
++        queries, keys, values = self._project(hidden, positions)
++        group, key_pages, value_pages = arena.layer_views(self.layer)
++        gathered = []
++        for index, row in enumerate(rows):
++            cache = row.groups[group]
++            key_pages[cache.append_pages, cache.append_offsets] = keys[index].transpose(
++                0, 1
++            )
++            value_pages[cache.append_pages, cache.append_offsets] = values[
++                index
++            ].transpose(0, 1)
++        for row in rows:
++            cache = row.groups[group]
++            row_keys = key_pages[cache.pages].flatten(0, 1).transpose(0, 1)
++            row_values = value_pages[cache.pages].flatten(0, 1).transpose(0, 1)
++            key_positions = cache.first_position + torch.arange(
++                row_keys.shape[1], device=hidden.device
++            )
++            # Unwritten (reserved) slots move to the far future: always masked.
++            key_positions = torch.where(key_positions < row.end, key_positions, 1 << 30)
++            gathered.append((row_keys, row_values, key_positions))
++        width = max(k.shape[1] for k, _, _ in gathered)
++        padded_keys = torch.stack(
++            [F.pad(k, (0, 0, 0, width - k.shape[1])) for k, _, _ in gathered]
++        )
++        padded_values = torch.stack(
++            [F.pad(v, (0, 0, 0, width - v.shape[1])) for _, v, _ in gathered]
++        )
++        key_positions = torch.stack(
++            [F.pad(p, (0, width - p.shape[0]), value=1 << 30) for _, _, p in gathered]
++        )
++        mask = self._mask(positions, key_positions)[:, None]
++        attended = F.scaled_dot_product_attention(
++            queries,
++            padded_keys.repeat_interleave(self.kv_groups, dim=1),
++            padded_values.repeat_interleave(self.kv_groups, dim=1),
++            attn_mask=mask,
++            scale=self.scale,
++        )
++        return self._output(attended, hidden)
++
+ 
+ class MLP(nn.Module):
+     def __init__(self, config: MuseGlimmerTextConfig) -> None:
+@@ -299,6 +350,12 @@ class DecoderLayer(nn.Module):
+         )
+         return self._feed_forward(hidden + self.post_attention_layernorm(update))
+ 
++    def forward_paged(self, hidden: Tensor, positions: Tensor, rows, arena) -> Tensor:
++        update = self.self_attn.forward_paged(
++            self.input_layernorm(hidden), positions, rows, arena
++        )
++        return self._feed_forward(hidden + self.post_attention_layernorm(update))
++
+ 
+ class MuseGlimmerTextModel(nn.Module):
+     def __init__(self, config: MuseGlimmerTextConfig) -> None:
+@@ -329,6 +386,11 @@ class MuseGlimmerTextModel(nn.Module):
+             )
+         return self.norm(hidden)
+ 
++    def forward_paged(self, hidden: Tensor, positions: Tensor, rows, arena) -> Tensor:
++        for layer in self.layers:
++            hidden = layer.forward_paged(hidden, positions, rows, arena)
++        return self.norm(hidden)
++
+ 
+ class VisionAdapter(nn.Module):
+     def __init__(self, config: MuseGlimmerConfig) -> None:
+diff --git a/models/torch/resin_models_torch/muse_glimmer/paged.py b/models/torch/resin_models_torch/muse_glimmer/paged.py
+new file mode 100644
+index 0000000..e4f21e1
+--- /dev/null
++++ b/models/torch/resin_models_torch/muse_glimmer/paged.py
+@@ -0,0 +1,171 @@
++"""Engine-managed paged KV for Muse Glimmer (Resin cache contract).
++
++Two cache groups match the decoder's layer split:
++
++- group 0, full HISTORY: the 13 full-attention (NoPE) layers;
++- group 1, WINDOW (read window 2,048): the 39 sliding-window layers.
++
++Because 39 = 3 x 13, one slab holds one window block (39 layers x 64 tokens)
++or exactly three history blocks (13 layers x 64 tokens), with no padding. The
++Engine owns allocation, retention, and lifetime; this module only maps the
++Engine's page addresses onto one device arena.
++"""
++
++from __future__ import annotations
++
++from dataclasses import dataclass
++
++import numpy as np
++import torch
++from torch import Tensor
++
++from resin import CacheGroupLayout, CacheLayout, CacheRetention
++from resin.backend.plans import BatchView, CacheGroupView
++from resin_models_torch.muse_glimmer.config import MuseGlimmerTextConfig
++
++BLOCK_TOKENS = 64
++HISTORY_GROUP = 0
++WINDOW_GROUP = 1
++
++
++@dataclass(frozen=True)
++class MuseCacheGeometry:
++    full_layers: tuple[int, ...]
++    sliding_layers: tuple[int, ...]
++    kv_heads: int
++    head_dim: int
++    read_window: int
++    window_tokens: int
++
++    @classmethod
++    def from_config(cls, config: MuseGlimmerTextConfig, *, chunk_tokens: int):
++        full = tuple(
++            i for i, t in enumerate(config.layer_types) if t == "full_attention"
++        )
++        sliding = tuple(
++            i for i, t in enumerate(config.layer_types) if t == "sliding_attention"
++        )
++        if len(sliding) % len(full):
++            raise ValueError(
++                "slab packing assumes sliding layers are a multiple of full"
++            )
++        # A chunk of Q writes with read window W needs W + Q - 1 retained tokens.
++        return cls(
++            full,
++            sliding,
++            config.num_key_value_heads,
++            config.head_dim,
++            config.sliding_window,
++            config.sliding_window + chunk_tokens - 1,
++        )
++
++    @property
++    def history_blocks_per_slab(self) -> int:
++        return len(self.sliding_layers) // len(self.full_layers)
++
++    def slab_bytes(self, element_bytes: int = 2) -> int:
++        return (
++            len(self.sliding_layers) * 2 * BLOCK_TOKENS * self.kv_heads * self.head_dim
++        ) * element_bytes
++
++    def layout(self, parent_capacity: int) -> CacheLayout:
++        return CacheLayout(
++            parent_capacity=parent_capacity,
++            groups=[
++                CacheGroupLayout(
++                    BLOCK_TOKENS, blocks_per_slab=self.history_blocks_per_slab
++                ),
++                CacheGroupLayout(
++                    BLOCK_TOKENS,
++                    retention=CacheRetention.WINDOW,
++                    window_tokens=self.window_tokens,
++                    read_window_tokens=self.read_window,
++                ),
++            ],
++        )
++
++
++class MuseKvArena:
++    """One device allocation, viewed per group. Slab 0 is the null slab."""
++
++    def __init__(
++        self, geometry: MuseCacheGeometry, parent_capacity: int, *, device, dtype
++    ):
++        self.geometry = geometry
++        g = geometry
++        slabs = parent_capacity + 1
++        self.storage = torch.zeros(
++            (slabs, len(g.sliding_layers), 2, BLOCK_TOKENS, g.kv_heads, g.head_dim),
++            dtype=dtype,
++            device=device,
++        )
++        self.window = self.storage  # [slab, layer, k/v, token, head, dim]
++        self.history = self.storage.view(
++            slabs * g.history_blocks_per_slab,
++            len(g.full_layers),
++            2,
++            BLOCK_TOKENS,
++            g.kv_heads,
++            g.head_dim,
++        )
++        self._slot = {
++            layer: (HISTORY_GROUP, i) for i, layer in enumerate(g.full_layers)
++        }
++        self._slot.update(
++            {layer: (WINDOW_GROUP, i) for i, layer in enumerate(g.sliding_layers)}
++        )
++
++    def layer_views(self, layer: int) -> tuple[int, Tensor, Tensor]:
++        """(group, keys, values), each indexed [page, token_in_block, head, dim]."""
++        group, index = self._slot[layer]
++        table = self.history if group == HISTORY_GROUP else self.window
++        return group, table[:, index, 0], table[:, index, 1]
++
++
++@dataclass(frozen=True)
++class GroupRow:
++    pages: Tensor  # [blocks] packed page ids, chronological
++    first_position: int  # absolute position of pages[0], token 0
++    append_pages: Tensor  # [query] destination page per new token
++    append_offsets: Tensor  # [query] offset within that page
++
++
++@dataclass(frozen=True)
++class PagedRow:
++    """One scheduled sequence's cache addresses for both groups."""
++
++    groups: tuple[GroupRow, GroupRow]
++    end: int  # context + query length: positions >= end are unwritten
++
++
++def paged_rows(batch: BatchView, parent_capacity: int, device) -> list[PagedRow]:
++    views = [
++        CacheGroupView.from_plan(
++            batch,
++            group_index=g,
++            parent_capacity=parent_capacity,
++            block_tokens=BLOCK_TOKENS,
++        )
++        for g in (HISTORY_GROUP, WINDOW_GROUP)
++    ]
++    packed = [view.packed_block_ids.astype(np.int64) for view in views]
++    appended = [view.packed_append_ids.astype(np.int64) for view in views]
++    rows = []
++    for row in range(batch.num_sequences):
++        tokens = batch.token_slice(row)
++        groups = []
++        for view, blocks, appends in zip(views, packed, appended):
++            groups.append(
++                GroupRow(
++                    torch.as_tensor(blocks[view.block_slice(row)], device=device),
++                    int(view.block_table_start_indices[row]) * BLOCK_TOKENS,
++                    torch.as_tensor(appends[tokens], device=device),
++                    torch.as_tensor(
++                        view.append_block_offsets[tokens].astype(np.int64),
++                        device=device,
++                    ),
++                )
++            )
++        end = int(batch.context_lengths[row]) + int(batch.query_lengths[row])
++        rows.append(PagedRow((groups[0], groups[1]), end))
++    return rows
+diff --git a/models/torch/resin_models_torch/muse_glimmer/reference.py b/models/torch/resin_models_torch/muse_glimmer/reference.py
+index 0d12052..9b64b5a 100644
+--- a/models/torch/resin_models_torch/muse_glimmer/reference.py
++++ b/models/torch/resin_models_torch/muse_glimmer/reference.py
+@@ -37,6 +37,11 @@ from resin_models_torch.muse_glimmer.model import (
+     MuseGlimmerForConditionalGeneration,
+     MuseGlimmerState,
+ )
++from resin_models_torch.muse_glimmer.paged import (
++    MuseCacheGeometry,
++    MuseKvArena,
++    paged_rows,
++)
+ 
+ if TYPE_CHECKING:
+     from resin import BatchPlan, ForwardOutput
+@@ -125,6 +130,10 @@ class MuseGlimmerTorchRunner(Runner):
+ 
+     Uniform one-token decode steps run as one batched forward. Prefill chunks
+     and mixed steps run one request at a time.
++
++    ``kv_cache="engine"`` (default) declares a Resin ``CacheLayout`` and keeps
++    K/V in Engine-managed pages (``paged.py``). ``kv_cache="local"`` keeps the
++    original request-owned tensors, retained for comparison.
+     """
+ 
+     parallelism_capabilities = ParallelismCapabilities()
+@@ -139,7 +148,13 @@ class MuseGlimmerTorchRunner(Runner):
+         include_vision: bool = True,
+         prefill_chunk_size: int | None = None,
+         max_batch_tokens: int | None = None,
++        kv_cache: str = "engine",
++        gpu_memory_utilization: float = 0.90,
++        kv_workspace_bytes: int = 8 << 30,
++        cache_parent_capacity: int | None = None,
+     ) -> None:
++        if kv_cache not in ("engine", "local"):
++            raise ValueError("kv_cache must be 'engine' or 'local'")
+         self.device = torch.device(device)
+         self.model_path = resolve_model_path(model, revision)
+         self._model = load_model(
+@@ -152,16 +167,85 @@ class MuseGlimmerTorchRunner(Runner):
+         self.include_vision = include_vision
+         self.vocab_size = self.config.text.vocab_size
+         self.eos_token_ids = self.config.text.eos_token_ids
++        self.kv_cache = kv_cache
++        self.cache_layout = None
++        self.cache_capacity_plan = None
++        self._arena = None
++        self._binding = None
++        if kv_cache == "engine":
++            self._configure_engine_cache(
++                prefill_chunk_size or 8192,
++                gpu_memory_utilization,
++                kv_workspace_bytes,
++                cache_parent_capacity,
++            )
+         self.runner_config = RunnerConfig(
+             continuation_prefill=True,
+             prefill_chunk_size=prefill_chunk_size,
+             max_batch_tokens=max_batch_tokens,
++            cache_layout=self.cache_layout,
+         )
+         self._sampler = TorchSampler()
+         self._requests: dict[int, _Request] = {}
+         self.forward_calls = 0
+         self.vision_calls = 0
+ 
++    # -- Engine-managed cache ----------------------------------------------
++
++    def _configure_engine_cache(
++        self, chunk_tokens, memory_utilization, workspace_bytes, parent_limit
++    ) -> None:
++        from resin.backend.capacity import plan_cache_capacity
++        from resin.backend.resources import CachePoolBinding
++
++        geometry = MuseCacheGeometry.from_config(
++            self.config.text, chunk_tokens=chunk_tokens
++        )
++        if self.device.type == "cuda":
++            free, total = torch.cuda.mem_get_info(self.device)
++            plan = plan_cache_capacity(
++                total,
++                free,
++                memory_utilization,
++                geometry.slab_bytes(),
++                overhead_bytes=workspace_bytes,
++            )
++            capacity = plan.parent_capacity
++        elif parent_limit is None:
++            raise ValueError("non-CUDA devices need an explicit cache_parent_capacity")
++        else:
++            plan, capacity = None, parent_limit
++        if parent_limit is not None:
++            capacity = min(capacity, parent_limit)
++        self.cache_capacity_plan = plan
++        self.cache_parent_capacity = capacity
++        self.cache_geometry = geometry
++        self.cache_layout = geometry.layout(capacity)
++        self._arena = MuseKvArena(
++            geometry,
++            capacity,
++            device=self.device,
++            dtype=self._model.lm_head.weight.dtype,
++        )
++        self._binding = CachePoolBinding(self.cache_layout, resource="Muse Glimmer KV")
++
++    def bind_resources(self, binding) -> None:
++        """Bind the arena to an Engine's pool.
++
++        Sequential Engines (tests, benchmark sweeps) may reuse one runner, so
++        a new pool rebinds the same arena; the frozen-layout check still
++        applies. Never drive two live Engines with one runner.
++        """
++        from resin.backend.resources import CachePoolBinding
++
++        if self._binding is None:
++            raise RuntimeError("this runner was built with kv_cache='local'")
++        if self._binding.pool_id not in (None, binding.cache_pool_id):
++            self._binding = CachePoolBinding(
++                self.cache_layout, resource="Muse Glimmer KV"
++            )
++        self._binding.bind_resources(binding)
++
+     # -- request state -----------------------------------------------------
+ 
+     def _request(self, sequence_id: int, media: Any) -> _Request:
+@@ -215,9 +299,12 @@ class MuseGlimmerTorchRunner(Runner):
+             request = self._request(int(sequence_id), media[index])
+             token_slice = batch.token_slice(index)
+             positions = batch.positions[token_slice]
++            # With Engine-managed pages the Engine is the source of truth for
++            # history; only the local path tracks lengths itself.
+             offset = request.state.length
+-            if int(batch.context_lengths[index]) != offset or (
+-                len(positions) and int(positions[0]) != offset
++            if self.kv_cache == "local" and (
++                int(batch.context_lengths[index]) != offset
++                or (len(positions) and int(positions[0]) != offset)
+             ):
+                 raise ValueError(
+                     f"non-contiguous positions for request {int(sequence_id)}: "
+@@ -251,6 +338,12 @@ class MuseGlimmerTorchRunner(Runner):
+         self.forward_calls += 1
+         batch = BatchView.from_plan(plan)
+         requests = self._validate(batch, plan)
++        rows = (
++            paged_rows(batch, self.cache_parent_capacity, self.device)
++            if self._arena is not None
++            else None
++        )
++        text = self._model.model.language_model
+         logits_rows: list[torch.Tensor] = []
+         prompt_rows: list[PromptScores | None] = []
+         with torch.inference_mode():
+@@ -270,9 +363,14 @@ class MuseGlimmerTorchRunner(Runner):
+                 positions = torch.as_tensor(
+                     batch.positions.astype(np.int64)[:, None], device=self.device
+                 )
+-                hidden = self._model.forward_batch(
+-                    tokens, [request.state for request in requests], positions
+-                )
++                if rows is not None:
++                    hidden = text.forward_paged(
++                        self._model.embed(tokens), positions, rows, self._arena
++                    )
++                else:
++                    hidden = self._model.forward_batch(
++                        tokens, [request.state for request in requests], positions
++                    )
+                 logits_rows.append(self._model.logits(hidden[:, -1]))
+             else:
+                 for index, request in enumerate(requests):
+@@ -285,12 +383,15 @@ class MuseGlimmerTorchRunner(Runner):
+                     positions = torch.as_tensor(
+                         row_positions.astype(np.int64)[None], device=self.device
+                     )
+-                    hidden = self._model(
+-                        tokens,
+-                        request.state,
+-                        positions,
+-                        hidden=self._hidden_for(request, tokens, row_positions),
+-                    )
++                    embedded = self._hidden_for(request, tokens, row_positions)
++                    if rows is not None:
++                        hidden = text.forward_paged(
++                            embedded, positions, rows[index : index + 1], self._arena
++                        )
++                    else:
++                        hidden = self._model(
++                            tokens, request.state, positions, hidden=embedded
++                        )
+                     if plan.needs_prompt_logprobs:
+                         prompt_rows.append(
+                             prompt_scores(
+diff --git a/models/torch/tests/test_muse_glimmer_paged.py b/models/torch/tests/test_muse_glimmer_paged.py
+new file mode 100644
+index 0000000..f2e963b
+--- /dev/null
++++ b/models/torch/tests/test_muse_glimmer_paged.py
+@@ -0,0 +1,167 @@
++"""CPU checks for Muse Glimmer's Engine-managed (paged) KV path.
++
++A tiny random model with Muse's layer pattern (3 sliding : 1 full, NoPE full
++layers) runs through the real Resin Engine twice: once with request-owned
++tensors (``kv_cache="local"``) and once with a declared ``CacheLayout`` and
++Engine pages (``kv_cache="engine"``). Both must produce the greedy tokens of a
++full-context reference forward, across window boundaries and chunked prefill.
++"""
++
++from __future__ import annotations
++
++import pytest
++import torch
++
++SLIDING_WINDOW = 8
++
++
++def _tiny_config():
++    from resin_models_torch.muse_glimmer.config import (
++        MuseGlimmerConfig,
++        MuseGlimmerTextConfig,
++        MuseGlimmerVisionConfig,
++    )
++
++    layers = ("sliding_attention",) * 3 + ("full_attention",)
++    text = MuseGlimmerTextConfig(
++        vocab_size=97,
++        hidden_size=32,
++        intermediate_size=64,
++        num_hidden_layers=8,
++        num_attention_heads=4,
++        num_key_value_heads=2,
++        head_dim=8,
++        rms_norm_eps=1e-5,
++        post_norm_eps=1e-8,
++        qk_scale_factor=3.87,
++        sliding_window=SLIDING_WINDOW,
++        layer_types=layers * 2,
++        layer_rope_theta=(10_000.0, 10_000.0, 10_000.0, 0.0) * 2,
++        final_logit_softcapping=20.0,
++        output_multiplier=0.5,
++    )
++    vision = MuseGlimmerVisionConfig(
++        hidden_size=8,
++        intermediate_size=16,
++        num_hidden_layers=1,
++        num_attention_heads=2,
++        patch_size=2,
++        patch_temporal=2,
++        merge_size=2,
++        pos_emb_height=4,
++        pos_emb_width=4,
++        layer_norm_eps=1e-5,
++        rope_theta=10_000.0,
++        layer_types=("full_attention",),
++    )
++    return MuseGlimmerConfig(
++        text=text,
++        vision=vision,
++        image_token_id=95,
++        video_token_id=96,
++        out_hidden_size=32,
++        projector_hidden_size=16,
++    )
++
++
++@pytest.fixture(scope="module")
++def model():
++    from resin_models_torch.muse_glimmer.model import (
++        MuseGlimmerForConditionalGeneration,
++    )
++
++    torch.manual_seed(0)
++    model = MuseGlimmerForConditionalGeneration(_tiny_config(), include_vision=False)
++    with torch.no_grad():
++        for parameter in model.parameters():
++            parameter.normal_(0.0, 0.5)
++    model.materialize_buffers("cpu")
++    return model.eval()
++
++
++def _runner(model, kv_cache: str, chunk: int):
++    from resin import RunnerConfig
++    from resin.backend.sampling import TorchSampler
++    from resin_models_torch.muse_glimmer import MuseGlimmerTorchRunner
++
++    runner = MuseGlimmerTorchRunner.__new__(MuseGlimmerTorchRunner)
++    runner.device = torch.device("cpu")
++    runner._model = model
++    runner.config = model.config
++    runner.include_vision = False
++    runner.vocab_size = model.config.text.vocab_size
++    runner.kv_cache = kv_cache
++    runner.cache_layout = runner.cache_capacity_plan = None
++    runner._arena = runner._binding = None
++    if kv_cache == "engine":
++        runner._configure_engine_cache(chunk, 0.9, 0, 64)
++    runner.runner_config = RunnerConfig(
++        continuation_prefill=True,
++        prefill_chunk_size=chunk,
++        cache_layout=runner.cache_layout,
++    )
++    runner._sampler = TorchSampler()
++    runner._requests = {}
++    runner.forward_calls = runner.vision_calls = 0
++    return runner
++
++
++def _reference_tokens(model, prompt, steps):
++    """Greedy tokens from full-context forwards (no cache reuse)."""
++    tokens = list(prompt)
++    with torch.inference_mode():
++        for _ in range(steps):
++            state = model.make_state()
++            hidden = model(
++                torch.tensor([tokens]), state, torch.arange(len(tokens))[None]
++            )
++            tokens.append(int(model.logits(hidden[:, -1]).argmax()))
++    return tokens[len(prompt) :]
++
++
++def _generate(runner, prompts, steps):
++    from resin import Engine, SamplingParams
++
++    engine = Engine(runner, context_length=128, max_running_requests=len(prompts))
++    leases = [
++        engine.submit(
++            prompt,
++            sampling_params=SamplingParams(
++                max_output_tokens=steps, temperature=0.0, stop_token_ids=[]
++            ),
++        )
++        for prompt in prompts
++    ]
++    for _ in range(500):
++        if not engine.has_work():
++            break
++        engine.step()
++    return [list(lease.take_result()) for lease in leases]
++
++
++def test_engine_layout_matches_muse_geometry(model):
++    from resin import CacheRetention
++
++    runner = _runner(model, "engine", chunk=5)
++    history, window = runner.cache_layout.groups
++    assert history.blocks_per_slab == 3  # 6 sliding layers / 2 full layers
++    assert window.retention == CacheRetention.WINDOW
++    assert window.read_window_tokens == SLIDING_WINDOW
++    assert window.window_tokens == SLIDING_WINDOW + 5 - 1
++
++
++@pytest.mark.parametrize("chunk", [5, 64])
++def test_engine_pages_match_local_state_and_reference(model, chunk):
++    prompts = [
++        [(7 * i + 3) % 90 + 1 for i in range(30)],  # crosses the 8-token window
++        [(5 * i + 1) % 90 + 1 for i in range(3)],  # shorter than one block
++        [(3 * i + 2) % 90 + 1 for i in range(17)],
++    ]
++    steps = 12
++    expected = [_reference_tokens(model, prompt, steps) for prompt in prompts]
++    local = _generate(_runner(model, "local", chunk), prompts, steps)
++    engine_runner = _runner(model, "engine", chunk)
++    paged = _generate(engine_runner, prompts, steps)
++    assert local == expected
++    assert paged == expected
++    assert engine_runner.live_cache_count == 0
+diff --git a/tests/test_muse_glimmer_hf_parity.py b/tests/test_muse_glimmer_hf_parity.py
+index 1c9486d..0bce990 100644
+--- a/tests/test_muse_glimmer_hf_parity.py
++++ b/tests/test_muse_glimmer_hf_parity.py
+@@ -48,7 +48,10 @@ def _token_summary(actual: list[int], expected: list[int]) -> dict:
+     first = next((i for i, (a, b) in enumerate(zip(actual, expected)) if a != b), None)
+     if first is None and len(actual) != len(expected):
+         first = min(len(actual), len(expected))
+-    return {"matches": sum(a == b for a, b in zip(actual, expected)), "first_mismatch": first}
++    return {
++        "matches": sum(a == b for a, b in zip(actual, expected)),
++        "first_mismatch": first,
++    }
+ 
+ 
+ def _logit_summary(actual: np.ndarray, expected: np.ndarray) -> dict:
+@@ -59,7 +62,9 @@ def _logit_summary(actual: np.ndarray, expected: np.ndarray) -> dict:
+         "rows": int(len(expected)),
+         "max_abs_diff": [round(float(v), 4) for v in diff.max(-1)],
+         "mean_abs_diff": [round(float(v), 5) for v in diff.mean(-1)],
+-        "reference_top1_margin": [round(float(v), 4) for v in ranked[:, -1] - ranked[:, -2]],
++        "reference_top1_margin": [
++            round(float(v), 4) for v in ranked[:, -1] - ranked[:, -2]
++        ],
+     }
+ 
+ 
+@@ -86,7 +91,11 @@ def _generate(runner, prompts, steps, *, chunk=None, max_running=8):
+ 
+     previous = runner.runner_config
+     if chunk is not None:
+-        runner.runner_config = RunnerConfig(continuation_prefill=True, prefill_chunk_size=chunk)
++        runner.runner_config = RunnerConfig(
++            continuation_prefill=True,
++            prefill_chunk_size=chunk,
++            cache_layout=previous.cache_layout,
++        )
+     try:
+         engine = Engine(
+             runner,
+@@ -129,7 +138,9 @@ def _teacher_forced(runner, ref) -> tuple[np.ndarray, np.ndarray | None]:
+         probes = None
+         if "probe_positions" in ref:
+             index = torch.as_tensor(ref["probe_positions"], device="cuda")
+-            probes = model.logits(hidden[0].index_select(0, index)).float().cpu().numpy()
++            probes = (
++                model.logits(hidden[0].index_select(0, index)).float().cpu().numpy()
++            )
+         rows = [model.logits(hidden[:, -1]).float()[0]]
+         for token in ref["tokens"][:-1]:
+             hidden = model(
+@@ -145,7 +156,9 @@ def test_single_request_tokens_and_logits(runner, references):
+     """One prefill plus greedy decode per reference, including window-crossing prompts."""
+     failures = []
+     for ref in references:
+-        (tokens,) = _generate(runner, [ref["prompt"]], [len(ref["tokens"])], max_running=1)
++        (tokens,) = _generate(
++            runner, [ref["prompt"]], [len(ref["tokens"])], max_running=1
++        )
+         steps, probes = _teacher_forced(runner, ref)
+         if DUMP_DIR:
+             Path(DUMP_DIR).mkdir(parents=True, exist_ok=True)
+@@ -154,8 +167,11 @@ def test_single_request_tokens_and_logits(runner, references):
+                 step_logits=steps,
+                 reference_tokens=np.array(ref["tokens"]),
+                 engine_tokens=np.array(tokens),
+-                **({"probe_logits": probes, "probe_positions": ref["probe_positions"]}
+-                   if probes is not None else {}),
++                **(
++                    {"probe_logits": probes, "probe_positions": ref["probe_positions"]}
++                    if probes is not None
++                    else {}
++                ),
+             )
+         summary = _report(
+             "single_request",
+@@ -165,14 +181,21 @@ def test_single_request_tokens_and_logits(runner, references):
+             reference_tokens=ref["tokens"],
+             engine=_token_summary(tokens, ref["tokens"]),
+             steps=_logit_summary(steps, ref["step_logits"]),
+-            probe_positions=ref["probe_positions"].tolist() if probes is not None else [],
+-            probes=_logit_summary(probes, ref["probe_logits"]) if probes is not None else None,
++            probe_positions=ref["probe_positions"].tolist()
++            if probes is not None
++            else [],
++            probes=_logit_summary(probes, ref["probe_logits"])
++            if probes is not None
++            else None,
+         )
+         if summary["engine"]["first_mismatch"] is not None:
+             failures.append(f"{ref['name']}: engine tokens diverge")
+         if summary["steps"]["argmax_matches"] != summary["steps"]["rows"]:
+             failures.append(f"{ref['name']}: teacher-forced argmax mismatch")
+-        if probes is not None and summary["probes"]["argmax_matches"] != summary["probes"]["rows"]:
++        if (
++            probes is not None
++            and summary["probes"]["argmax_matches"] != summary["probes"]["rows"]
++        ):
+             failures.append(f"{ref['name']}: probe argmax mismatch")
+     assert not failures, failures
+     assert runner.live_cache_count == 0
+@@ -187,7 +210,11 @@ def test_chunked_prefill_across_window_matches_reference(runner, references):
+     for chunk in (1000, 2047):
+         for ref in long_refs:
+             (tokens,) = _generate(
+-                runner, [ref["prompt"]], [len(ref["tokens"])], chunk=chunk, max_running=1
++                runner,
++                [ref["prompt"]],
++                [len(ref["tokens"])],
++                chunk=chunk,
++                max_running=1,
+             )
+             summary = _report(
+                 "chunked_prefill",
+@@ -235,5 +262,7 @@ def test_concurrent_requests_batch_and_match_reference(runner, references, concu
+         requests=results,
+     )
+     assert runner.live_cache_count == 0
+-    assert max(batch_sizes, default=0) == concurrency, "batched decode path not exercised"
++    assert max(batch_sizes, default=0) == concurrency, (
++        "batched decode path not exercised"
++    )
+     assert all(r["first_mismatch"] is None for r in results), results
+-- 
+2.50.1 (Apple Git-155)
+
