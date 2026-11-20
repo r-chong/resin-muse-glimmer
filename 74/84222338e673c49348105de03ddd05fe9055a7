@@ -1,0 +1,46 @@
+README.md
+  s_fde809a6b235c8::t_036710be51c71c 1-121
+harness/optimization/prepare_validated.py
+  s_fde809a6b235c8::t_15564945a7bb0f 1-48,52-78
+  s_fde809a6b235c8::t_5c4847064b0745 49-51
+harness/optimization/vllm_modal.py
+  s_fde809a6b235c8::t_e72ccaca10de7e 1-148
+harness/optimization/paired.py
+  s_fde809a6b235c8::t_51b81871edd295 1-356
+REPRODUCE.md
+  s_fde809a6b235c8::t_47db9b0f50bcd1 157-158
+  s_fde809a6b235c8::t_025ab49d476d18 8-101,104-107,111-112,154,172-175,190-194,204-206,210-228
+  s_fde809a6b235c8::t_e72ccaca10de7e 133-136,149-150,153,159-160,164-166
+harness/optimization/analyze_parallel.py
+  s_fde809a6b235c8::t_f668ec636012ba 1-359
+harness/optimization/analyze_round2.py
+  s_fde809a6b235c8::t_a9babcf51ba276 1-300
+harness/optimization/combine_delivery.py
+  s_fde809a6b235c8::t_47aa1fa26cbced 1-78
+harness/optimization/completion_bench.py
+  s_fde809a6b235c8::t_c4fe267beba187 1-257
+harness/optimization/executing_path_checks.py
+  s_fde809a6b235c8::t_ac881d3a4eaee7 1-67
+harness/optimization/parallel_modal.py
+  s_fde809a6b235c8::t_b92090e51ec15c 1-312
+harness/optimization/plot_round2.py
+  s_fde809a6b235c8::t_2a35815900cfa3 1-145
+harness/optimization/round2_modal.py
+  s_fde809a6b235c8::t_7e38eb21a451c7 1-135
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "7484222338e673c49348105de03ddd05fe9055a7",
+  "prompts": {},
+  "sessions": {
+    "s_fde809a6b235c8": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1f6c2-b4d7-71e0-b3fa-c7d633aa35e4",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "r-chong <dev.reese.chong@gmail.com>"
+    }
+  }
+}
