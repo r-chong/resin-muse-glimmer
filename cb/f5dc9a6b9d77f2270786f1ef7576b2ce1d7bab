@@ -1,0 +1,29 @@
+results/optimization/history-rewrite-map.json
+  s_fde809a6b235c8::t_23539bfeaf2806 1-111
+results/optimization/artifact-storage.json
+  s_fde809a6b235c8::t_23539bfeaf2806 1-19
+.gitignore
+  s_fde809a6b235c8::t_18e6e623d309d0 24
+  s_fde809a6b235c8::t_fa4fc2a83b8694 21-23,25-34
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "cbf5dc9a6b9d77f2270786f1ef7576b2ce1d7bab",
+  "prompts": {},
+  "humans": {
+    "h_04353115311dd2": {
+      "author": "r-chong <dev.reese.chong@gmail.com>"
+    }
+  },
+  "sessions": {
+    "s_fde809a6b235c8": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1f6c2-b4d7-71e0-b3fa-c7d633aa35e4",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "r-chong <dev.reese.chong@gmail.com>"
+    }
+  }
+}
