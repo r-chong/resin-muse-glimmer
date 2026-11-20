@@ -1,0 +1,1320 @@
+.gitignore
+  s_0d9d163433c805::t_0fa827a3196d3d 7-8
+resin-source/.editorconfig
+  s_806610229dbb4a::t_d4aa993f98101b 1-14
+resin-source/.github/workflows/apple-tests.yml
+  s_806610229dbb4a::t_ef4880116f15d1 1-57
+resin-source/.github/workflows/python-checks.yml
+  s_806610229dbb4a::t_ca102b0b6bbbad 1-43
+resin-source/.gitignore
+  s_806610229dbb4a::t_18f0021c24a958 1-15
+resin-source/.type-libs/.gitignore
+  s_806610229dbb4a::t_32f059c6cb3809 1-4
+resin-source/.type-libs/patches/flashinfer/api_logging.pyi
+  s_806610229dbb4a::t_990278a6982fb5 1-14
+resin-source/.type-libs/sources/.gitignore
+  s_806610229dbb4a::t_1a9f59461e41fb 1-2
+resin-source/Cargo.lock
+  s_806610229dbb4a::t_404521a31ea621 1-2295
+resin-source/Cargo.toml
+  s_806610229dbb4a::t_e9bf263fae48dc 1-9
+resin-source/LICENSE
+  s_806610229dbb4a::t_9f37267214a6fe 1-202
+resin-source/NOTICE
+  s_806610229dbb4a::t_a5da742048efbc 1-244
+resin-source/README.md
+  s_806610229dbb4a::t_8eb0e57355ccfb 1-280
+resin-source/conftest.py
+  s_806610229dbb4a::t_2ff35d556d7853 1-68
+resin-source/crates/resin-core/Cargo.toml
+  s_806610229dbb4a::t_3e6be25c84c9a2 1-16
+resin-source/crates/resin-core/src/batch.rs
+  s_806610229dbb4a::t_ae1bba1bc6bf5e 1-36
+resin-source/crates/resin-core/src/engine.rs
+  s_806610229dbb4a::t_358e72ed095859 1-2763
+resin-source/crates/resin-core/src/ids.rs
+  s_806610229dbb4a::t_8b7e6fc3c15621 1-14
+resin-source/crates/resin-core/src/lib.rs
+  s_806610229dbb4a::t_a50bc0989781fb 1-30
+resin-source/crates/resin-core/src/logprobs.rs
+  s_806610229dbb4a::t_9c7082647d104f 1-215
+resin-source/crates/resin-core/src/metrics.rs
+  s_806610229dbb4a::t_174da37cb77443 1-238
+resin-source/crates/resin-core/src/metrics/histogram.rs
+  s_806610229dbb4a::t_efc794ff0603d0 1-303
+resin-source/crates/resin-core/src/output.rs
+  s_806610229dbb4a::t_8a58762e794737 1-106
+resin-source/crates/resin-core/src/parallelism.rs
+  s_806610229dbb4a::t_3f1c147a9a5ff4 1-289
+resin-source/crates/resin-core/src/planning.rs
+  s_806610229dbb4a::t_00c43ac4cd44ab 1-283
+resin-source/crates/resin-core/src/resources/kv.rs
+  s_806610229dbb4a::t_d40dd6e1e86047 1-798
+resin-source/crates/resin-core/src/resources/mod.rs
+  s_806610229dbb4a::t_d739b97e0d8221 1-6
+resin-source/crates/resin-core/src/resources/paged.rs
+  s_806610229dbb4a::t_39df8359024411 1-2828
+resin-source/crates/resin-core/src/resources/paged_kv.rs
+  s_806610229dbb4a::t_ba08b751a96478 1-2679
+resin-source/crates/resin-core/src/resources/prefix.rs
+  s_806610229dbb4a::t_79f487970fcd66 1-406
+resin-source/crates/resin-core/src/scheduler.rs
+  s_806610229dbb4a::t_c3379291613a9b 1-716
+resin-source/crates/resin-core/tests/engine.rs
+  s_806610229dbb4a::t_de6e2144eefc86 1-2424
+resin-source/crates/resin-core/tests/preparation.rs
+  s_806610229dbb4a::t_609c7a86fb109e 1-272
+resin-source/crates/resin-core/tests/prompt_scores.rs
+  s_806610229dbb4a::t_6732eab99b4a90 1-202
+resin-source/crates/resin-http/Cargo.toml
+  s_806610229dbb4a::t_a665289ad65ace 1-21
+resin-source/crates/resin-http/src/anthropic.rs
+  s_806610229dbb4a::t_4f267fd5847e7c 1-404
+resin-source/crates/resin-http/src/index.html
+  s_806610229dbb4a::t_132fced5fe22cd 1-270
+resin-source/crates/resin-http/src/lib.rs
+  s_806610229dbb4a::t_dfac3cff6ffe07 1-186
+resin-source/crates/resin-http/src/metrics.rs
+  s_806610229dbb4a::t_263ed015db989d 1-527
+resin-source/crates/resin-http/src/metrics_encoder.rs
+  s_806610229dbb4a::t_4a7b9a77e6ead1 1-457
+resin-source/crates/resin-http/src/openai.rs
+  s_806610229dbb4a::t_7cc10422b8011d 1-864
+resin-source/crates/resin-http/src/protocol.rs
+  s_806610229dbb4a::t_4d134fd3a8f8ae 1-261
+resin-source/crates/resin-http/src/ui.rs
+  s_806610229dbb4a::t_35f054b35d5b06 1-11
+resin-source/crates/resin-http/tests/metrics.rs
+  s_806610229dbb4a::t_f82297f71c8632 1-65
+resin-source/crates/resin-http/tests/protocols.rs
+  s_806610229dbb4a::t_8500ae9c3c6188 1-1496
+resin-source/crates/resin-py/Cargo.toml
+  s_806610229dbb4a::t_fd595295bcf7cb 1-30
+resin-source/crates/resin-py/src/arrays.rs
+  s_806610229dbb4a::t_0b1f51ddd48d39 1-41
+resin-source/crates/resin-py/src/cache.rs
+  s_806610229dbb4a::t_c7d9afef206455 1-565
+resin-source/crates/resin-py/src/cache_storage.rs
+  s_806610229dbb4a::t_17f95a75a6326d 1-52
+resin-source/crates/resin-py/src/http.rs
+  s_806610229dbb4a::t_05699bc5859aa1 1-504
+resin-source/crates/resin-py/src/http_distributed.rs
+  s_806610229dbb4a::t_3b6360375139f3 1-278
+resin-source/crates/resin-py/src/http_logprobs.rs
+  s_806610229dbb4a::t_739104015b336c 1-80
+resin-source/crates/resin-py/src/http_output.rs
+  s_806610229dbb4a::t_0b0ce6be8cbf0b 1-390
+resin-source/crates/resin-py/src/http_session.rs
+  s_806610229dbb4a::t_65d0c8bd023f4a 1-856
+resin-source/crates/resin-py/src/http_stop.rs
+  s_806610229dbb4a::t_f2cde3112480af 1-237
+resin-source/crates/resin-py/src/metrics.rs
+  s_806610229dbb4a::t_32b030d47d140f 1-229
+resin-source/crates/resin-py/src/numa.rs
+  s_806610229dbb4a::t_bb3af75308d0a5 1-275
+resin-source/crates/resin-py/src/output.rs
+  s_806610229dbb4a::t_471f075048693f 1-337
+resin-source/crates/resin-py/src/parallelism.rs
+  s_806610229dbb4a::t_3a4d9a02592c23 1-154
+resin-source/crates/resin-py/src/planning.rs
+  s_806610229dbb4a::t_7bfc8ae482fab1 1-43
+resin-source/crates/resin-py/src/recipe_events.rs
+  s_806610229dbb4a::t_6719e06d45543a 1-131
+resin-source/crates/resin-py/src/recipe_media.rs
+  s_806610229dbb4a::t_b448f0dc31cefd 1-153
+resin-source/crates/resin-py/src/recipe_types.rs
+  s_806610229dbb4a::t_d1a4c7238976d5 1-833
+resin-source/crates/resin-py/src/runner.rs
+  s_806610229dbb4a::t_850b4c84d7edfc 1-234
+resin-source/crates/resin-recipe/Cargo.toml
+  s_806610229dbb4a::t_10f62a78a846f2 1-15
+resin-source/crates/resin-recipe/README.md
+  s_806610229dbb4a::t_8a068e71e93670 1-102
+resin-source/crates/resin-recipe/licenses/deepseek-MIT.txt
+  s_806610229dbb4a::t_7b2c36b054c66f 1-21
+resin-source/crates/resin-recipe/licenses/glm-MIT.txt
+  s_806610229dbb4a::t_d3a3b82e7cf20c 1-21
+resin-source/crates/resin-recipe/licenses/lfm2-OpenLicense.txt
+  s_806610229dbb4a::t_d9b0ff9d137a7a 1-71
+resin-source/crates/resin-recipe/src/deepseek.rs
+  s_806610229dbb4a::t_2fb70fdbdd3389 1-622
+resin-source/crates/resin-recipe/src/deepseek/parser.rs
+  s_806610229dbb4a::t_2c1686977aa0f1 1-394
+resin-source/crates/resin-recipe/src/deepseek/tools.txt
+  s_806610229dbb4a::t_c5ee6739f00f22 1-22
+resin-source/crates/resin-recipe/src/gemma.rs
+  s_806610229dbb4a::t_950409d4e432ae 1-456
+resin-source/crates/resin-recipe/src/gemma/values.rs
+  s_806610229dbb4a::t_360a87e2b67c81 1-320
+resin-source/crates/resin-recipe/src/glm.rs
+  s_806610229dbb4a::t_0eede16c856247 1-336
+resin-source/crates/resin-recipe/src/glm/parser.rs
+  s_806610229dbb4a::t_03a7a5d0fc04cb 1-184
+resin-source/crates/resin-recipe/src/gpt_oss.rs
+  s_806610229dbb4a::t_2f0ee3d14de081 1-435
+resin-source/crates/resin-recipe/src/gpt_oss/schema.rs
+  s_806610229dbb4a::t_346d453cb72451 1-169
+resin-source/crates/resin-recipe/src/inkling2.rs
+  s_806610229dbb4a::t_2e21c5f64b8830 1-153
+resin-source/crates/resin-recipe/src/inkling2/render.rs
+  s_806610229dbb4a::t_a14eddb3e8c0cf 1-237
+resin-source/crates/resin-recipe/src/json.rs
+  s_806610229dbb4a::t_32f2713aa51fdd 1-109
+resin-source/crates/resin-recipe/src/lfm2.rs
+  s_806610229dbb4a::t_eac4c1ba8365be 1-296
+resin-source/crates/resin-recipe/src/lfm2/literals.rs
+  s_806610229dbb4a::t_081d60ccf0912a 1-280
+resin-source/crates/resin-recipe/src/media/deepseek.rs
+  s_806610229dbb4a::t_920301a4db9f6e 1-355
+resin-source/crates/resin-recipe/src/media/gemma.rs
+  s_806610229dbb4a::t_f87865c87de04c 1-473
+resin-source/crates/resin-recipe/src/media/glm.rs
+  s_806610229dbb4a::t_017de12cd64813 1-227
+resin-source/crates/resin-recipe/src/media/inkling2.rs
+  s_806610229dbb4a::t_253225e57840bd 1-158
+resin-source/crates/resin-recipe/src/media/qwen.rs
+  s_806610229dbb4a::t_e49b93488d0133 1-430
+resin-source/crates/resin-recipe/src/parser.rs
+  s_806610229dbb4a::t_cf3fe5a67f4dd3 1-211
+resin-source/crates/resin-recipe/src/prompt.rs
+  s_806610229dbb4a::t_1a0e9c2e85843d 1-198
+resin-source/crates/resin-recipe/src/provenance.rs
+  s_806610229dbb4a::t_1a7614d18cc4e7 1-189
+resin-source/crates/resin-recipe/src/qwen.rs
+  s_806610229dbb4a::t_aa65365fd2ab63 1-344
+resin-source/crates/resin-recipe/src/qwen/parser.rs
+  s_806610229dbb4a::t_ab5fdf46eff853 1-198
+resin-source/crates/resin-recipe/src/render.rs
+  s_806610229dbb4a::t_6fd0ea2d392f2f 1-97
+resin-source/crates/resin-recipe/src/tokenizer.rs
+  s_806610229dbb4a::t_915b9f421770a8 1-87
+resin-source/crates/resin-recipe/src/tokenizer/bytes.rs
+  s_806610229dbb4a::t_224af05d0a0faa 1-95
+resin-source/crates/resin-recipe/src/tokenizer/trace.rs
+  s_806610229dbb4a::t_7bcfadcaacadcd 1-304
+resin-source/crates/resin-recipe/tests/common/mod.rs
+  s_806610229dbb4a::t_6e1c67603841b7 1-65
+resin-source/crates/resin-recipe/tests/deepseek.rs
+  s_806610229dbb4a::t_58b75fbc9c2250 1-292
+resin-source/crates/resin-recipe/tests/fixtures/deepseek_v41_prompts.jsonl
+  s_806610229dbb4a::t_4970919512e90e 1-12
+resin-source/crates/resin-recipe/tests/fixtures/gemma4_prompts.jsonl
+  s_806610229dbb4a::t_9e73a16d90d85b 1-21
+resin-source/crates/resin-recipe/tests/fixtures/glm_hf.json
+  s_806610229dbb4a::t_05894d943fa414 1-705
+resin-source/crates/resin-recipe/tests/fixtures/gpt_oss_harmony.json
+  s_806610229dbb4a::t_79a53fd3028423 1-426
+resin-source/crates/resin-recipe/tests/fixtures/inkling2_prompts.jsonl
+  s_806610229dbb4a::t_6f4ef4e1d6a3af 1-11
+resin-source/crates/resin-recipe/tests/fixtures/lfm2_prompts.jsonl
+  s_806610229dbb4a::t_93cccc70c8e0fc 1-5
+resin-source/crates/resin-recipe/tests/fixtures/qwen_hf.json
+  s_806610229dbb4a::t_6732ef73719dbe 1-922
+resin-source/crates/resin-recipe/tests/gemma.rs
+  s_806610229dbb4a::t_3659f39368e1ec 1-189
+resin-source/crates/resin-recipe/tests/glm.rs
+  s_806610229dbb4a::t_c7e4351fe7b04e 1-218
+resin-source/crates/resin-recipe/tests/gpt_oss.rs
+  s_806610229dbb4a::t_dc32c45f3bb927 1-288
+resin-source/crates/resin-recipe/tests/inkling2.rs
+  s_806610229dbb4a::t_ee172903a9d776 1-340
+resin-source/crates/resin-recipe/tests/lfm2.rs
+  s_806610229dbb4a::t_8f353c082ece99 1-229
+resin-source/crates/resin-recipe/tests/provenance.rs
+  s_806610229dbb4a::t_27a29465fbd72b 1-461
+resin-source/crates/resin-recipe/tests/qwen.rs
+  s_806610229dbb4a::t_5152ac6126335b 1-215
+resin-source/deploy/README.md
+  s_806610229dbb4a::t_60c85f60cb751e 1-47
+resin-source/deploy/__init__.py
+  s_806610229dbb4a::t_73240439ae0ade 1
+resin-source/deploy/checkpoint_cache.py
+  s_806610229dbb4a::t_e2ecfa59f4e90a 1-95
+resin-source/deploy/jit_cache.py
+  s_806610229dbb4a::t_306c914dbf3739 1-171
+resin-source/deploy/modal_bench.py
+  s_806610229dbb4a::t_2e0f17a43c0576 1-475
+resin-source/deploy/modal_bench_scoring.py
+  s_806610229dbb4a::t_ba9623e521cc8a 1-236
+resin-source/deploy/modal_serve.py
+  s_806610229dbb4a::t_b5c5f766805a5a 1-278
+resin-source/docs/architecture.md
+  s_806610229dbb4a::t_a676aaf136ed40 1-206
+resin-source/docs/benchmarks.md
+  s_806610229dbb4a::t_9f7f41b365c8ff 1-945
+resin-source/docs/cache-pool.md
+  s_806610229dbb4a::t_11cfca68c7e789 1-124
+resin-source/docs/cache-storage.md
+  s_806610229dbb4a::t_79216659e9a172 1-187
+resin-source/docs/cuda-graphs.md
+  s_806610229dbb4a::t_64b903351f972f 1-257
+resin-source/docs/distributed.md
+  s_806610229dbb4a::t_9357efa0f1fa55 1-554
+resin-source/docs/kernel-boundary.md
+  s_806610229dbb4a::t_3473c94c6475b9 1-131
+resin-source/docs/kernel-cache.md
+  s_806610229dbb4a::t_f545e5b1d7a773 1-136
+resin-source/docs/logprobs.md
+  s_806610229dbb4a::t_0cfb106640eb04 1-232
+resin-source/docs/metrics.md
+  s_806610229dbb4a::t_ef345836cc3dc0 1-329
+resin-source/docs/model-forward-pass.md
+  s_806610229dbb4a::t_aa2504eaa9a84f 1-279
+resin-source/docs/numa.md
+  s_806610229dbb4a::t_34d4456c247ddf 1-123
+resin-source/docs/scheduler.md
+  s_806610229dbb4a::t_200c1aff273c0b 1-232
+resin-source/docs/scripts.md
+  s_806610229dbb4a::t_9565d88df79039 1-44
+resin-source/models/cuda/ARCHITECTURE.md
+  s_806610229dbb4a::t_537e9686af76bf 1-70
+resin-source/models/cuda/pyproject.toml
+  s_806610229dbb4a::t_3d7de3014fc62d 1-45
+resin-source/models/cuda/resin_models_cuda/__init__.py
+  s_806610229dbb4a::t_dec96dc11d16c0 1
+resin-source/models/cuda/resin_models_cuda/deepseek_v41/LICENSE
+  s_806610229dbb4a::t_e34f96ba7e8307 1-21
+resin-source/models/cuda/resin_models_cuda/deepseek_v41/README.md
+  s_806610229dbb4a::t_441d6a3d35c28b 1-253
+resin-source/models/cuda/resin_models_cuda/deepseek_v41/__init__.py
+  s_806610229dbb4a::t_79ce0361194921 1
+resin-source/models/cuda/resin_models_cuda/deepseek_v41/attention.py
+  s_806610229dbb4a::t_c3d31aaf1820b3 1-314
+resin-source/models/cuda/resin_models_cuda/deepseek_v41/batch.py
+  s_806610229dbb4a::t_ca8f45f6f77676 1-254
+resin-source/models/cuda/resin_models_cuda/deepseek_v41/cache.py
+  s_806610229dbb4a::t_31fbaa44dcae90 1-378
+resin-source/models/cuda/resin_models_cuda/deepseek_v41/checkpoint.py
+  s_806610229dbb4a::t_3e6a6e8da0988f 1-34
+resin-source/models/cuda/resin_models_cuda/deepseek_v41/compressor.py
+  s_806610229dbb4a::t_fe7a8465ba3ffd 1-92
+resin-source/models/cuda/resin_models_cuda/deepseek_v41/cuda.py
+  s_806610229dbb4a::t_d0133d4c572ba4 1-1655
+resin-source/models/cuda/resin_models_cuda/deepseek_v41/embedding.py
+  s_806610229dbb4a::t_bc0a435631f1a9 1-142
+resin-source/models/cuda/resin_models_cuda/deepseek_v41/embedding_cuda.py
+  s_806610229dbb4a::t_756c9cb2072c93 1-67
+resin-source/models/cuda/resin_models_cuda/deepseek_v41/engram.py
+  s_806610229dbb4a::t_76c09d3648a894 1-362
+resin-source/models/cuda/resin_models_cuda/deepseek_v41/experts.py
+  s_806610229dbb4a::t_18dde4abc35209 1-476
+resin-source/models/cuda/resin_models_cuda/deepseek_v41/gemm.py
+  s_806610229dbb4a::t_2ab7a418a5b6fb 1-150
+resin-source/models/cuda/resin_models_cuda/deepseek_v41/hc.py
+  s_806610229dbb4a::t_f3aa8ff5004d15 1-228
+resin-source/models/cuda/resin_models_cuda/deepseek_v41/indexer.py
+  s_806610229dbb4a::t_7a5b54207d4471 1-220
+resin-source/models/cuda/resin_models_cuda/deepseek_v41/kernels.py
+  s_806610229dbb4a::t_1fd22f03849341 1-523
+resin-source/models/cuda/resin_models_cuda/deepseek_v41/linear.py
+  s_806610229dbb4a::t_e34f5b498fb438 1-227
+resin-source/models/cuda/resin_models_cuda/deepseek_v41/model.py
+  s_806610229dbb4a::t_f7188406678fae 1-1132
+resin-source/models/cuda/resin_models_cuda/deepseek_v41/primitives.py
+  s_806610229dbb4a::t_916f08395a2551 1-162
+resin-source/models/cuda/resin_models_cuda/deepseek_v41/tilelang_kernels.py
+  s_806610229dbb4a::t_97aba532d3aeb0 1-13
+resin-source/models/cuda/resin_models_cuda/deepseek_v41/upstream/LICENSE
+  s_806610229dbb4a::t_d008552d81c84b 1-201
+resin-source/models/cuda/resin_models_cuda/deepseek_v41/upstream/__init__.py
+  s_806610229dbb4a::t_6719970e414eed 1
+resin-source/models/cuda/resin_models_cuda/deepseek_v41/upstream/cache_common.py
+  s_806610229dbb4a::t_08d39821cbbe4d 1-270
+resin-source/models/cuda/resin_models_cuda/deepseek_v41/upstream/candidate_blocks.py
+  s_806610229dbb4a::t_c2eaea157f77fd 1-148
+resin-source/models/cuda/resin_models_cuda/deepseek_v41/upstream/common.py
+  s_806610229dbb4a::t_5ee31e65ec8b3b 1-20
+resin-source/models/cuda/resin_models_cuda/deepseek_v41/upstream/cuda/__init__.py
+  s_806610229dbb4a::t_2b709ae6440810 1
+resin-source/models/cuda/resin_models_cuda/deepseek_v41/upstream/cuda/batch_metadata.py
+  s_806610229dbb4a::t_710fb78f8e9754 1-286
+resin-source/models/cuda/resin_models_cuda/deepseek_v41/upstream/cuda/candidate_blocks.py
+  s_806610229dbb4a::t_4292de24a48cb7 1-287
+resin-source/models/cuda/resin_models_cuda/deepseek_v41/upstream/cuda/compress.py
+  s_806610229dbb4a::t_4a5895c87804ba 1-173
+resin-source/models/cuda/resin_models_cuda/deepseek_v41/upstream/cuda/flash_mla_utils.py
+  s_806610229dbb4a::t_c761aa37a18fc2 1-49
+resin-source/models/cuda/resin_models_cuda/deepseek_v41/upstream/cuda/fused_transform.py
+  s_806610229dbb4a::t_ea95077d244070 1-799
+resin-source/models/cuda/resin_models_cuda/deepseek_v41/upstream/cuda/get_kv_index.py
+  s_806610229dbb4a::t_9614ef9aab1bb3 1-77
+resin-source/models/cuda/resin_models_cuda/deepseek_v41/upstream/cuda/quant.py
+  s_806610229dbb4a::t_ec05943e40e414 1-16
+resin-source/models/cuda/resin_models_cuda/deepseek_v41/upstream/fused_transform.py
+  s_806610229dbb4a::t_09c415567be3c9 1-401
+resin-source/models/cuda/resin_models_cuda/deepseek_v41/vision.py
+  s_806610229dbb4a::t_297c1030cdb4c5 1-148
+resin-source/models/cuda/resin_models_cuda/deepseek_v41/weights.py
+  s_806610229dbb4a::t_f294d09f75dbab 1-131
+resin-source/models/cuda/resin_models_cuda/deepseek_v41/yoco.py
+  s_806610229dbb4a::t_ec8aa0ab1ab72e 1-94
+resin-source/models/cuda/resin_models_cuda/dense_parallel.py
+  s_806610229dbb4a::t_0d028e0d6af806 1-156
+resin-source/models/cuda/resin_models_cuda/gemma4/__init__.py
+  s_806610229dbb4a::t_ebc430fb17dd70 1
+resin-source/models/cuda/resin_models_cuda/gemma4/assistant_checkpoint.py
+  s_806610229dbb4a::t_7aac24f4c55622 1-103
+resin-source/models/cuda/resin_models_cuda/gemma4/checkpoint.py
+  s_806610229dbb4a::t_01b6875460e413 1-133
+resin-source/models/cuda/resin_models_cuda/gemma4/cuda.py
+  s_806610229dbb4a::t_db8f01098f1ac4 1-1744
+resin-source/models/cuda/resin_models_cuda/gemma4/edge_assistant.py
+  s_806610229dbb4a::t_55b7b50c32ca5d 1-185
+resin-source/models/cuda/resin_models_cuda/gemma4/edge_checkpoint.py
+  s_806610229dbb4a::t_61967360f92dce 1-52
+resin-source/models/cuda/resin_models_cuda/gemma4/edge_cuda.py
+  s_806610229dbb4a::t_d421b4b1b17b3d 1-890
+resin-source/models/cuda/resin_models_cuda/gemma4/edge_kernels.py
+  s_806610229dbb4a::t_f07fc82f4dfbbb 1-304
+resin-source/models/cuda/resin_models_cuda/gemma4/edge_kernels_triton.py
+  s_806610229dbb4a::t_30bd9ca04ef8a9 1-421
+resin-source/models/cuda/resin_models_cuda/gemma4/edge_model.py
+  s_806610229dbb4a::t_51e1095be01d93 1-391
+resin-source/models/cuda/resin_models_cuda/gemma4/model.py
+  s_806610229dbb4a::t_fd300e381e151e 1-279
+resin-source/models/cuda/resin_models_cuda/gemma4/parallel.py
+  s_806610229dbb4a::t_c6c57bb12a44e0 1-83
+resin-source/models/cuda/resin_models_cuda/glm5_3_flash/LICENSE.fla
+  s_806610229dbb4a::t_f161e4c1910145 1-21
+resin-source/models/cuda/resin_models_cuda/glm5_3_flash/__init__.py
+  s_806610229dbb4a::t_b976d0bbf81123 1
+resin-source/models/cuda/resin_models_cuda/glm5_3_flash/attention.py
+  s_806610229dbb4a::t_0fcdbe1f22b580 1-294
+resin-source/models/cuda/resin_models_cuda/glm5_3_flash/cache.py
+  s_806610229dbb4a::t_a2193ee8ad532a 1-507
+resin-source/models/cuda/resin_models_cuda/glm5_3_flash/cache_cuda.py
+  s_806610229dbb4a::t_41bfa60eea05fa 1-677
+resin-source/models/cuda/resin_models_cuda/glm5_3_flash/checkpoint.py
+  s_806610229dbb4a::t_b49955cae82de6 1-180
+resin-source/models/cuda/resin_models_cuda/glm5_3_flash/cuda.py
+  s_806610229dbb4a::t_107805a9b957a1 1-768
+resin-source/models/cuda/resin_models_cuda/glm5_3_flash/dsa.py
+  s_806610229dbb4a::t_941336a731973d 1-151
+resin-source/models/cuda/resin_models_cuda/glm5_3_flash/dsa_cuda.py
+  s_806610229dbb4a::t_d8d7f6afe10350 1-75
+resin-source/models/cuda/resin_models_cuda/glm5_3_flash/feed_forward_fusion.py
+  s_806610229dbb4a::t_323c40852989f4 1-60
+resin-source/models/cuda/resin_models_cuda/glm5_3_flash/feed_forward_fusion_cuda.py
+  s_806610229dbb4a::t_df6a1a1fc047b1 1-188
+resin-source/models/cuda/resin_models_cuda/glm5_3_flash/index_tail.py
+  s_806610229dbb4a::t_16212ad69a94c6 1-82
+resin-source/models/cuda/resin_models_cuda/glm5_3_flash/index_tail_cuda.py
+  s_806610229dbb4a::t_91f375706eec70 1-94
+resin-source/models/cuda/resin_models_cuda/glm5_3_flash/kda_state_cuda.py
+  s_806610229dbb4a::t_ecbfa0ede5c920 1-213
+resin-source/models/cuda/resin_models_cuda/glm5_3_flash/kernels.py
+  s_806610229dbb4a::t_87f178c4658324 1-402
+resin-source/models/cuda/resin_models_cuda/glm5_3_flash/kernels_cuda.py
+  s_806610229dbb4a::t_f803a2c2dbe0e1 1-584
+resin-source/models/cuda/resin_models_cuda/glm5_3_flash/mhc_cuda.py
+  s_806610229dbb4a::t_ad7f70a0ab5775 1-191
+resin-source/models/cuda/resin_models_cuda/glm5_3_flash/model.py
+  s_806610229dbb4a::t_118982d51ba542 1-751
+resin-source/models/cuda/resin_models_cuda/glm5_3_flash/normalization.py
+  s_806610229dbb4a::t_dca8e3023c7ff3 1-28
+resin-source/models/cuda/resin_models_cuda/glm5_3_flash/normalization_cuda.py
+  s_806610229dbb4a::t_98193af5aad756 1-68
+resin-source/models/cuda/resin_models_cuda/glm5_3_flash/projections.py
+  s_806610229dbb4a::t_7e471cf0f908e8 1-120
+resin-source/models/cuda/resin_models_cuda/glm5_3_flash/speculative.py
+  s_806610229dbb4a::t_d05cbc7025a046 1-398
+resin-source/models/cuda/resin_models_cuda/glm5_3_flash/speculative_cuda.py
+  s_806610229dbb4a::t_88952b7f9d1f90 1-360
+resin-source/models/cuda/resin_models_cuda/glm5_3_flash/staging_cuda.py
+  s_806610229dbb4a::t_479e8e498acab1 1-54
+resin-source/models/cuda/resin_models_cuda/glm5_3_flash/state_cuda.py
+  s_806610229dbb4a::t_f7f1c40b9dd03e 1-101
+resin-source/models/cuda/resin_models_cuda/glm5_3_flash/vision.py
+  s_806610229dbb4a::t_6e12d4cbbb77bf 1-297
+resin-source/models/cuda/resin_models_cuda/glm5_3_flash/weights.py
+  s_806610229dbb4a::t_57eaa6b27bdc3c 1-59
+resin-source/models/cuda/resin_models_cuda/gpt_oss/__init__.py
+  s_806610229dbb4a::t_b7473d5c6cc616 1
+resin-source/models/cuda/resin_models_cuda/gpt_oss/checkpoint.py
+  s_806610229dbb4a::t_0efaf843436af0 1-205
+resin-source/models/cuda/resin_models_cuda/gpt_oss/cuda.py
+  s_806610229dbb4a::t_4fbb65522d8c92 1-1172
+resin-source/models/cuda/resin_models_cuda/gpt_oss/cutile.py
+  s_806610229dbb4a::t_091c972c48ae5b 1-80
+resin-source/models/cuda/resin_models_cuda/gpt_oss/flashinfer.py
+  s_806610229dbb4a::t_c043df2af04efa 1-588
+resin-source/models/cuda/resin_models_cuda/gpt_oss/model.py
+  s_806610229dbb4a::t_564fcc1a1066a9 1-290
+resin-source/models/cuda/resin_models_cuda/gpt_oss/mxfp4.py
+  s_806610229dbb4a::t_79dad31858c2c8 1-279
+resin-source/models/cuda/resin_models_cuda/gpt_oss/paged_kv.py
+  s_806610229dbb4a::t_de0d2c66e63a4d 1-317
+resin-source/models/cuda/resin_models_cuda/gpt_oss/weights.py
+  s_806610229dbb4a::t_2e11d75bb86f50 1-84
+resin-source/models/cuda/resin_models_cuda/inkling2/LICENSE.flash-attention
+  s_806610229dbb4a::t_50d34bf36eed50 1-29
+resin-source/models/cuda/resin_models_cuda/inkling2/README.md
+  s_806610229dbb4a::t_4f385b52de0c23 1-113
+resin-source/models/cuda/resin_models_cuda/inkling2/__init__.py
+  s_806610229dbb4a::t_a125f965b563e2 1
+resin-source/models/cuda/resin_models_cuda/inkling2/attention.py
+  s_806610229dbb4a::t_ad148d939e0276 1-345
+resin-source/models/cuda/resin_models_cuda/inkling2/attention_prologue.py
+  s_806610229dbb4a::t_c0ba47dc3652b2 1-573
+resin-source/models/cuda/resin_models_cuda/inkling2/cache.py
+  s_806610229dbb4a::t_24691be081dc62 1-356
+resin-source/models/cuda/resin_models_cuda/inkling2/checkpoint.py
+  s_806610229dbb4a::t_7489d416d407af 1-59
+resin-source/models/cuda/resin_models_cuda/inkling2/cuda.py
+  s_806610229dbb4a::t_7f652c43a78dfb 1-929
+resin-source/models/cuda/resin_models_cuda/inkling2/cute_grouped_nvfp4.py
+  s_806610229dbb4a::t_fe10c284190215 1-1522
+resin-source/models/cuda/resin_models_cuda/inkling2/decode_attention.py
+  s_806610229dbb4a::t_9472c82f414dad 1-169
+resin-source/models/cuda/resin_models_cuda/inkling2/draft_weights.py
+  s_806610229dbb4a::t_222f2009066b32 1-84
+resin-source/models/cuda/resin_models_cuda/inkling2/dspark.py
+  s_806610229dbb4a::t_3a547bfd6cf966 1-391
+resin-source/models/cuda/resin_models_cuda/inkling2/dspark_kernels.py
+  s_806610229dbb4a::t_acc6702dfa0b8b 1-332
+resin-source/models/cuda/resin_models_cuda/inkling2/expert_cute.py
+  s_806610229dbb4a::t_ac342d13c2149e 1-203
+resin-source/models/cuda/resin_models_cuda/inkling2/expert_kernels.py
+  s_806610229dbb4a::t_d8aaa3800f4150 1-424
+resin-source/models/cuda/resin_models_cuda/inkling2/expert_native.cu
+  s_806610229dbb4a::t_00661dd5bf5087 1-410
+resin-source/models/cuda/resin_models_cuda/inkling2/expert_native.py
+  s_806610229dbb4a::t_52ff397d9d6c85 1-220
+resin-source/models/cuda/resin_models_cuda/inkling2/expert_quantization.py
+  s_806610229dbb4a::t_9308de24abf933 1-210
+resin-source/models/cuda/resin_models_cuda/inkling2/experts.py
+  s_806610229dbb4a::t_d0d265d9405ef4 1-191
+resin-source/models/cuda/resin_models_cuda/inkling2/fa4.py
+  s_806610229dbb4a::t_c2e02b9c8b7577 1-167
+resin-source/models/cuda/resin_models_cuda/inkling2/fa4_bias.py
+  s_806610229dbb4a::t_a099b6fa139d24 1-183
+resin-source/models/cuda/resin_models_cuda/inkling2/fa4_bias_kernel.py
+  s_806610229dbb4a::t_e6a0ffbced38a9 1-1844
+resin-source/models/cuda/resin_models_cuda/inkling2/fa4_bias_utils.py
+  s_806610229dbb4a::t_c0ecf3153e2555 1-66
+resin-source/models/cuda/resin_models_cuda/inkling2/kernels.py
+  s_806610229dbb4a::t_2b31639ee35ee2 1-214
+resin-source/models/cuda/resin_models_cuda/inkling2/model.py
+  s_806610229dbb4a::t_0d3248a3dd46a8 1-700
+resin-source/models/cuda/resin_models_cuda/inkling2/residual.py
+  s_806610229dbb4a::t_26dad59b2c2e8a 1-102
+resin-source/models/cuda/resin_models_cuda/inkling2/triton.py
+  s_806610229dbb4a::t_7b60611d67b734 1-673
+resin-source/models/cuda/resin_models_cuda/inkling2/vision.py
+  s_806610229dbb4a::t_e31732a0a476c0 1-335
+resin-source/models/cuda/resin_models_cuda/inkling2/vision_kernels.py
+  s_806610229dbb4a::t_0a99064e4b5388 1-267
+resin-source/models/cuda/resin_models_cuda/inkling2/vision_weights.py
+  s_806610229dbb4a::t_6db24d03cfd7bf 1-34
+resin-source/models/cuda/resin_models_cuda/inkling2/weights.py
+  s_806610229dbb4a::t_4159c778d35b3d 1-144
+resin-source/models/cuda/resin_models_cuda/mega_moe.py
+  s_806610229dbb4a::t_f5d6dc54b0f097 1-234
+resin-source/models/cuda/resin_models_cuda/nvfp4.py
+  s_806610229dbb4a::t_9b2f40d6b341ae 1-286
+resin-source/models/cuda/resin_models_cuda/qwen3_5/__init__.py
+  s_806610229dbb4a::t_2777dceb4abfa5 1
+resin-source/models/cuda/resin_models_cuda/qwen3_5/attention.py
+  s_806610229dbb4a::t_47dcdd1dd26a1d 1-491
+resin-source/models/cuda/resin_models_cuda/qwen3_5/attention_triton.py
+  s_806610229dbb4a::t_84b6b20ed5e90d 1-97
+resin-source/models/cuda/resin_models_cuda/qwen3_5/cache.py
+  s_806610229dbb4a::t_20c3ea588df9dc 1-432
+resin-source/models/cuda/resin_models_cuda/qwen3_5/checkpoint.py
+  s_806610229dbb4a::t_3a50eaec026ac9 1-209
+resin-source/models/cuda/resin_models_cuda/qwen3_5/cuda.py
+  s_806610229dbb4a::t_6214dc70b16a8b 1-1484
+resin-source/models/cuda/resin_models_cuda/qwen3_5/gdn_decode.py
+  s_806610229dbb4a::t_56260afb4a722b 1-321
+resin-source/models/cuda/resin_models_cuda/qwen3_5/model.py
+  s_806610229dbb4a::t_c0e799bf4450a7 1-748
+resin-source/models/cuda/resin_models_cuda/qwen3_5/parallel.py
+  s_806610229dbb4a::t_2db69ee538807f 1-204
+resin-source/models/cuda/resin_models_cuda/qwen3_5/quantization.py
+  s_806610229dbb4a::t_38c005c866540d 1-47
+resin-source/models/cuda/tests/_inkling2_expert_reference.py
+  s_806610229dbb4a::t_85f9ea94c491a5 1-181
+resin-source/models/cuda/tests/_inkling2_model.py
+  s_806610229dbb4a::t_71e59e24b02af7 1-216
+resin-source/models/cuda/tests/fixtures/README.md
+  s_806610229dbb4a::t_b6e7cf498ef9a5 1-20
+resin-source/models/cuda/tests/fixtures/deepseek_v41/README.md
+  s_806610229dbb4a::t_660c5a8a95743d 1-7
+resin-source/models/cuda/tests/fixtures/deepseek_v41/config.json
+  s_806610229dbb4a::t_f5230fa1308485 1-170
+resin-source/models/cuda/tests/fixtures/deepseek_v41/inference.json
+  s_806610229dbb4a::t_5c8d3198c54b8f 1-66
+resin-source/models/cuda/tests/fixtures/gemma4_e2b_config.json
+  s_806610229dbb4a::t_1d0ec4931a3736 1-190
+resin-source/models/cuda/tests/test_cuda_runner_graph_policy.py
+  s_806610229dbb4a::t_60fe9f5b7b8a99 1-252
+resin-source/models/cuda/tests/test_deepseek_checkpoint_loading.py
+  s_806610229dbb4a::t_a7d077d11c685e 1-131
+resin-source/models/cuda/tests/test_deepseek_v41.py
+  s_806610229dbb4a::t_2b5794164f26ab 1-474
+resin-source/models/cuda/tests/test_deepseek_v41_attention.py
+  s_806610229dbb4a::t_214f4ca2c848f2 1-88
+resin-source/models/cuda/tests/test_deepseek_v41_batch.py
+  s_806610229dbb4a::t_5aeddc044edfe1 1-460
+resin-source/models/cuda/tests/test_deepseek_v41_candidates.py
+  s_806610229dbb4a::t_daaf099c25eecc 1-47
+resin-source/models/cuda/tests/test_deepseek_v41_compressor.py
+  s_806610229dbb4a::t_da353c97321d38 1-102
+resin-source/models/cuda/tests/test_deepseek_v41_contracts.py
+  s_806610229dbb4a::t_861938708768b7 1-579
+resin-source/models/cuda/tests/test_deepseek_v41_engram.py
+  s_806610229dbb4a::t_cc0a5d82027faf 1-449
+resin-source/models/cuda/tests/test_deepseek_v41_experts.py
+  s_806610229dbb4a::t_715bd8e9a00d7b 1-168
+resin-source/models/cuda/tests/test_deepseek_v41_kernels_gpu.py
+  s_806610229dbb4a::t_4c05778283dba6 1-531
+resin-source/models/cuda/tests/test_deepseek_v41_media_transport.py
+  s_806610229dbb4a::t_84b7e0778c9bec 1-107
+resin-source/models/cuda/tests/test_deepseek_v41_model.py
+  s_806610229dbb4a::t_8cc69960c0fb2f 1-482
+resin-source/models/cuda/tests/test_deepseek_v41_projections.py
+  s_806610229dbb4a::t_3cd9d1c2901f36 1-277
+resin-source/models/cuda/tests/test_deepseek_v41_residuals.py
+  s_806610229dbb4a::t_80e6bff381d1e7 1-122
+resin-source/models/cuda/tests/test_deepseek_v41_vision.py
+  s_806610229dbb4a::t_908d46dc152ce1 1-335
+resin-source/models/cuda/tests/test_deepseek_v41_yoco.py
+  s_806610229dbb4a::t_dae2bdb9720338 1-305
+resin-source/models/cuda/tests/test_dense_parallel.py
+  s_806610229dbb4a::t_99f084a22b68a3 1-214
+resin-source/models/cuda/tests/test_dense_parallel_gpu.py
+  s_806610229dbb4a::t_75be5139046978 1-145
+resin-source/models/cuda/tests/test_gemma4_assistant.py
+  s_806610229dbb4a::t_f3d1b5c6c378f0 1-68
+resin-source/models/cuda/tests/test_gemma4_checkpoint.py
+  s_806610229dbb4a::t_81027e66f6f19f 1-111
+resin-source/models/cuda/tests/test_gemma4_codec.py
+  s_806610229dbb4a::t_b4eb36fc46d0a3 1-72
+resin-source/models/cuda/tests/test_gemma4_config.py
+  s_806610229dbb4a::t_1a421dcd8038e8 1-120
+resin-source/models/cuda/tests/test_gemma4_cuda.py
+  s_806610229dbb4a::t_4d038320964630 1-640
+resin-source/models/cuda/tests/test_gemma4_edge_kernels_cuda.py
+  s_806610229dbb4a::t_196b8a5039035c 1-604
+resin-source/models/cuda/tests/test_gemma4_edge_model.py
+  s_806610229dbb4a::t_237fd77901474f 1-467
+resin-source/models/cuda/tests/test_gemma4_edge_overlap.py
+  s_806610229dbb4a::t_6579f65f842edc 1-492
+resin-source/models/cuda/tests/test_gemma4_media.py
+  s_806610229dbb4a::t_d06b92b4529959 1-191
+resin-source/models/cuda/tests/test_gemma4_model.py
+  s_806610229dbb4a::t_757a6778a08c88 1-81
+resin-source/models/cuda/tests/test_gemma4_nvfp4.py
+  s_806610229dbb4a::t_fc59f0b982e5ab 1-141
+resin-source/models/cuda/tests/test_gemma4_parallel.py
+  s_806610229dbb4a::t_90c02f321299ce 1-167
+resin-source/models/cuda/tests/test_gemma4_plan.py
+  s_806610229dbb4a::t_0948a712a610cb 1-651
+resin-source/models/cuda/tests/test_glm53_attention.py
+  s_806610229dbb4a::t_a54b90a96df84c 1-991
+resin-source/models/cuda/tests/test_glm53_attention_compilation.py
+  s_806610229dbb4a::t_fa851e2bd5b8a6 1-209
+resin-source/models/cuda/tests/test_glm53_cache.py
+  s_806610229dbb4a::t_bca8e37ae867c8 1-193
+resin-source/models/cuda/tests/test_glm53_cache_cuda.py
+  s_806610229dbb4a::t_423e21acb0412e 1-468
+resin-source/models/cuda/tests/test_glm53_dsa_fp8.py
+  s_806610229dbb4a::t_0b79e1ddf1167a 1-289
+resin-source/models/cuda/tests/test_glm53_expert_tp_gpu.py
+  s_806610229dbb4a::t_7f17b5139fe330 1-159
+resin-source/models/cuda/tests/test_glm53_feed_forward_fusion.py
+  s_806610229dbb4a::t_e24500c7c64205 1-233
+resin-source/models/cuda/tests/test_glm53_index_tail.py
+  s_806610229dbb4a::t_0f3c8cd0f7e7d2 1-358
+resin-source/models/cuda/tests/test_glm53_kda_decode_workspace.py
+  s_806610229dbb4a::t_c98ced959fe958 1-240
+resin-source/models/cuda/tests/test_glm53_kda_state.py
+  s_806610229dbb4a::t_987820e03c45b5 1-114
+resin-source/models/cuda/tests/test_glm53_kda_workspace.py
+  s_806610229dbb4a::t_207589868c3a97 1-257
+resin-source/models/cuda/tests/test_glm53_model_gpu.py
+  s_806610229dbb4a::t_6074d27df68f99 1-660
+resin-source/models/cuda/tests/test_glm53_normalization.py
+  s_806610229dbb4a::t_f420fc7a832f9b 1-86
+resin-source/models/cuda/tests/test_glm53_projections.py
+  s_806610229dbb4a::t_5c597f05cd5ea5 1-291
+resin-source/models/cuda/tests/test_glm53_runner_limits.py
+  s_806610229dbb4a::t_b89d00017a12a2 1-254
+resin-source/models/cuda/tests/test_glm53_speculative.py
+  s_806610229dbb4a::t_544a0a4bc6625b 1-377
+resin-source/models/cuda/tests/test_glm53_speculative_cuda.py
+  s_806610229dbb4a::t_a9f58c9f740b38 1-238
+resin-source/models/cuda/tests/test_glm53_state_fusion.py
+  s_806610229dbb4a::t_b17e1615297b0c 1-124
+resin-source/models/cuda/tests/test_glm53_vision.py
+  s_806610229dbb4a::t_66c50067ef2046 1-132
+resin-source/models/cuda/tests/test_gpt_oss.py
+  s_806610229dbb4a::t_371c6281cc74cc 1-201
+resin-source/models/cuda/tests/test_gpt_oss_cuda.py
+  s_806610229dbb4a::t_a648eb622a2942 1-860
+resin-source/models/cuda/tests/test_gpt_oss_distributed_runner.py
+  s_806610229dbb4a::t_f03d7296f4d427 1-653
+resin-source/models/cuda/tests/test_gpt_oss_expert_parallel.py
+  s_806610229dbb4a::t_88349cf5e601e3 1-472
+resin-source/models/cuda/tests/test_gpt_oss_flashinfer.py
+  s_806610229dbb4a::t_c30681d15bdcf4 1-234
+resin-source/models/cuda/tests/test_gpt_oss_flashinfer_gpu.py
+  s_806610229dbb4a::t_27b136597e1f89 1-99
+resin-source/models/cuda/tests/test_gpt_oss_packed.py
+  s_806610229dbb4a::t_43beb41b395c24 1-66
+resin-source/models/cuda/tests/test_gpt_oss_prefill_projections.py
+  s_806610229dbb4a::t_93dda770c3a259 1-151
+resin-source/models/cuda/tests/test_gpt_oss_routing_gpu.py
+  s_806610229dbb4a::t_f88c8739b6ae39 1-49
+resin-source/models/cuda/tests/test_gpt_oss_weights.py
+  s_806610229dbb4a::t_5a06a29152aa9b 1-148
+resin-source/models/cuda/tests/test_inkling2_attention.py
+  s_806610229dbb4a::t_e2fadd20581ea5 1-306
+resin-source/models/cuda/tests/test_inkling2_engine_gpu.py
+  s_806610229dbb4a::t_95afeeb6e6dbf4 1-147
+resin-source/models/cuda/tests/test_inkling2_experts.py
+  s_806610229dbb4a::t_f775ed8f710224 1-177
+resin-source/models/cuda/tests/test_inkling2_model.py
+  s_806610229dbb4a::t_344b5291778399 1-174
+resin-source/models/cuda/tests/test_inkling2_state.py
+  s_806610229dbb4a::t_7f9888d2aff218 1-245
+resin-source/models/cuda/tests/test_logprobs_cuda.py
+  s_806610229dbb4a::t_22db21f4df8842 1-321
+resin-source/models/cuda/tests/test_media_feature_reuse.py
+  s_806610229dbb4a::t_ec2287d1ce0c30 1-247
+resin-source/models/cuda/tests/test_qwen3_5_cache.py
+  s_806610229dbb4a::t_c9cc3499d64604 1-211
+resin-source/models/cuda/tests/test_qwen3_5_config.py
+  s_806610229dbb4a::t_87e57dd36df393 1-125
+resin-source/models/cuda/tests/test_qwen3_5_gdn_decode.py
+  s_806610229dbb4a::t_a2ff927b420ea6 1-521
+resin-source/models/cuda/tests/test_qwen3_5_kernels_gpu.py
+  s_806610229dbb4a::t_126c3d318511f0 1-459
+resin-source/models/cuda/tests/test_qwen3_5_media.py
+  s_806610229dbb4a::t_62064cc44e2295 1-177
+resin-source/models/cuda/tests/test_qwen3_5_model.py
+  s_806610229dbb4a::t_7f1d6384b985c1 1-341
+resin-source/models/cuda/tests/test_qwen3_5_tensor_parallel.py
+  s_806610229dbb4a::t_a63959bfa95113 1-297
+resin-source/models/cuda/tests/test_scoring_runtime_cuda.py
+  s_806610229dbb4a::t_52476b60f93054 1-308
+resin-source/models/cuda/tests/test_verified_sampling_blocks.py
+  s_806610229dbb4a::t_fa002d525027e1 1-290
+resin-source/models/cuda/tests/test_vision_attention_cuda.py
+  s_806610229dbb4a::t_13886784fbb660 1-177
+resin-source/models/mlx/.gitignore
+  s_806610229dbb4a::t_8312fc658080dc 1
+resin-source/models/mlx/LICENSE
+  s_806610229dbb4a::t_c69b0a9f65fd5f 1-202
+resin-source/models/mlx/MANIFEST.in
+  s_806610229dbb4a::t_1be38e0e02c9aa 1
+resin-source/models/mlx/pyproject.toml
+  s_806610229dbb4a::t_31c9a28ddafb2b 1-45
+resin-source/models/mlx/resin_models_mlx/__init__.py
+  s_806610229dbb4a::t_df483177e01846 1
+resin-source/models/mlx/resin_models_mlx/_native/README.md
+  s_806610229dbb4a::t_d30ab4eb37834c 1-98
+resin-source/models/mlx/resin_models_mlx/_native/__init__.py
+  s_806610229dbb4a::t_2ee3f32e0afea2 1-15
+resin-source/models/mlx/resin_models_mlx/_native/__init__.pyi
+  s_806610229dbb4a::t_047982ce4fa545 1
+resin-source/models/mlx/resin_models_mlx/_native/attention.cpp
+  s_806610229dbb4a::t_62c56c89f7342f 1-166
+resin-source/models/mlx/resin_models_mlx/_native/attention.metal
+  s_806610229dbb4a::t_0917c39acede9c 1-40
+resin-source/models/mlx/resin_models_mlx/_native/attention_kernel.h
+  s_806610229dbb4a::t_147c22f6abce8b 1-153
+resin-source/models/mlx/resin_models_mlx/_native/cache.cpp
+  s_806610229dbb4a::t_8b48b7a067a8a9 1-254
+resin-source/models/mlx/resin_models_mlx/_native/cache.metal
+  s_806610229dbb4a::t_c8133c86a14bcb 1-42
+resin-source/models/mlx/resin_models_mlx/_native/common.h
+  s_806610229dbb4a::t_7562bab6394708 1-35
+resin-source/models/mlx/resin_models_mlx/_native_cache.pyi
+  s_806610229dbb4a::t_8a51f8811864fc 1-47
+resin-source/models/mlx/resin_models_mlx/cache_packing.py
+  s_806610229dbb4a::t_336ce9381c9e26 1-68
+resin-source/models/mlx/resin_models_mlx/paged_attention.py
+  s_806610229dbb4a::t_1bbabc524f72d2 1-314
+resin-source/models/mlx/resin_models_mlx/qwen3_5/LICENSE
+  s_806610229dbb4a::t_19cafea5fafccf 1-25
+resin-source/models/mlx/resin_models_mlx/qwen3_5/README.md
+  s_806610229dbb4a::t_820660cd42f35c 1-164
+resin-source/models/mlx/resin_models_mlx/qwen3_5/__init__.py
+  s_806610229dbb4a::t_7b77d99b1c1d06 1-5
+resin-source/models/mlx/resin_models_mlx/qwen3_5/cache.py
+  s_806610229dbb4a::t_8de486b8ded2b2 1-417
+resin-source/models/mlx/resin_models_mlx/qwen3_5/checkpoint.py
+  s_806610229dbb4a::t_e85b7fe9df32d2 1-271
+resin-source/models/mlx/resin_models_mlx/qwen3_5/fused_conv.py
+  s_806610229dbb4a::t_6a7d2ed9cfe008 1-133
+resin-source/models/mlx/resin_models_mlx/qwen3_5/fused_norm.py
+  s_806610229dbb4a::t_ef2d3a419047e3 1-161
+resin-source/models/mlx/resin_models_mlx/qwen3_5/gated_delta.py
+  s_806610229dbb4a::t_1f9bcd0b6ff3a1 1-44
+resin-source/models/mlx/resin_models_mlx/qwen3_5/media.py
+  s_806610229dbb4a::t_3d08e007508ab8 1-145
+resin-source/models/mlx/resin_models_mlx/qwen3_5/model.py
+  s_806610229dbb4a::t_32402b39ea7e59 1-598
+resin-source/models/mlx/resin_models_mlx/qwen3_5/normalization.py
+  s_806610229dbb4a::t_f82aaedc538db3 1-32
+resin-source/models/mlx/resin_models_mlx/qwen3_5/runner.py
+  s_806610229dbb4a::t_e1bc932a730197 1-402
+resin-source/models/mlx/resin_models_mlx/qwen3_5/state.py
+  s_806610229dbb4a::t_f6518821e795f0 1-141
+resin-source/models/mlx/resin_models_mlx/qwen3_5/vision.py
+  s_806610229dbb4a::t_6d5ef7b8144194 1-143
+resin-source/models/mlx/resin_models_mlx/sampling.py
+  s_806610229dbb4a::t_cd39e1aad5a908 1-84
+resin-source/models/mlx/setup.py
+  s_806610229dbb4a::t_4ee3df727bad77 1-48
+resin-source/models/mlx/tests/test_cache_packing.py
+  s_806610229dbb4a::t_7cdc930582a560 1-40
+resin-source/models/mlx/tests/test_fused_conv.py
+  s_806610229dbb4a::t_8f85caf712297a 1-52
+resin-source/models/mlx/tests/test_fused_norm.py
+  s_806610229dbb4a::t_f748f593d4d131 1-40
+resin-source/models/mlx/tests/test_mlx_sampling.py
+  s_806610229dbb4a::t_29823f87b1c689 1-121
+resin-source/models/mlx/tests/test_native_cache.py
+  s_806610229dbb4a::t_f17c2a26b92760 1-142
+resin-source/models/mlx/tests/test_native_cache_ordering.py
+  s_806610229dbb4a::t_c237847e01d26a 1-100
+resin-source/models/mlx/tests/test_native_cache_rows.py
+  s_806610229dbb4a::t_d8991d1e101a49 1-25
+resin-source/models/mlx/tests/test_paged_attention.py
+  s_806610229dbb4a::t_b512c88328cf74 1-109
+resin-source/models/mlx/tests/test_paged_attention_layouts.py
+  s_806610229dbb4a::t_cf6da98309d900 1-83
+resin-source/models/mlx/tests/test_paged_attention_merge.py
+  s_806610229dbb4a::t_4b2caedf334795 1-32
+resin-source/models/mlx/tests/test_qwen3_5_media.py
+  s_806610229dbb4a::t_18c32d2319ee28 1-107
+resin-source/models/mlx/tests/test_qwen3_5_mlx.py
+  s_806610229dbb4a::t_aa850abdc441ac 1-442
+resin-source/models/mlx/tests/test_qwen3_5_vision.py
+  s_806610229dbb4a::t_e980ea650016ce 1-163
+resin-source/models/torch/pyproject.toml
+  s_806610229dbb4a::t_e43e725776fd4a 1-22
+resin-source/models/torch/resin_models_torch/__init__.py
+  s_806610229dbb4a::t_4bc7f9f103d61b 1
+resin-source/models/torch/resin_models_torch/lfm2/__init__.py
+  s_806610229dbb4a::t_1b522b4b7afd6b 1-10
+resin-source/models/torch/resin_models_torch/lfm2/config.py
+  s_806610229dbb4a::t_19af1bdd65165a 1-77
+resin-source/models/torch/resin_models_torch/lfm2/model.py
+  s_806610229dbb4a::t_4108ece6744bd4 1-416
+resin-source/models/torch/resin_models_torch/lfm2/reference.py
+  s_806610229dbb4a::t_045ad76d2bcf4d 1-201
+resin-source/models/torch/tests/test_lfm2_torch.py
+  s_806610229dbb4a::t_6e4418b2a433a8 1-416
+resin-source/pyproject.toml
+  s_806610229dbb4a::t_a0bd9e34a73158 1-181
+resin-source/resin/__init__.py
+  s_806610229dbb4a::t_336c65acdf3c21 1-76
+resin-source/resin/_cache_storage.py
+  s_806610229dbb4a::t_a6c7d44137995c 1-105
+resin-source/resin/backend/__init__.py
+  s_806610229dbb4a::t_37ddf840880bd4 1-6
+resin-source/resin/backend/balanced_routing.py
+  s_806610229dbb4a::t_489534cb1c2905 1-65
+resin-source/resin/backend/cache_storage.py
+  s_806610229dbb4a::t_e6d3a2e473cb1f 1-43
+resin-source/resin/backend/capacity.py
+  s_806610229dbb4a::t_c1d46d30bde489 1-64
+resin-source/resin/backend/collectives.py
+  s_806610229dbb4a::t_db7e9d82a2a3fd 1-77
+resin-source/resin/backend/command_transport.py
+  s_806610229dbb4a::t_731dfb3e052d1d 1-166
+resin-source/resin/backend/control_plane.py
+  s_806610229dbb4a::t_030b5b4253b9be 1-95
+resin-source/resin/backend/cuda/__init__.py
+  s_806610229dbb4a::t_611b259031e5a5 1
+resin-source/resin/backend/cuda/_sampling_cutedsl.py
+  s_806610229dbb4a::t_2071787d5863d7 1-562
+resin-source/resin/backend/cuda/_scoring_cutedsl.py
+  s_806610229dbb4a::t_0bcf3d739e7781 1-930
+resin-source/resin/backend/cuda/completion.py
+  s_806610229dbb4a::t_117839a1f0e58e 1-374
+resin-source/resin/backend/cuda/context_parallel.py
+  s_806610229dbb4a::t_b00f1fca8fca5e 1-151
+resin-source/resin/backend/cuda/expert_parallel.py
+  s_806610229dbb4a::t_2e2393ac1ecc20 1-190
+resin-source/resin/backend/cuda/expert_parallel_kernels.py
+  s_806610229dbb4a::t_8ac70b58c561fc 1-333
+resin-source/resin/backend/cuda/failures.py
+  s_806610229dbb4a::t_5c197a439ba4a3 1-52
+resin-source/resin/backend/cuda/filtered_sampling.py
+  s_806610229dbb4a::t_c851f6d157487e 1-253
+resin-source/resin/backend/cuda/graphs.py
+  s_806610229dbb4a::t_f4c689d89c1d6f 1-804
+resin-source/resin/backend/cuda/logits_sampling.py
+  s_806610229dbb4a::t_ab1479b0817a40 1-447
+resin-source/resin/backend/cuda/metrics.py
+  s_806610229dbb4a::t_070be39cc143c4 1-273
+resin-source/resin/backend/cuda/parallel.py
+  s_806610229dbb4a::t_d303e507b38995 1-228
+resin-source/resin/backend/cuda/runner.py
+  s_806610229dbb4a::t_73afaa1b60687f 1-784
+resin-source/resin/backend/cuda/sampling.py
+  s_806610229dbb4a::t_665f11dd68c4c4 1-264
+resin-source/resin/backend/cuda/sampling_blocks.py
+  s_806610229dbb4a::t_01282c7263c056 1-131
+resin-source/resin/backend/cuda/sampling_native.py
+  s_806610229dbb4a::t_cf36f9a80b0947 1-85
+resin-source/resin/backend/cuda/sampling_topk.cu
+  s_806610229dbb4a::t_9222eeccf42ce1 1-209
+resin-source/resin/backend/cuda/scoring.py
+  s_806610229dbb4a::t_52b887dae281b6 1-282
+resin-source/resin/backend/cuda/shared_workspace.py
+  s_806610229dbb4a::t_07c4bb9a73bfc7 1-50
+resin-source/resin/backend/cuda/slab.py
+  s_806610229dbb4a::t_d071d6eec4c753 1-327
+resin-source/resin/backend/cuda/staging.py
+  s_806610229dbb4a::t_5f4cb7c9d666a1 1-160
+resin-source/resin/backend/cuda/state.py
+  s_806610229dbb4a::t_2331fb3f488b8e 1-214
+resin-source/resin/backend/cuda/state_triton.py
+  s_806610229dbb4a::t_3c170592b876d1 1-74
+resin-source/resin/backend/cuda/tensor_graphs.py
+  s_806610229dbb4a::t_61ff06441af09c 1-197
+resin-source/resin/backend/cuda/vision_cache.py
+  s_806610229dbb4a::t_25c840d1482881 1-102
+resin-source/resin/backend/distributed.py
+  s_806610229dbb4a::t_97459c0cd1bf12 1-749
+resin-source/resin/backend/expert_parallel.py
+  s_806610229dbb4a::t_295a9325b6b9bc 1-234
+resin-source/resin/backend/layers.py
+  s_806610229dbb4a::t_c1b7bf2b8cd75e 1-80
+resin-source/resin/backend/loading.py
+  s_806610229dbb4a::t_2687343c94696a 1-207
+resin-source/resin/backend/metrics.py
+  s_806610229dbb4a::t_0cc398ffaddd94 1-11
+resin-source/resin/backend/plan_transport.py
+  s_806610229dbb4a::t_0e90e95876b98d 1-164
+resin-source/resin/backend/plans.py
+  s_806610229dbb4a::t_340990c2068072 1-341
+resin-source/resin/backend/resources.py
+  s_806610229dbb4a::t_7b9a46e65c40a2 1-40
+resin-source/resin/backend/safetensors.py
+  s_806610229dbb4a::t_05ebfdd878ccdf 1-131
+resin-source/resin/backend/sampling.py
+  s_806610229dbb4a::t_203de2e199f6a3 1-524
+resin-source/resin/backend/speculative.py
+  s_806610229dbb4a::t_cc5d8aadea579b 1-91
+resin-source/resin/backend/topology.py
+  s_806610229dbb4a::t_958defc047ab59 1-143
+resin-source/resin/backend/torch.py
+  s_806610229dbb4a::t_92e30779be8061 1-21
+resin-source/resin/bench.py
+  s_806610229dbb4a::t_debaa30f412a56 1-897
+resin-source/resin/bench_prompts.py
+  s_806610229dbb4a::t_1faba9f7f62dcf 1-497
+resin-source/resin/cache_storage.py
+  s_806610229dbb4a::t_0373ca7d818cd3 1-270
+resin-source/resin/kernel_cache.py
+  s_806610229dbb4a::t_c7d4bf5662e5fc 1-398
+resin-source/resin/models/__init__.py
+  s_806610229dbb4a::t_01d29b2a70dac8 1
+resin-source/resin/models/deepseek_v41/__init__.py
+  s_806610229dbb4a::t_43b90e4b0bc37a 1-5
+resin-source/resin/models/deepseek_v41/config.py
+  s_806610229dbb4a::t_aaff4b81972411 1-153
+resin-source/resin/models/gemma4/__init__.py
+  s_806610229dbb4a::t_9d346a8c7c0c45 1
+resin-source/resin/models/gemma4/assistant.py
+  s_806610229dbb4a::t_4d46c093b4772f 1-250
+resin-source/resin/models/gemma4/config.py
+  s_806610229dbb4a::t_c4622c9379fef4 1-165
+resin-source/resin/models/gemma4/edge_config.py
+  s_806610229dbb4a::t_965a4ad2253e37 1-140
+resin-source/resin/models/gemma4/model.py
+  s_806610229dbb4a::t_f60b89614686e6 1-89
+resin-source/resin/models/gemma4/plan.py
+  s_806610229dbb4a::t_b7a8b2e6a1fb79 1-312
+resin-source/resin/models/glm5_3_flash/README.md
+  s_806610229dbb4a::t_d091c06d87dea4 1-444
+resin-source/resin/models/glm5_3_flash/__init__.py
+  s_806610229dbb4a::t_0d6df43c863a25 1
+resin-source/resin/models/glm5_3_flash/config.py
+  s_806610229dbb4a::t_33b3b7ec80f47e 1-131
+resin-source/resin/models/gpt_oss/__init__.py
+  s_806610229dbb4a::t_4efd460e57a51f 1
+resin-source/resin/models/gpt_oss/config.py
+  s_806610229dbb4a::t_8bddd47060535e 1-139
+resin-source/resin/models/gpt_oss/plan.py
+  s_806610229dbb4a::t_e1d1dc4191ff85 1-120
+resin-source/resin/models/hf_config.py
+  s_806610229dbb4a::t_0db22be31de1c0 1-67
+resin-source/resin/models/inkling2/__init__.py
+  s_806610229dbb4a::t_1e3e22b1cc5158 1-5
+resin-source/resin/models/inkling2/config.py
+  s_806610229dbb4a::t_235228eb03c6c3 1-148
+resin-source/resin/models/inkling2/dspark.py
+  s_806610229dbb4a::t_bd228a0353dcfc 1-109
+resin-source/resin/models/qwen3_5/__init__.py
+  s_806610229dbb4a::t_f06b0f7a7d4cf3 1
+resin-source/resin/models/qwen3_5/config.py
+  s_806610229dbb4a::t_9508727519eea9 1-245
+resin-source/resin/numa.py
+  s_806610229dbb4a::t_6fca3454ec3926 1-274
+resin-source/resin/process.py
+  s_806610229dbb4a::t_5c593e43c7bb7a 1-199
+resin-source/resin/protocols.py
+  s_806610229dbb4a::t_dedae115ea0dee 1-164
+resin-source/resin/py.typed
+  s_806610229dbb4a::t_add84544897d89 1
+resin-source/resin/server/__init__.py
+  s_806610229dbb4a::t_28319862e76131 1-229
+resin-source/resin/server/distributed.py
+  s_806610229dbb4a::t_b09dbd3369716c 1-229
+resin-source/resin/server/transport.py
+  s_806610229dbb4a::t_c44d2fca21aa7b 1-75
+resin-source/scripts/bench.py
+  s_806610229dbb4a::t_0e7d1df386584d 1-1248
+resin-source/scripts/bench_scoring.py
+  s_806610229dbb4a::t_c433b68858d691 1-327
+resin-source/scripts/bench_sglang.py
+  s_806610229dbb4a::t_0c61946e2e87f4 1-551
+resin-source/scripts/bench_startup.py
+  s_806610229dbb4a::t_5a33843d7c2dee 1-22
+resin-source/scripts/check_server.py
+  s_806610229dbb4a::t_be7eb5141e3d38 1-883
+resin-source/scripts/cloc.py
+  s_806610229dbb4a::t_364d57658d7a4d 1-230
+resin-source/scripts/lfm2_chat.py
+  s_806610229dbb4a::t_ae1fa63c07c315 1-58
+resin-source/scripts/lfm2_serve.py
+  s_806610229dbb4a::t_1001f5ee37c565 1-30
+resin-source/scripts/merge_bench_traces.py
+  s_806610229dbb4a::t_ec3e7619104336 1-176
+resin-source/scripts/mlx_serve.py
+  s_806610229dbb4a::t_175a539920e43d 1-113
+resin-source/scripts/plot_bench.py
+  s_806610229dbb4a::t_d9555a508e3964 1-524
+resin-source/scripts/rust_build_and_types.py
+  s_806610229dbb4a::t_12cee43a2f50ca 1-25
+resin-source/scripts/stress_http.py
+  s_806610229dbb4a::t_fdc52d25ab2a31 1-542
+resin-source/scripts/sync_type_libraries.py
+  s_806610229dbb4a::t_9eab01e0b6c6a5 1-299
+resin-source/skills/add-resin-model/SKILL.md
+  s_806610229dbb4a::t_9fefbf1a3fd0cb 1-230
+resin-source/skills/add-resin-model/agents/openai.yaml
+  s_806610229dbb4a::t_a9f1940680163a 1-4
+resin-source/skills/optimize-resin-performance/SKILL.md
+  s_806610229dbb4a::t_2a15006e629a37 1-244
+resin-source/skills/optimize-resin-performance/agents/openai.yaml
+  s_806610229dbb4a::t_1483eff04740ac 1-4
+resin-source/skills/optimize-resin-performance/references/lessons.md
+  s_806610229dbb4a::t_f3bedce5742f55 1-370
+resin-source/tests/fixtures/deepseek_v41_images.json
+  s_806610229dbb4a::t_d03035413b06fa 1-105
+resin-source/tests/http_checks.py
+  s_806610229dbb4a::t_76977e7ad9bf5d 1-115
+resin-source/tests/http_packets.py
+  s_806610229dbb4a::t_b4b58f964d14c5 1-13
+resin-source/tests/output_helpers.py
+  s_806610229dbb4a::t_83d03e40c50fb5 1-33
+resin-source/tests/recipe_fuzz/README.md
+  s_806610229dbb4a::t_bdff35bcc23410 1-42
+resin-source/tests/recipe_fuzz/deepseek.py
+  s_806610229dbb4a::t_ae697df32e3f3f 1-302
+resin-source/tests/recipe_fuzz/gemma.py
+  s_806610229dbb4a::t_a7e62ca8dfc8ab 1-233
+resin-source/tests/recipe_fuzz/gpt_oss.py
+  s_806610229dbb4a::t_d4df5c5e5486c7 1-280
+resin-source/tests/recipe_fuzz/harness.py
+  s_806610229dbb4a::t_b63d71270039a1 1-132
+resin-source/tests/recipe_fuzz/inputs.py
+  s_806610229dbb4a::t_81c583a4ff38b8 1-72
+resin-source/tests/recipe_fuzz/lfm2.py
+  s_806610229dbb4a::t_90bdbdea8ba828 1-180
+resin-source/tests/recipe_fuzz/qwen.py
+  s_806610229dbb4a::t_49c98514b1730e 1-228
+resin-source/tests/recipe_fuzz/references/README.md
+  s_806610229dbb4a::t_4ee4a2807bfd1d 1-30
+resin-source/tests/recipe_fuzz/references/gemma4-LICENSE.txt
+  s_806610229dbb4a::t_1bdbf4a922fd1e 1-202
+resin-source/tests/recipe_fuzz/references/lfm2-LICENSE.txt
+  s_806610229dbb4a::t_b38255628b5d26 1-71
+resin-source/tests/recipe_fuzz/references/lfm2.jinja
+  s_806610229dbb4a::t_ab9418f0ee3904 1-117
+resin-source/tests/recipe_fuzz/templates/README.md
+  s_806610229dbb4a::t_2ab510eabfc287 1-19
+resin-source/tests/recipe_fuzz/templates/gemma4.jinja
+  s_806610229dbb4a::t_bf2b06a5834292 1-354
+resin-source/tests/recipe_fuzz/templates/glm5_3_flash.jinja
+  s_806610229dbb4a::t_69a326024bf033 1-257
+resin-source/tests/recipe_fuzz/templates/inkling2.jinja
+  s_806610229dbb4a::t_c93ce020ac3b5c 1-130
+resin-source/tests/recipe_fuzz/templates/ornith.jinja
+  s_806610229dbb4a::t_703b91a59dbd2b 1-150
+resin-source/tests/recipe_fuzz/templates/qwen3_5.jinja
+  s_806610229dbb4a::t_e5f82510386ba0 1-154
+resin-source/tests/recipe_fuzz/templates/qwen3_8.jinja
+  s_806610229dbb4a::t_3e0ea9816fb0b2 1-170
+resin-source/tests/recipe_fuzz/test_deepseek_images.py
+  s_806610229dbb4a::t_16ab07890e1160 1-108
+resin-source/tests/recipe_fuzz/test_differential.py
+  s_806610229dbb4a::t_cc33823187b8bb 1-301
+resin-source/tests/test_backend_capacity.py
+  s_806610229dbb4a::t_512015ba0085c2 1-29
+resin-source/tests/test_backend_loading.py
+  s_806610229dbb4a::t_b985643d6be7ec 1-147
+resin-source/tests/test_backend_plans.py
+  s_806610229dbb4a::t_dcecc6812fbfd2 1-527
+resin-source/tests/test_bench.py
+  s_806610229dbb4a::t_8ddcd9b828bb32 1-956
+resin-source/tests/test_bench_cli.py
+  s_806610229dbb4a::t_9d66823c4ef673 1-543
+resin-source/tests/test_bench_plots.py
+  s_806610229dbb4a::t_4581b145926c77 1-510
+resin-source/tests/test_bench_preflight.py
+  s_806610229dbb4a::t_506ec2e6adabb2 1-219
+resin-source/tests/test_bench_prompts.py
+  s_806610229dbb4a::t_afe83b9b1bfe4d 1-51
+resin-source/tests/test_bench_sglang.py
+  s_806610229dbb4a::t_1cbad62d41fe00 1-273
+resin-source/tests/test_bench_trace.py
+  s_806610229dbb4a::t_b4f2fb56511211 1-112
+resin-source/tests/test_bench_trace_headroom.py
+  s_806610229dbb4a::t_cb6f7e26cbc1cb 1-325
+resin-source/tests/test_cache_salt.py
+  s_806610229dbb4a::t_9ab02f93ac1159 1-135
+resin-source/tests/test_cache_storage.py
+  s_806610229dbb4a::t_b4e45935effeb0 1-388
+resin-source/tests/test_check_server.py
+  s_806610229dbb4a::t_c17e3f4e1e02e4 1-713
+resin-source/tests/test_checkpoint_cache.py
+  s_806610229dbb4a::t_2660f0c0a52c35 1-87
+resin-source/tests/test_composable_expert_parallel.py
+  s_806610229dbb4a::t_6cd79e2c0f1607 1-208
+resin-source/tests/test_context_parallel.py
+  s_806610229dbb4a::t_c461f62a41e045 1-157
+resin-source/tests/test_context_parallel_gpu.py
+  s_806610229dbb4a::t_9c839acefc1b06 1-190
+resin-source/tests/test_control_plane.py
+  s_806610229dbb4a::t_c57c1281906fad 1-263
+resin-source/tests/test_cuda_completion.py
+  s_806610229dbb4a::t_b5a0cc4b833db7 1-444
+resin-source/tests/test_cuda_failures.py
+  s_806610229dbb4a::t_19d87fec7b236a 1-117
+resin-source/tests/test_cuda_graph_pool_gpu.py
+  s_806610229dbb4a::t_dc02fbdc136fed 1-376
+resin-source/tests/test_cuda_graphs.py
+  s_806610229dbb4a::t_d2757d7eadc674 1-1136
+resin-source/tests/test_cuda_metrics.py
+  s_806610229dbb4a::t_a7c77925dc45c6 1-97
+resin-source/tests/test_cuda_plan_validation.py
+  s_806610229dbb4a::t_38169ad015dc38 1-88
+resin-source/tests/test_cuda_prefill_graphs.py
+  s_806610229dbb4a::t_040586d3659ca8 1-390
+resin-source/tests/test_cuda_slab.py
+  s_806610229dbb4a::t_32bb48ab1582ca 1-180
+resin-source/tests/test_cuda_staging.py
+  s_806610229dbb4a::t_83ef352b149fd4 1-285
+resin-source/tests/test_cuda_tensor_graphs.py
+  s_806610229dbb4a::t_185584e49c0c63 1-186
+resin-source/tests/test_deepseek_attention_graphs.py
+  s_806610229dbb4a::t_da76596bea547a 1-79
+resin-source/tests/test_deepseek_auxiliary_graphs.py
+  s_806610229dbb4a::t_4ce7bfec398643 1-201
+resin-source/tests/test_deepseek_engram_graphs.py
+  s_806610229dbb4a::t_b8f529cd991b84 1-62
+resin-source/tests/test_deepseek_hc_warmup.py
+  s_806610229dbb4a::t_f5767e3eadd254 1-132
+resin-source/tests/test_deepseek_v41_codec.py
+  s_806610229dbb4a::t_8e706835645a02 1-63
+resin-source/tests/test_deepseek_v41_media.py
+  s_806610229dbb4a::t_391ae68a185e7f 1-234
+resin-source/tests/test_deploy_models.py
+  s_806610229dbb4a::t_0f0bb0dc607139 1-415
+resin-source/tests/test_distributed.py
+  s_806610229dbb4a::t_a1dbfa0676804b 1-679
+resin-source/tests/test_distributed_cuda_graphs.py
+  s_806610229dbb4a::t_d07de194498842 1-619
+resin-source/tests/test_distributed_http.py
+  s_806610229dbb4a::t_e80fa269a14957 1-608
+resin-source/tests/test_distributed_metrics.py
+  s_806610229dbb4a::t_d29c7622488fa6 1-122
+resin-source/tests/test_distributed_overlap.py
+  s_806610229dbb4a::t_5063a676a8d4b4 1-256
+resin-source/tests/test_distributed_transport.py
+  s_806610229dbb4a::t_2bd814056cceb9 1-253
+resin-source/tests/test_engine.py
+  s_806610229dbb4a::t_6d1b9087ecf260 1-604
+resin-source/tests/test_engine_execution.py
+  s_806610229dbb4a::t_08c2646bf7c54c 1-295
+resin-source/tests/test_engine_overlap.py
+  s_806610229dbb4a::t_5ad766445e0d6a 1-573
+resin-source/tests/test_expert_parallel.py
+  s_806610229dbb4a::t_6fbdd8874b95b1 1-298
+resin-source/tests/test_expert_parallel_gpu.py
+  s_806610229dbb4a::t_dbf97007eda16f 1-532
+resin-source/tests/test_expert_parallel_preparation_gpu.py
+  s_806610229dbb4a::t_55672e185b7a21 1-317
+resin-source/tests/test_flat_cache.py
+  s_806610229dbb4a::t_80a83d88d3af6a 1-549
+resin-source/tests/test_glm53_expert_sharding.py
+  s_806610229dbb4a::t_e6b1aaa9683666 1-261
+resin-source/tests/test_glm53_model.py
+  s_806610229dbb4a::t_310f655e8baca9 1-168
+resin-source/tests/test_glm_media.py
+  s_806610229dbb4a::t_cd919ae0595581 1-137
+resin-source/tests/test_glm_recipe.py
+  s_806610229dbb4a::t_bafe80413732e5 1-178
+resin-source/tests/test_http_checks.py
+  s_806610229dbb4a::t_e0ae6f22545a23 1-109
+resin-source/tests/test_http_lifecycle.py
+  s_806610229dbb4a::t_80cfe120d511d1 1-702
+resin-source/tests/test_http_logprobs.py
+  s_806610229dbb4a::t_31180f7dc8fd35 1-743
+resin-source/tests/test_http_metrics.py
+  s_806610229dbb4a::t_e6ca93605de207 1-115
+resin-source/tests/test_http_server.py
+  s_806610229dbb4a::t_4ec9747b25ab04 1-182
+resin-source/tests/test_http_session.py
+  s_806610229dbb4a::t_9ff027a6e04ae9 1-343
+resin-source/tests/test_http_stops.py
+  s_806610229dbb4a::t_d43450434a9dc3 1-265
+resin-source/tests/test_http_stream_interval.py
+  s_806610229dbb4a::t_550d77ce0beca6 1-385
+resin-source/tests/test_http_stress.py
+  s_806610229dbb4a::t_4a63f8bacfafcc 1-339
+resin-source/tests/test_http_token_counts.py
+  s_806610229dbb4a::t_ad08ad4514358f 1-319
+resin-source/tests/test_http_token_limits.py
+  s_806610229dbb4a::t_f5a03471fd322d 1-102
+resin-source/tests/test_http_transport.py
+  s_806610229dbb4a::t_62a3a936831a35 1-159
+resin-source/tests/test_jit_cache.py
+  s_806610229dbb4a::t_12563bf808c201 1-90
+resin-source/tests/test_kernel_cache.py
+  s_806610229dbb4a::t_9f4a27814e952d 1-412
+resin-source/tests/test_lazy_imports.py
+  s_806610229dbb4a::t_3941898ac8a249 1-21
+resin-source/tests/test_logprob_limits.py
+  s_806610229dbb4a::t_f68e24b2fa5d1f 1-210
+resin-source/tests/test_logprobs.py
+  s_806610229dbb4a::t_052c810c432f5c 1-393
+resin-source/tests/test_mega_moe.py
+  s_806610229dbb4a::t_754e2947ac2817 1-526
+resin-source/tests/test_merge_bench_traces.py
+  s_806610229dbb4a::t_ebd610fb5d3dbd 1-247
+resin-source/tests/test_metrics.py
+  s_806610229dbb4a::t_d2654ca248169a 1-94
+resin-source/tests/test_modal_serve.py
+  s_806610229dbb4a::t_9d4be8be952e0d 1-203
+resin-source/tests/test_native_recipe_types.py
+  s_806610229dbb4a::t_09e49737d1c1db 1-370
+resin-source/tests/test_numa.py
+  s_806610229dbb4a::t_5b3065e6babb1d 1-293
+resin-source/tests/test_parallelism.py
+  s_806610229dbb4a::t_53405bd8f73535 1-229
+resin-source/tests/test_plan_metadata.py
+  s_806610229dbb4a::t_ae3b865464b1cc 1-180
+resin-source/tests/test_plan_transport.py
+  s_806610229dbb4a::t_8560b866f456b0 1-470
+resin-source/tests/test_process.py
+  s_806610229dbb4a::t_928b6780c52593 1-180
+resin-source/tests/test_prompt_logprobs.py
+  s_806610229dbb4a::t_9eb60d296715f1 1-431
+resin-source/tests/test_qwen3_5_moe_config.py
+  s_806610229dbb4a::t_9580741883d0c7 1-125
+resin-source/tests/test_recipe.py
+  s_806610229dbb4a::t_e727549754abe6 1-373
+resin-source/tests/test_recipe_http.py
+  s_806610229dbb4a::t_9cc7ab62a569cd 1-182
+resin-source/tests/test_recipe_media.py
+  s_806610229dbb4a::t_2f6be385d54064 1-250
+resin-source/tests/test_recipe_media_cache.py
+  s_806610229dbb4a::t_ae73f31b999b0a 1-322
+resin-source/tests/test_recipe_media_preparation.py
+  s_806610229dbb4a::t_78fee21997197d 1-376
+resin-source/tests/test_runner_metrics.py
+  s_806610229dbb4a::t_13ee023d2188d4 1-121
+resin-source/tests/test_sampling.py
+  s_806610229dbb4a::t_c2e85878225be3 1-328
+resin-source/tests/test_sampling_blocks_cuda.py
+  s_806610229dbb4a::t_45b39cc64fcb91 1-282
+resin-source/tests/test_sampling_completion_cuda.py
+  s_806610229dbb4a::t_60e2d5e6349a49 1-217
+resin-source/tests/test_sampling_cuda.py
+  s_806610229dbb4a::t_102449932cffba 1-172
+resin-source/tests/test_sampling_filters_cuda.py
+  s_806610229dbb4a::t_1ab38788caee65 1-355
+resin-source/tests/test_sampling_fused_cuda.py
+  s_806610229dbb4a::t_66bef86ee8cef2 1-571
+resin-source/tests/test_sampling_guard_cuda.py
+  s_806610229dbb4a::t_a34ad4c5139dfb 1-150
+resin-source/tests/test_scheduler.py
+  s_806610229dbb4a::t_717038b28759a7 1-692
+resin-source/tests/test_server_media.py
+  s_806610229dbb4a::t_62b53e0d61a665 1-28
+resin-source/tests/test_sharded_embedding.py
+  s_806610229dbb4a::t_3ca55289eac3ac 1-130
+resin-source/tests/test_sparse_expert_transport.py
+  s_806610229dbb4a::t_8ae60ccac4f9f3 1-145
+resin-source/tests/test_topology_groups.py
+  s_806610229dbb4a::t_304d7a97dbf4be 1-73
+resin-source/tests/test_type_libraries.py
+  s_806610229dbb4a::t_6d9786f3c18ff0 1-410
+resin-source/tests/test_vision_cache.py
+  s_806610229dbb4a::t_fd4d319e24206a 1-84
+resin-source/uv.lock
+  s_806610229dbb4a::t_bf9fd3f5858707 1-4614
+resin-source/crates/resin-py/src/lib.rs
+  s_0d9d163433c805::t_fe2836075b5084 1-2107
+resin-source/crates/resin-py/src/media_payload.rs
+  s_0d9d163433c805::t_844755b780f84d 1-1051
+resin-source/crates/resin-py/src/media_preprocess.rs
+  s_0d9d163433c805::t_ba1b5b175adcaa 1-624
+resin-source/crates/resin-py/src/recipe.rs
+  s_0d9d163433c805::t_c70501bb73694a 1-781
+resin-source/crates/resin-recipe/src/lib.rs
+  s_0d9d163433c805::t_a562cbe3bb1ffd 1-101
+resin-source/crates/resin-recipe/src/media/mod.rs
+  s_0d9d163433c805::t_516d382689203c 1-204
+resin-source/crates/resin-recipe/src/recipe.rs
+  s_0d9d163433c805::t_e1d2b1faa93a6e 1-121
+resin-source/deploy/modal_image.py
+  s_0d9d163433c805::t_d354928a70df44 1-170
+resin-source/deploy/models.py
+  s_0d9d163433c805::t_8798f14a4e13d0 1-815
+resin-source/resin/_resin.pyi
+  s_0d9d163433c805::t_e4d7a55666f3ec 1-1569
+resin-source/resin/recipe.py
+  s_0d9d163433c805::t_4230543dca62d5 1-115
+resin-source/scripts/normalize_stubs.py
+  s_0d9d163433c805::t_8c489f743b6d0f 1-323
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "a1736eb14b14f1e2004e9088922dec9b3ff14dba",
+  "prompts": {},
+  "humans": {
+    "h_04353115311dd2": {
+      "author": "r-chong <dev.reese.chong@gmail.com>"
+    }
+  },
+  "sessions": {
+    "s_0d9d163433c805": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "13cdd190-051a-4924-b48b-997280d71d90",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "r-chong <dev.reese.chong@gmail.com>"
+    },
+    "s_806610229dbb4a": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1e3a1-ce87-7ca0-85d5-6bbc49b94d37",
+        "model": "gpt-6-sol"
+      },
+      "human_author": "r-chong <dev.reese.chong@gmail.com>"
+    }
+  }
+}
