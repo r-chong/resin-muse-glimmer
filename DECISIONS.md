@@ -162,6 +162,18 @@ decisions. Newest entries are at the bottom.
 - **Infra patch 0002** (`bench.py`) landed after the model commits; see
   `resin-patches/README.md`.
 
+- **Logit discrepancy analysis (2026-11-19).** See
+  [`reports/correctness-analysis.md`](reports/correctness-analysis.md).
+  - Resin-vs-HF differences are BF16 implementation noise. They are no
+    larger than HF's own eager-vs-sdpa control, which itself diverges at a
+    margin-0.125 step.
+  - Resin matches all 128 greedy GSM8K tokens, including an exact tie in the
+    reference.
+  - Recommendation: make exact-token assertions margin-aware.
+- **Resin coverage.** The runner declares no `CacheLayout`, so the scheduler
+  and bench paths are exercised. The paged KV pool, prefix cache, graphs and
+  overlap are **not**.
+
 ### Open items
 
 - Speculative decoding (target-only for now).

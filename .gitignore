@@ -15,3 +15,6 @@ __pycache__/
 .venv/
 .venv-*/
 .DS_Store
+
+# Large logit dumps (kept on the Modal trace volume /muse-dumps/)
+/results/logits/**/*.npz
