@@ -1,9 +1,12 @@
-"""Text-only Muse Glimmer parity against a saved Transformers greedy reference.
+"""Text-only Muse Glimmer parity against saved Transformers greedy references.
 
 GPU-only. Set RESIN_TEST_CHECKPOINT to the pinned checkpoint directory and
-RESIN_MUSE_REFERENCE to an ``.npz`` written by ``baseline/hf_reference.py``
-(input_ids, step_logits, generated_ids). One prefill plus decode steps run
-through the Resin Engine; teacher-forced logits are compared row by row.
+RESIN_MUSE_REFERENCES to comma-separated ``.npz`` files written by
+``baseline/hf_reference.py`` or ``baseline/hf_reference_cases.py`` (input_ids,
+step_logits, generated_ids; optionally probe_positions/probe_logits).
+
+Each test prints one ``MUSE_PARITY_REPORT`` JSON line before asserting so a
+failing run still records its evidence.
 """
 
 from __future__ import annotations
@@ -16,12 +19,46 @@ import numpy as np
 import pytest
 
 CHECKPOINT = os.environ.get("RESIN_TEST_CHECKPOINT")
-REFERENCE = os.environ.get("RESIN_MUSE_REFERENCE")
+REFERENCES = [p for p in os.environ.get("RESIN_MUSE_REFERENCES", "").split(",") if p]
 STEPS = int(os.environ.get("RESIN_MUSE_STEPS", "16"))
 
 pytestmark = pytest.mark.skipif(
-    not (CHECKPOINT and REFERENCE), reason="needs a GPU checkpoint and HF reference"
+    not (CHECKPOINT and REFERENCES), reason="needs a GPU checkpoint and HF references"
 )
+
+
+def _load(path: str) -> dict:
+    data = np.load(path)
+    ref = {key: data[key] for key in data.files}
+    ref["name"] = Path(path).stem
+    ref["prompt"] = ref["input_ids"].astype(np.int64).tolist()
+    ref["tokens"] = ref["generated_ids"].astype(np.int64).tolist()[:STEPS]
+    ref["step_logits"] = ref["step_logits"][: len(ref["tokens"])].astype(np.float32)
+    return ref
+
+
+def _report(test: str, **fields) -> dict:
+    print("MUSE_PARITY_REPORT " + json.dumps({"test": test, **fields}), flush=True)
+    return fields
+
+
+def _token_summary(actual: list[int], expected: list[int]) -> dict:
+    first = next((i for i, (a, b) in enumerate(zip(actual, expected)) if a != b), None)
+    if first is None and len(actual) != len(expected):
+        first = min(len(actual), len(expected))
+    return {"matches": sum(a == b for a, b in zip(actual, expected)), "first_mismatch": first}
+
+
+def _logit_summary(actual: np.ndarray, expected: np.ndarray) -> dict:
+    diff = np.abs(actual - expected)
+    ranked = np.sort(expected, axis=-1)
+    return {
+        "argmax_matches": int((actual.argmax(-1) == expected.argmax(-1)).sum()),
+        "rows": int(len(expected)),
+        "max_abs_diff": [round(float(v), 4) for v in diff.max(-1)],
+        "mean_abs_diff": [round(float(v), 5) for v in diff.mean(-1)],
+        "reference_top1_margin": [round(float(v), 4) for v in ranked[:, -1] - ranked[:, -2]],
+    }
 
 
 @pytest.fixture(scope="module")
@@ -37,75 +74,154 @@ def runner():
 
 
 @pytest.fixture(scope="module")
-def reference():
-    data = np.load(REFERENCE)
-    return {key: data[key] for key in data.files}
+def references():
+    return [_load(path) for path in REFERENCES]
 
 
-def test_engine_greedy_tokens_and_logits_match_transformers(runner, reference):
+def _generate(runner, prompts, steps, *, chunk=None, max_running=8):
+    """Greedy generation through the Engine; returns per-request tokens."""
+    from resin import Engine, RunnerConfig, SamplingParams
+
+    previous = runner.runner_config
+    if chunk is not None:
+        runner.runner_config = RunnerConfig(continuation_prefill=True, prefill_chunk_size=chunk)
+    try:
+        engine = Engine(
+            runner,
+            context_length=max(len(p) for p in prompts) + max(steps) + 8,
+            max_running_requests=max_running,
+        )
+        leases = [
+            engine.submit(
+                prompt,
+                sampling_params=SamplingParams(
+                    max_output_tokens=n, temperature=0.0, stop_token_ids=[]
+                ),
+            )
+            for prompt, n in zip(prompts, steps)
+        ]
+        limit = sum(len(p) for p in prompts) + sum(steps) + 64
+        for _ in range(limit):
+            if not engine.has_work():
+                break
+            engine.step()
+        assert all(lease.done for lease in leases), "engine did not finish"
+        return [list(lease.take_result()) for lease in leases]
+    finally:
+        runner.runner_config = previous
+
+
+def _teacher_forced(runner, ref) -> tuple[np.ndarray, np.ndarray | None]:
+    """Step logits after the prompt, plus logits at reference probe positions."""
     import torch
 
-    from resin import Engine, SamplingParams
-
-    prompt = reference["input_ids"].astype(np.int64).tolist()
-    expected_ids = reference["generated_ids"].astype(np.int64).tolist()[:STEPS]
-    expected_logits = reference["step_logits"][: len(expected_ids)].astype(np.float32)
-
-    # 1. One prefill and greedy decode steps through the Engine.
-    engine = Engine(runner, context_length=4096, max_running_requests=1)
-    lease = engine.submit(
-        prompt,
-        sampling_params=SamplingParams(
-            max_output_tokens=len(expected_ids), temperature=0.0, stop_token_ids=[]
-        ),
-    )
-    steps = 0
-    while engine.has_work():
-        engine.step()
-        steps += 1
-        assert steps <= len(expected_ids) + 8, "engine did not finish"
-    assert lease.done
-    generated = list(lease.take_result())
-    assert runner.live_cache_count == 0
-
-    # 2. Teacher-forced logits on the reference continuation, same runner model.
     model = runner._model
     state = model.make_state()
-    rows = []
+    prompt = ref["prompt"]
     with torch.inference_mode():
-        tokens = torch.tensor([prompt], device="cuda")
-        positions = torch.arange(len(prompt), device="cuda")[None]
-        hidden = model(tokens, state, positions)
-        rows.append(model.logits(hidden[:, -1]).float()[0])
-        for token in expected_ids[:-1]:
-            tokens = torch.tensor([[token]], device="cuda")
-            positions = torch.tensor([[state.length]], device="cuda")
-            hidden = model(tokens, state, positions)
+        hidden = model(
+            torch.tensor([prompt], device="cuda"),
+            state,
+            torch.arange(len(prompt), device="cuda")[None],
+        )
+        probes = None
+        if "probe_positions" in ref:
+            index = torch.as_tensor(ref["probe_positions"], device="cuda")
+            probes = model.logits(hidden[0].index_select(0, index)).float().cpu().numpy()
+        rows = [model.logits(hidden[:, -1]).float()[0]]
+        for token in ref["tokens"][:-1]:
+            hidden = model(
+                torch.tensor([[token]], device="cuda"),
+                state,
+                torch.tensor([[state.length]], device="cuda"),
+            )
             rows.append(model.logits(hidden[:, -1]).float()[0])
-    actual_logits = torch.stack(rows).cpu().numpy()
+    return torch.stack(rows).cpu().numpy(), probes
 
-    diff = np.abs(actual_logits - expected_logits)
-    ref_sorted = np.sort(expected_logits, axis=-1)
-    report = {
-        "prompt_tokens": len(prompt),
-        "steps": len(expected_ids),
-        "engine_tokens": generated,
-        "reference_tokens": expected_ids,
-        "engine_token_matches": int(
-            sum(a == b for a, b in zip(generated, expected_ids, strict=False))
-        ),
-        "first_engine_mismatch": next(
-            (i for i, (a, b) in enumerate(zip(generated, expected_ids)) if a != b), None
-        ),
-        "teacher_forced_argmax_matches": int(
-            (actual_logits.argmax(-1) == np.array(expected_ids)).sum()
-        ),
-        "max_abs_logit_diff_per_step": [round(float(v), 4) for v in diff.max(-1)],
-        "mean_abs_logit_diff_per_step": [round(float(v), 5) for v in diff.mean(-1)],
-        "reference_top1_margin_per_step": [
-            round(float(v), 4) for v in ref_sorted[:, -1] - ref_sorted[:, -2]
-        ],
-    }
-    print("MUSE_PARITY_REPORT " + json.dumps(report))
-    assert report["teacher_forced_argmax_matches"] == len(expected_ids)
-    assert generated == expected_ids
+
+def test_single_request_tokens_and_logits(runner, references):
+    """One prefill plus greedy decode per reference, including window-crossing prompts."""
+    failures = []
+    for ref in references:
+        (tokens,) = _generate(runner, [ref["prompt"]], [len(ref["tokens"])], max_running=1)
+        steps, probes = _teacher_forced(runner, ref)
+        summary = _report(
+            "single_request",
+            reference=ref["name"],
+            prompt_tokens=len(ref["prompt"]),
+            engine_tokens=tokens,
+            reference_tokens=ref["tokens"],
+            engine=_token_summary(tokens, ref["tokens"]),
+            steps=_logit_summary(steps, ref["step_logits"]),
+            probe_positions=ref["probe_positions"].tolist() if probes is not None else [],
+            probes=_logit_summary(probes, ref["probe_logits"]) if probes is not None else None,
+        )
+        if summary["engine"]["first_mismatch"] is not None:
+            failures.append(f"{ref['name']}: engine tokens diverge")
+        if summary["steps"]["argmax_matches"] != summary["steps"]["rows"]:
+            failures.append(f"{ref['name']}: teacher-forced argmax mismatch")
+        if probes is not None and summary["probes"]["argmax_matches"] != summary["probes"]["rows"]:
+            failures.append(f"{ref['name']}: probe argmax mismatch")
+    assert not failures, failures
+    assert runner.live_cache_count == 0
+
+
+def test_chunked_prefill_across_window_matches_reference(runner, references):
+    """Engine prefill in chunks that straddle the 2,048-token sliding window."""
+    long_refs = [ref for ref in references if len(ref["prompt"]) > 2048]
+    if not long_refs:
+        pytest.skip("no reference prompt longer than the sliding window")
+    failures = []
+    for chunk in (1000, 2047):
+        for ref in long_refs:
+            (tokens,) = _generate(
+                runner, [ref["prompt"]], [len(ref["tokens"])], chunk=chunk, max_running=1
+            )
+            summary = _report(
+                "chunked_prefill",
+                reference=ref["name"],
+                chunk=chunk,
+                prompt_tokens=len(ref["prompt"]),
+                engine=_token_summary(tokens, ref["tokens"]),
+            )
+            if summary["engine"]["first_mismatch"] is not None:
+                failures.append(f"{ref['name']} chunk={chunk}")
+    assert not failures, failures
+
+
+@pytest.mark.parametrize("concurrency", [2, 4, 8])
+def test_concurrent_requests_batch_and_match_reference(runner, references, concurrency):
+    """Concurrent greedy requests (mixed prompt lengths) through one Engine."""
+    model = runner._model
+    original = model.forward_batch
+    batch_sizes: list[int] = []
+
+    def counted(tokens, states, positions):
+        batch_sizes.append(len(states))
+        return original(tokens, states, positions)
+
+    model.forward_batch = counted
+    try:
+        chosen = [references[i % len(references)] for i in range(concurrency)]
+        outputs = _generate(
+            runner,
+            [ref["prompt"] for ref in chosen],
+            [len(ref["tokens"]) for ref in chosen],
+            max_running=concurrency,
+        )
+    finally:
+        model.forward_batch = original
+    results = [
+        {"reference": ref["name"], **_token_summary(out, ref["tokens"])}
+        for ref, out in zip(chosen, outputs)
+    ]
+    _report(
+        "concurrent",
+        concurrency=concurrency,
+        batched_decode_calls=len(batch_sizes),
+        max_decode_batch=max(batch_sizes, default=0),
+        requests=results,
+    )
+    assert runner.live_cache_count == 0
+    assert max(batch_sizes, default=0) == concurrency, "batched decode path not exercised"
+    assert all(r["first_mismatch"] is None for r in results), results
