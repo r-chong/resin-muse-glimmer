@@ -1,0 +1,29 @@
+[
+  {
+    "lane": "graphs",
+    "commit": "6fd2dda4b0677bea4e539135f016c6b40a5c8653",
+    "checkpoint_at": "2026-11-19T23:14:19-05:00",
+    "title": "perf(muse): combine native paged decode with stateless graphs",
+    "source_changes": "191\t0\tresin-source/models/torch/resin_models_torch/muse_glimmer/execution.py\n56\t0\tresin-source/models/torch/resin_models_torch/muse_glimmer/reference.py\n50\t0\tresin-source/models/torch/tests/test_muse_glimmer_graph_failures.py\n116\t0\tresin-source/models/torch/tests/test_muse_glimmer_graphs.py\n3\t1\tresin-source/tests/test_muse_glimmer_hf_parity.py\n",
+    "patch_sha256": "b39f42f71f03c47191c6bd872cdcf154cc2b8f595152b73103c25c6069f739aa",
+    "human_interventions": []
+  },
+  {
+    "lane": "prefill",
+    "commit": "e74e98174447b77e55d43d39b6c8a6239d13c9b9",
+    "checkpoint_at": "2026-11-19T23:15:59-05:00",
+    "title": "Add native paged GQA prefill candidate for Muse",
+    "source_changes": "75\t5\tresin-source/models/torch/resin_models_torch/muse_glimmer/flashinfer.py\n13\t4\tresin-source/models/torch/resin_models_torch/muse_glimmer/model.py\n22\t1\tresin-source/models/torch/resin_models_torch/muse_glimmer/paged.py\n1\t0\tresin-source/models/torch/resin_models_torch/muse_glimmer/reference.py\n164\t0\tresin-source/tests/test_muse_glimmer_prefill_flashinfer.py\n",
+    "patch_sha256": "6946c7eb83292756641ce8e2b25b91d5ad1b6f2d568321236071c370ec75ea6c",
+    "human_interventions": []
+  },
+  {
+    "lane": "delivery",
+    "commit": "8bf4e0993aae5402e75144b33a893b1da580857f",
+    "checkpoint_at": "2026-11-19T23:17:58-05:00",
+    "title": "perf(muse): expose existing token budget for prefill delivery ablation",
+    "source_changes": "21\t0\tresin-source/models/torch/resin_models_torch/muse_glimmer/reference.py\n196\t0\tresin-source/models/torch/tests/test_muse_glimmer_delivery.py\n",
+    "patch_sha256": "941930f0169f7525148c383ed8a3c735d19ea4f64591b7f1d1909c72aa176bef",
+    "human_interventions": []
+  }
+]

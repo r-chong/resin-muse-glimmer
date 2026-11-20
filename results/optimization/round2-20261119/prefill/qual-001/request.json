@@ -1,0 +1,33 @@
+{
+  "base_source": "/private/tmp/resin-opt-snapshots/c-final/resin-source",
+  "completion_only": true,
+  "variants": [
+    {
+      "name": "prefill",
+      "source": "/private/tmp/resin-round2-snapshots/prefill/resin-source",
+      "commit": "e74e981",
+      "qualify": true,
+      "completion": false,
+      "extra_tests": [
+        "tests/test_muse_glimmer_prefill_flashinfer.py",
+        "tests/test_muse_glimmer_flashinfer.py"
+      ],
+      "source_sha256": {
+        "models/torch/resin_models_torch/__init__.py": "494ba50d6c2d17dfbf7a8b0b39a53f9981626afe33ccc0a3cd131b439edf8618",
+        "models/torch/resin_models_torch/lfm2/__init__.py": "595b8005d46d2a23f288b17d3314212b484ca595855a612e97f78c2dd8963e72",
+        "models/torch/resin_models_torch/lfm2/config.py": "f429b9f98a84fe39c2acb2dfb4a917aa5f02feb4ae6623ee3538d4ba05e1b7ab",
+        "models/torch/resin_models_torch/lfm2/model.py": "2d0082238e523ba22fda6b2e8c10bdca4b920fdc7c54cc5d3f6fe37d26e45689",
+        "models/torch/resin_models_torch/lfm2/reference.py": "7ad95d59571429534e6c8259b1469a43b8dd147aeffc74e2f089a2ef2f4a49a8",
+        "models/torch/resin_models_torch/muse_glimmer/__init__.py": "7f9c21f71d7682adc9697b10227fe33a576f754372bb1aa5718c9ef0863fe215",
+        "models/torch/resin_models_torch/muse_glimmer/config.py": "ff4d5a68762bd17bb2014452d60a7b76816262cacc692de51894cd953ae04b34",
+        "models/torch/resin_models_torch/muse_glimmer/flashinfer.py": "f04b3a932771eba483f72a2804b6924be2b2b969464b65fa806378dcc21c0f07",
+        "models/torch/resin_models_torch/muse_glimmer/model.py": "9afa506bfcf37ca0df7d7bfbd3e2a89d9af8c03e40853630087eced3c03478d5",
+        "models/torch/resin_models_torch/muse_glimmer/paged.py": "47b2759fa4c5e14b55033066cbfd9e8342b8b182f4fab0d86e030432c58b165a",
+        "models/torch/resin_models_torch/muse_glimmer/reference.py": "07eebb64e5f0abe94a5de647f580bf1f71c32f49f866593dcf4f53308677f112",
+        "models/torch/resin_models_torch/muse_glimmer/vision.py": "af55768714e097044731d404d24657eb3bbffeb8c442bfccce64071020040f71"
+      }
+    }
+  ],
+  "volume": "resin-opt-r2-prefill-qual-001",
+  "checkpoint": "/models/resin-muse-glimmer-30b/cec94fcfd6512f2cfe708138c32533b346ea4f69"
+}

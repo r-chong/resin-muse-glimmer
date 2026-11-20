@@ -1,0 +1,24 @@
+{
+  "base_source": "/private/tmp/resin-opt-snapshots/c-final/resin-source",
+  "completion_only": true,
+  "variants": [
+    {
+      "name": "C",
+      "source": "/private/tmp/resin-opt-snapshots/c-final/resin-source",
+      "commit": "66bb70a63470581f1ced548265e839da374836aa",
+      "qualify": false,
+      "completion": true
+    },
+    {
+      "name": "prefill",
+      "source": "/private/tmp/resin-round2-snapshots/prefill/resin-source",
+      "commit": "e74e981",
+      "qualify": false,
+      "completion": true,
+      "extra_tests": [
+        "tests/test_muse_glimmer_prefill_flashinfer.py",
+        "tests/test_muse_glimmer_flashinfer.py"
+      ]
+    }
+  ]
+}

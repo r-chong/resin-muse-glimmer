@@ -1,0 +1,22 @@
+{
+  "reviewer": "graph-combination agent, independent profile attribution check",
+  "scope": "C profile and graph composition, no paid resources or source changes",
+  "findings": {
+    "trace_hashes_match": true,
+    "correlation_only_attribution_reproduces_reported_counts": true,
+    "ambiguous_or_duplicate_runtime_correlations": false,
+    "native_main_and_merge_kernels_per_decode_forward": [
+      52,
+      52
+    ],
+    "linear_calls_per_forward": 417,
+    "graph_region_linear_calls_per_forward": 312,
+    "issues_found": []
+  },
+  "interpretation": [
+    "Native decode attention is a small remaining GPU category; matrix operations dominate captured GPU kernel time.",
+    "Profiles do not quantify removable host cost or predict graph speedup.",
+    "Prefill remains eager in this graph candidate.",
+    "Independent unprofiled paired completion measurements determine the performance result."
+  ]
+}

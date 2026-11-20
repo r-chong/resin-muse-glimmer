@@ -1,0 +1,78 @@
+{
+  "lane": "round2-native-prefill",
+  "branch": "codex/resin-round2-prefill",
+  "base_commit": "66bb70a63470581f1ced548265e839da374836aa",
+  "record_created_utc": "2026-11-20T04:15:00Z",
+  "approved_scope": "Replace the validated C runner's dense prefill attention with native causal/sliding-window GQA over the existing Engine pages; preserve native decode, exact BF16 model math, CacheLayout, model/checkpoint, H100 target and fixed benchmark policy",
+  "status": "semantic-candidate-ready-for-centralized-GPU-qualification",
+  "comparison": {
+    "model": "meta-models/Muse-Glimmer-30B",
+    "checkpoint_revision": "cec94fcfd6512f2cfe708138c32533b346ea4f69",
+    "gpu": "1x NVIDIA H100 80GB HBM3",
+    "weights_and_kv": "BF16",
+    "flashinfer": "0.7.1",
+    "execution_chunk_tokens": 8192,
+    "graph_or_compile_change": false,
+    "scheduler_or_admission_change": false,
+    "paid_resource_calls_by_this_lane": 0
+  },
+  "attempts": [
+    {
+      "candidate": "flashinfer-fa2-paged-prefill",
+      "hypothesis": "Native GQA and sliding-window prefill can remove the existing dense page gather, repeated KV heads and explicit dense masks. This is an unprofiled static hypothesis; the parent owns the current-C profile and all performance measurements.",
+      "changes": [
+        "Two FA2 BatchPrefillWithPagedKVCacheWrapper plans, prepared once per cache group/text forward and reused across all model layers",
+        "Existing projection, QK norm, RoPE, output gating, BF16 dtype, append addresses, arena layout and retention unchanged",
+        "Query length greater than one selects native prefill; existing one-token native decode implementation unchanged",
+        "Bottom-right causal alignment over each chronological retained suffix, window_left=2047 for sliding layers and -1 for full layers",
+        "Live page counts and final live-page lengths exclude future reserved pages and unwritten final-page positions",
+        "Separate lazy 128MiB prefill workspace preserves the existing decoder's allocation and plans",
+        "Existing CUDA failure containment now also covers prefill before any layer mutates persistent KV"
+      ],
+      "local_checks": {
+        "completed_utc": "2026-11-20T04:15:00Z",
+        "command": "PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=/private/tmp/resin-round2-prefill/resin-source:/private/tmp/resin-round2-prefill/resin-source/models/torch /Users/reese/code/resin/resin-source/.venv/bin/python -m pytest -q resin-source/models/torch/tests/test_muse_glimmer_paged.py resin-source/tests/test_muse_glimmer_flashinfer.py resin-source/tests/test_muse_glimmer_prefill_flashinfer.py",
+        "result": "4 passed, 7 skipped in 4.65s",
+        "skips": "All seven CUDA primitive cases skipped because the local host has no CUDA",
+        "ruff_lint": "passed for all touched Python files",
+        "ruff_format": "passed for all touched Python files",
+        "git_diff_check": "passed",
+        "environment_change": "Copied the unchanged baseline _resin.abi3.so to ignored lane-local resin-source/resin; shared environment untouched"
+      },
+      "gpu_requested": {
+        "first": "tests/test_muse_glimmer_prefill_flashinfer.py plus existing tests/test_muse_glimmer_flashinfer.py",
+        "primitive_coverage": [
+          "Q=2,63,64,65,2049,8192 at actual model 32Q/2KV head geometry and head_dim128",
+          "Absolute history ends1-page/window-adjacent and8193 with unequal histories and nonzero retained window starts",
+          "Both full causal and W2048 sliding causal masks against an independently constructed absolute-position FP32 SDPA oracle",
+          "Append-before-read in strided arena views; NaN unused last-page positions and two reserved future pages"
+        ],
+        "primitive_tolerance": "Existing decode primitive tolerance atol0.01/rtol0.01; unchanged exact greedy-token and checkpoint diagnostic gates",
+        "then": "Unchanged existing full-checkpoint HF exact greedy suite with chunked/window crossings and concurrent requests, plus actual-paged-path teacher-forced diagnostic logits; existing local-path teacher-forced helper alone does not measure native prefill",
+        "if_passing": "Shared Resin complete-prefill TTFT at4096/8192 b1 and fixed8192-context decode b1/2/4/8, same paired baseline allocation and5 warmup/250 measured decode steps",
+        "estimated_h100_minutes": {
+          "primitive_including_possible_jit": "3-6",
+          "full_existing_qualification": "10-20 depending on already cached checkpoint/kernel state",
+          "paired_fixed_benchmark": "10-15"
+        },
+        "all_paid_launches_owner": "parent/root"
+      },
+      "gpu_runs": [],
+      "performance_claim": null,
+      "correctness_claim": "CPU regression checks pass; native CUDA semantics still unqualified"
+    }
+  ],
+  "risks": [
+    "Pinned FlashInfer FA2 prefill must accept actual noncontiguous K/V layer views on H100",
+    "Kernel shape acceptance does not establish causal/window semantics; all primitive mask/tail checks must pass",
+    "Different BF16 attention reduction order may alter exact greedy tokens; unchanged full checkpoint parity must pass",
+    "Native planning or an extra lazy workspace may offset warm-prefill savings or affect first-use TTFT",
+    "No result should be inferred from another round2 lane or merged across lanes before independent validation"
+  ],
+  "human_interventions": [],
+  "references": [
+    "https://raw.githubusercontent.com/flashinfer-ai/flashinfer/v0.7.1/flashinfer/prefill.py",
+    "resin-source/models/cuda/resin_models_cuda/gemma4/cuda.py",
+    "resin-source/models/cuda/resin_models_cuda/qwen3_5/attention.py"
+  ]
+}

@@ -1,0 +1,35 @@
+{
+  "normalized_common_completion_cases": 108,
+  "all_output_counts_and_arrival_bounds_validated": true,
+  "common_prompt_sha256_matches": true,
+  "C_source_hashes_identical_across_pairs": true,
+  "frozen_files": {
+    "frozen_regular_files_checked": 723,
+    "changed": []
+  },
+  "held_checkpoints": {
+    "graphs": {
+      "commit": "6fd2dda4b0677bea4e539135f016c6b40a5c8653",
+      "model_source_held_immutable": true
+    },
+    "prefill": {
+      "commit": "e74e98174447b77e55d43d39b6c8a6239d13c9b9",
+      "model_source_held_immutable": true
+    },
+    "delivery": {
+      "commit": "8bf4e0993aae5402e75144b33a893b1da580857f",
+      "model_source_held_immutable": true
+    }
+  },
+  "strict_synthetic_sequence_match": {
+    "graphs": true,
+    "prefill": false,
+    "delivery": true
+  },
+  "independent_profile_review": "shared/profile-review.json",
+  "native_prefill_numeric_limitation": "shared/numeric-diagnosis.json",
+  "initial_delivery_timeout_preserved": true,
+  "recovery_replaces_both_b8_sides": true,
+  "branches_merged": false,
+  "paid_jobs_complete": true
+}
