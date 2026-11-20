@@ -85,6 +85,15 @@ decisions. Newest entries are at the bottom.
   Resin's own `qualify` Modal function on `H100!` with the parity test. The raw
   result goes to `results/parity/`.
 
+- **Reference prompt date.** The saved HF references (`baseline/output/*`) were
+  rendered with the wall-clock `Current date: 2026-11-16`. The Resin parity test
+  feeds the saved input IDs, so it is unaffected. Any recipe-to-reference
+  token check must render with `current_date="2026-11-16"`. The same issue
+  failed the from-scratch baseline (`vibe-muse-glimmer-engine`) run at
+  19:29:32: it took the first date in the prompt (the knowledge cutoff,
+  `2026-01-04`). Its fix `bab6b42` was verified locally to recover `2026-11-16`
+  from that exact prompt. That fixed version has not yet been rerun on GPU.
+
 ### Open items
 
 - Speculative decoding (target-only for now).
