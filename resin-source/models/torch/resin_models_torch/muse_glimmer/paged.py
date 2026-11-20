@@ -96,13 +96,17 @@ class MuseKvArena:
         device,
         dtype,
         native_decode: bool = False,
+        native_prefill: bool = False,
         num_query_heads: int | None = None,
     ):
         self.geometry = geometry
         self.native_decode = native_decode
+        self.native_prefill = native_prefill
         self.num_query_heads = num_query_heads
         self._native_decoder = None
         self.decode_attention = None
+        self._native_prefiller = None
+        self.prefill_attention = None
         g = geometry
         slabs = parent_capacity + 1
         self.storage = torch.zeros(
@@ -133,8 +137,25 @@ class MuseKvArena:
         return group, table[:, index, 0], table[:, index, 1]
 
     def prepare_forward(self, rows, query_length: int) -> None:
-        """Plan native one-token attention once before running all layers."""
+        """Plan each selected native attention group once for all layers."""
         self.decode_attention = None
+        self.prefill_attention = None
+        if query_length > 1 and self.native_prefill:
+            from resin_models_torch.muse_glimmer.flashinfer import (
+                FlashinferPagedPrefill,
+            )
+
+            if self.num_query_heads is None:
+                raise ValueError("native prefill needs the model's query-head count")
+            if self._native_prefiller is None:
+                self._native_prefiller = FlashinferPagedPrefill(
+                    self.geometry,
+                    self.num_query_heads,
+                    device=self.storage.device,
+                    dtype=self.storage.dtype,
+                )
+            self._native_prefiller.plan(rows, query_length)
+            self.prefill_attention = self._native_prefiller
         if not self.native_decode or query_length != 1:
             return
         if self._native_decoder is None:

@@ -259,8 +259,9 @@ class Attention(nn.Module):
 
         ``hidden`` is ``[rows, length, width]``: one prefill chunk (one row) or
         one decode token per row. New keys/values are written to the Engine's
-        append addresses first, then each row gathers its pages in block-table
-        order. Positions at or after ``row.end`` are reserved but unwritten.
+        append addresses first, then native attention reads those pages or the
+        reference path gathers them. Positions at or after ``row.end`` are
+        reserved but unwritten.
         """
 
         queries, keys, values = self._project(hidden, positions)
@@ -279,6 +280,14 @@ class Attention(nn.Module):
                 group, queries[:, :, 0, :].contiguous(), key_pages, value_pages
             )
             return self._output(attended.unsqueeze(2), hidden)
+        if arena.prefill_attention is not None:
+            batch, heads, length, dim = queries.shape
+            flat_queries = queries.transpose(1, 2).contiguous().view(-1, heads, dim)
+            attended = arena.prefill_attention.run(
+                group, flat_queries, key_pages, value_pages
+            )
+            attended = attended.view(batch, length, heads, dim).transpose(1, 2)
+            return self._output(attended, hidden)
         for row in rows:
             cache = row.groups[group]
             row_keys = key_pages[cache.pages].flatten(0, 1).transpose(0, 1)
@@ -395,14 +404,14 @@ class MuseGlimmerTextModel(nn.Module):
     def forward_paged(self, hidden: Tensor, positions: Tensor, rows, arena) -> Tensor:
         arena.prepare_forward(rows, hidden.shape[1])
         guard = nullcontext()
-        if arena.decode_attention is not None:
+        if arena.decode_attention is not None or arena.prefill_attention is not None:
             from resin.backend.cuda.failures import CudaFailureGuard
 
             # A failed kernel may follow successful in-place K/V writes; the
             # Engine must quarantine those resources rather than retry them.
             guard = CudaFailureGuard(
                 lambda: torch.cuda.synchronize(hidden.device),
-                label="Muse native paged decode",
+                label="Muse native paged attention",
             )
         with guard:
             for layer in self.layers:

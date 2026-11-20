@@ -1,7 +1,7 @@
-"""Native decode attention over the existing Engine-owned Muse KV arena.
+"""Native attention over the existing Engine-owned Muse KV arena.
 
-Only one-token queries use this adapter. The eager SDPA prefill/reference path
-is unchanged, and projections, QK norms, RoPE and output gating stay in Torch.
+Decode and causal prefill use separate FA2 plans. Projections, QK norms, RoPE
+and output gating stay in Torch; the eager reference path remains available.
 """
 
 from __future__ import annotations
@@ -15,8 +15,8 @@ def decode_page_lengths(rows, group: int) -> tuple[list[int], list[int]]:
     """Return live page counts and last-page lengths, excluding reserved tails.
 
     A window group's first page can represent a nonzero absolute position.
-    FlashInfer sees only the retained, chronological suffix; for a one-token
-    query its relative last-token/window mask is therefore the same mask.
+    FlashInfer sees only the retained, chronological suffix. Bottom-right
+    query alignment preserves the absolute causal/window mask for that suffix.
     """
     counts, last_lengths = [], []
     for row in rows:
@@ -78,6 +78,76 @@ class FlashinferPagedDecode:
                 g.head_dim,
                 BLOCK_TOKENS,
                 pos_encoding_mode="NONE",
+                window_left=g.read_window - 1 if group == WINDOW_GROUP else -1,
+                sm_scale=g.head_dim**-0.5,
+                q_data_type=self.dtype,
+                kv_data_type=self.dtype,
+                o_data_type=self.dtype,
+            )
+            self.plan_calls += 1
+
+    def run(self, group: int, queries, key_pages, value_pages):
+        self.layer_calls += 1
+        return self.wrappers[group].run(queries, (key_pages, value_pages))
+
+
+class FlashinferPagedPrefill:
+    """Causal GQA prefill directly over the existing strided page arena.
+
+    Queries are the final ``query_length`` positions of each row's live KV
+    suffix. FlashInfer's bottom-right causal alignment therefore matches the
+    absolute query positions even after window eviction or chunked prefill.
+    Projection, RoPE, QK normalization and output gating remain in Torch.
+    """
+
+    def __init__(self, geometry, num_query_heads: int, *, device, dtype):
+        from flashinfer import BatchPrefillWithPagedKVCacheWrapper
+
+        self.geometry = geometry
+        self.num_query_heads = num_query_heads
+        self.device = device
+        self.dtype = dtype
+        self.workspace = torch.zeros(128 << 20, dtype=torch.uint8, device=device)
+        self.wrappers = tuple(
+            BatchPrefillWithPagedKVCacheWrapper(self.workspace, "NHD", backend="fa2")
+            for _ in range(2)
+        )
+        self.plan_calls = 0
+        self.layer_calls = 0
+
+    def plan(self, rows, query_length: int) -> None:
+        if type(query_length) is not int or query_length <= 1:
+            raise ValueError("native prefill needs more than one query token")
+        g = self.geometry
+        qo_indptr = (
+            torch.arange(len(rows) + 1, dtype=torch.int32, device=self.device)
+            * query_length
+        )
+        for group, wrapper in enumerate(self.wrappers):
+            counts, last_lengths = decode_page_lengths(rows, group)
+            if any(
+                row.end - row.groups[group].first_position < query_length
+                for row in rows
+            ):
+                raise ValueError("live KV suffix does not cover the prefill queries")
+            offsets = [0]
+            for count in counts:
+                offsets.append(offsets[-1] + count)
+            indices = torch.cat(
+                [row.groups[group].pages[:count] for row, count in zip(rows, counts)]
+            ).to(torch.int32)
+            wrapper.plan(
+                qo_indptr,
+                torch.tensor(offsets, dtype=torch.int32, device=self.device),
+                indices,
+                torch.tensor(last_lengths, dtype=torch.int32, device=self.device),
+                self.num_query_heads,
+                g.kv_heads,
+                g.head_dim,
+                BLOCK_TOKENS,
+                causal=True,
+                pos_encoding_mode="NONE",
+                use_fp16_qk_reduction=False,
                 window_left=g.read_window - 1 if group == WINDOW_GROUP else -1,
                 sm_scale=g.head_dim**-0.5,
                 q_data_type=self.dtype,
