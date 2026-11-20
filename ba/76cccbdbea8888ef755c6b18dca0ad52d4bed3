@@ -1,0 +1,30 @@
+resin-source/tests/test_muse_glimmer_flashinfer.py
+  s_fde809a6b235c8::t_c920837f3e0956 1-117
+resin-source/models/torch/resin_models_torch/muse_glimmer/model.py
+  s_fde809a6b235c8::t_7b1072aed28e06 276-280,395
+resin-source/models/torch/resin_models_torch/muse_glimmer/reference.py
+  s_fde809a6b235c8::t_7b1072aed28e06 229-230
+resin-source/models/torch/resin_models_torch/muse_glimmer/paged.py
+  s_fde809a6b235c8::t_7b1072aed28e06 92-93,96-99,129-144
+  s_fde809a6b235c8::t_284834106d73c3 145
+resin-source/models/torch/resin_models_torch/muse_glimmer/flashinfer.py
+  s_fde809a6b235c8::t_7b1072aed28e06 1-91
+results/optimization/lane-c.json
+  s_fde809a6b235c8::t_73fe621ca1be14 1-46
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "ba76cccbdbea8888ef755c6b18dca0ad52d4bed3",
+  "prompts": {},
+  "sessions": {
+    "s_fde809a6b235c8": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1f6c2-b4d7-71e0-b3fa-c7d633aa35e4",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "r-chong <dev.reese.chong@gmail.com>"
+    }
+  }
+}
