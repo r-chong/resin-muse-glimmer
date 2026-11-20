@@ -1,0 +1,24 @@
+DECISIONS.md
+  s_0d9d163433c805::t_b59a13847f9834 97-108
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "f3c46d776727c77a441cf64d3fd15eb452b96bf2",
+  "prompts": {},
+  "humans": {
+    "h_04353115311dd2": {
+      "author": "r-chong <dev.reese.chong@gmail.com>"
+    }
+  },
+  "sessions": {
+    "s_0d9d163433c805": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "13cdd190-051a-4924-b48b-997280d71d90",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "r-chong <dev.reese.chong@gmail.com>"
+    }
+  }
+}
