@@ -20,7 +20,7 @@ scripts/apply_resin_patches.sh /tmp/resin   # fresh upstream clone + both groups
 ```
 
 Verified on 2026-11-19: both groups apply cleanly to `1fe19de`. The resulting
-tree (`fd9db2e14958ef021e0628aa3a6167bb582cbc50`) is identical to the vendored
+tree (`acfe9a275dd15740336bb5dc0c6421ff50f95f9c`) is identical to the vendored
 `resin-source/`.
 
 ## Regenerate after changing the fork
