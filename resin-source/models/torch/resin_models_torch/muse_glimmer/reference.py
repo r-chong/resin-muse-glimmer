@@ -9,6 +9,7 @@ graph-captured. It is the correctness baseline for an optimized CUDA runner.
 from __future__ import annotations
 
 import json
+import os
 from dataclasses import dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, cast
@@ -152,6 +153,7 @@ class MuseGlimmerTorchRunner(Runner):
         gpu_memory_utilization: float = 0.90,
         kv_workspace_bytes: int = 8 << 30,
         cache_parent_capacity: int | None = None,
+        decode_execution: str | None = None,
     ) -> None:
         if kv_cache not in ("engine", "local"):
             raise ValueError("kv_cache must be 'engine' or 'local'")
@@ -189,6 +191,43 @@ class MuseGlimmerTorchRunner(Runner):
         self._requests: dict[int, _Request] = {}
         self.forward_calls = 0
         self.vision_calls = 0
+        self.decode_execution = decode_execution or os.environ.get(
+            "RESIN_MUSE_DECODE_EXECUTION", "eager"
+        )
+        if self.decode_execution not in ("eager", "graphs"):
+            raise ValueError("decode_execution must be 'eager' or 'graphs'")
+        self._decode_graphs = None
+        if self.decode_execution == "graphs":
+            from resin_models_torch.muse_glimmer.execution import MuseDecodeGraphs
+
+            self._decode_graphs = MuseDecodeGraphs(self._model)
+
+    def capture_cuda_graphs(self):
+        if self._decode_graphs is not None:
+            return self._decode_graphs.capture()
+        return {}
+
+    @property
+    def cuda_graph_counts(self):
+        graphs = getattr(self, "_decode_graphs", None)
+        return {} if graphs is None else graphs.counts
+
+    @property
+    def cuda_graph_stats(self):
+        graphs = getattr(self, "_decode_graphs", None)
+        return {} if graphs is None else graphs.stats
+
+    @property
+    def benchmark_metadata(self):
+        graphs = getattr(self, "_decode_graphs", None)
+        return {
+            "graphs": {
+                "prefill": "disabled",
+                "decode": "disabled" if graphs is None else "stateless_regions",
+            },
+            "decode_execution": getattr(self, "decode_execution", "eager"),
+            "decode_graph_batches": [] if graphs is None else list(graphs.batches),
+        }
 
     # -- Engine-managed cache ----------------------------------------------
 
