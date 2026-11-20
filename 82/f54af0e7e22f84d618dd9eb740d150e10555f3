@@ -1,0 +1,185 @@
+results/optimization/round2-20261119/SHA256.json
+  s_fde809a6b235c8::t_7106c2d0936d62 1-112
+results/optimization/round2-20261119/analysis.json
+  s_fde809a6b235c8::t_1ef693e8cba762 1-5395
+results/optimization/round2-20261119/delivery/agent-audit.json
+  s_fde809a6b235c8::t_70de3698f81e28 1-90
+results/optimization/round2-20261119/delivery/b8-recovery-001/function-call.json
+  s_fde809a6b235c8::t_f1e6d10f7c2aa6 1
+results/optimization/round2-20261119/delivery/b8-recovery-001/qualified-C.py
+  s_fde809a6b235c8::t_b72bfab9086d5f 1-329
+results/optimization/round2-20261119/delivery/b8-recovery-001/qualified-delivery.py
+  s_fde809a6b235c8::t_434fc5b1bf6f34 1-329
+results/optimization/round2-20261119/delivery/b8-recovery-001/request.json
+  s_fde809a6b235c8::t_a00243d41e4943 1-62
+results/optimization/round2-20261119/delivery/b8-recovery-001/result.json
+  s_fde809a6b235c8::t_0d203b8fda8fff 1-38105
+results/optimization/round2-20261119/delivery/combined/result.json
+  s_fde809a6b235c8::t_89272180fc591b 1-71322
+results/optimization/round2-20261119/delivery/independent.patch
+  s_fde809a6b235c8::t_b8ababcbf422c7 1-255
+results/optimization/round2-20261119/delivery/pair-001/function-call.json
+  s_fde809a6b235c8::t_f0cb25c6d0a258 1
+results/optimization/round2-20261119/delivery/pair-001/qualified-C.py
+  s_fde809a6b235c8::t_0474d26ec7c544 1-329
+results/optimization/round2-20261119/delivery/pair-001/qualified-delivery.py
+  s_fde809a6b235c8::t_00955dff0f4dd8 1-329
+results/optimization/round2-20261119/delivery/pair-001/recovered/completion-C.json
+  s_fde809a6b235c8::t_0b3608668c0548 1-35550
+results/optimization/round2-20261119/delivery/pair-001/recovered/completion-delivery.json
+  s_fde809a6b235c8::t_857a36280ee58f 1-29326
+results/optimization/round2-20261119/delivery/pair-001/recovered/result.json
+  s_fde809a6b235c8::t_61ee0d593c1411 1-35773
+results/optimization/round2-20261119/delivery/pair-001/request.json
+  s_fde809a6b235c8::t_b83bfcfa6f47f4 1-57
+results/optimization/round2-20261119/graphs/agent-audit.json
+  s_fde809a6b235c8::t_3d867385ebcfbf 1-57
+results/optimization/round2-20261119/graphs/independent.patch
+  s_fde809a6b235c8::t_9f8581f0c4a54d 1-473
+results/optimization/round2-20261119/graphs/pair-001/function-call.json
+  s_fde809a6b235c8::t_d660bf8190a30a 1
+results/optimization/round2-20261119/graphs/pair-001/qualified-C.py
+  s_fde809a6b235c8::t_68f09b5ae2a2f6 1-329
+results/optimization/round2-20261119/graphs/pair-001/qualified-graphs.py
+  s_fde809a6b235c8::t_850aae15d96c64 1-331
+results/optimization/round2-20261119/graphs/pair-001/request.json
+  s_fde809a6b235c8::t_2a0a51e1049d2a 1-59
+results/optimization/round2-20261119/graphs/pair-001/result.json
+  s_fde809a6b235c8::t_f7d0f9f6c73778 1-71344
+results/optimization/round2-20261119/prefill/agent-audit.json
+  s_fde809a6b235c8::t_69c18e4f252fa6 1-78
+results/optimization/round2-20261119/prefill/divergence-audit.json
+  s_fde809a6b235c8::t_b5602204ca333b 1-165
+results/optimization/round2-20261119/prefill/independent.patch
+  s_fde809a6b235c8::t_1d622d9e613f2b 1-379
+results/optimization/round2-20261119/prefill/numeric-001/artifacts/divergence-C.json
+  s_fde809a6b235c8::t_3e9c355ef06a4c 1-1472
+results/optimization/round2-20261119/prefill/numeric-001/artifacts/divergence-prefill.json
+  s_fde809a6b235c8::t_cb5300b6f88f9b 1-1473
+results/optimization/round2-20261119/prefill/numeric-001/divergence-C.json
+  s_fde809a6b235c8::t_95796c7f2a65cf 1-1472
+results/optimization/round2-20261119/prefill/numeric-001/divergence-prefill.json
+  s_fde809a6b235c8::t_9ad66b8e324670 1-1473
+results/optimization/round2-20261119/prefill/numeric-001/function-call.json
+  s_fde809a6b235c8::t_07ad7d0d394678 1
+results/optimization/round2-20261119/prefill/numeric-001/qualified-C.py
+  s_fde809a6b235c8::t_684f5abfc4c879 1-329
+results/optimization/round2-20261119/prefill/numeric-001/qualified-prefill.py
+  s_fde809a6b235c8::t_58e07a65450ef6 1-329
+results/optimization/round2-20261119/prefill/numeric-001/request.json
+  s_fde809a6b235c8::t_06cb6ecbb02112 1-88
+results/optimization/round2-20261119/prefill/numeric-001/result.json
+  s_fde809a6b235c8::t_d2952615374d40 1-246
+results/optimization/round2-20261119/prefill/pair-001/function-call.json
+  s_fde809a6b235c8::t_afce56869e7082 1
+results/optimization/round2-20261119/prefill/pair-001/qualified-C.py
+  s_fde809a6b235c8::t_3e2ffdf123de92 1-329
+results/optimization/round2-20261119/prefill/pair-001/qualified-prefill.py
+  s_fde809a6b235c8::t_9bcab5a3a9136f 1-329
+results/optimization/round2-20261119/prefill/pair-001/request.json
+  s_fde809a6b235c8::t_fc44bea7aac1fb 1-54
+results/optimization/round2-20261119/prefill/pair-001/result.json
+  s_fde809a6b235c8::t_ca2fb42f65252f 1-71318
+results/optimization/round2-20261119/prefill/qual-001/function-call.json
+  s_fde809a6b235c8::t_2f174e5e124c76 1
+results/optimization/round2-20261119/prefill/qual-001/qualified-prefill.py
+  s_fde809a6b235c8::t_92147ea8f5ca03 1-329
+results/optimization/round2-20261119/prefill/qual-001/request.json
+  s_fde809a6b235c8::t_7b4747fbec5d99 1-33
+results/optimization/round2-20261119/prefill/qual-001/result.json
+  s_fde809a6b235c8::t_6b024b339c72ff 1-179
+results/optimization/round2-20261119/profile/c-001/benchmark.jsonl
+  s_fde809a6b235c8::t_595d41365cc679 1-4
+results/optimization/round2-20261119/profile/c-001/function-call.json
+  s_fde809a6b235c8::t_a8f50b39594c88 1
+results/optimization/round2-20261119/profile/c-001/request.json
+  s_fde809a6b235c8::t_bdf2693a64e952 1-487
+results/optimization/round2-20261119/profile/c-001/result.json
+  s_fde809a6b235c8::t_375aca17de4864 1-1351
+results/optimization/round2-20261119/profile/c-001/test_muse_glimmer_qualified.py
+  s_fde809a6b235c8::t_917c935a7157de 1-329
+results/optimization/round2-20261119/protocol.json
+  s_fde809a6b235c8::t_05dd60329d61ab 1-183
+results/optimization/round2-20261119/shared/analyze_c_profiles.py
+  s_fde809a6b235c8::t_ea3912ed0c29f9 1-308
+results/optimization/round2-20261119/shared/c-profile-analysis.json
+  s_fde809a6b235c8::t_d1f0ae916de4ac 1-3392
+results/optimization/round2-20261119/shared/checkpoints.json
+  s_fde809a6b235c8::t_c34b7a90633141 1-29
+results/optimization/round2-20261119/shared/delivery-b8-recovery-spec.json
+  s_fde809a6b235c8::t_6b1a6ce4af9f80 1-32
+results/optimization/round2-20261119/shared/delivery-pair-spec.json
+  s_fde809a6b235c8::t_93b3cbf811a57a 1-27
+results/optimization/round2-20261119/shared/diagnose_prefill_divergence.py
+  s_fde809a6b235c8::t_bf7a3740289858 1-260
+results/optimization/round2-20261119/shared/engineering-timeline.json
+  s_fde809a6b235c8::t_cb14542bef15dd 1-32
+results/optimization/round2-20261119/shared/executed-drivers/analyze_round2.py
+  s_fde809a6b235c8::t_c4d69e1cfe16a3 1-271
+results/optimization/round2-20261119/shared/executed-drivers/completion_bench.py
+  s_fde809a6b235c8::t_c377f92c88793a 1-247
+results/optimization/round2-20261119/shared/executed-drivers/final-reporting/analyze_round2.py
+  s_fde809a6b235c8::t_1f3a77d36dbf36 1-300
+results/optimization/round2-20261119/shared/executed-drivers/final-reporting/combine_delivery.py
+  s_fde809a6b235c8::t_e71c7d44523e79 1-78
+results/optimization/round2-20261119/shared/executed-drivers/final-reporting/plot_round2.py
+  s_fde809a6b235c8::t_6d2c3f50c2c376 1-145
+results/optimization/round2-20261119/shared/executed-drivers/numeric/completion_bench.py
+  s_fde809a6b235c8::t_8d57576287e07c 1-257
+results/optimization/round2-20261119/shared/executed-drivers/numeric/paired.py
+  s_fde809a6b235c8::t_2f65c594fd7d25 1-356
+results/optimization/round2-20261119/shared/executed-drivers/numeric/round2_modal.py
+  s_fde809a6b235c8::t_34a82975c0289f 1-135
+results/optimization/round2-20261119/shared/executed-drivers/paired.py
+  s_fde809a6b235c8::t_279458d1d875d1 1-350
+results/optimization/round2-20261119/shared/executed-drivers/parallel_modal.py
+  s_fde809a6b235c8::t_147e2042188b87 1-312
+results/optimization/round2-20261119/shared/executed-drivers/recovery/completion_bench.py
+  s_fde809a6b235c8::t_d49037b8fa3503 1-257
+results/optimization/round2-20261119/shared/executed-drivers/recovery/paired.py
+  s_fde809a6b235c8::t_794271a48afd0a 1-351
+results/optimization/round2-20261119/shared/executed-drivers/recovery/round2_modal.py
+  s_fde809a6b235c8::t_73fd4cdcbac32c 1-129
+results/optimization/round2-20261119/shared/executed-drivers/round2_modal.py
+  s_fde809a6b235c8::t_f52ad7fdf88ef5 1-129
+results/optimization/round2-20261119/shared/executed-drivers/test_executing_path.py
+  s_fde809a6b235c8::t_b79b9d5f1cb858 1-67
+results/optimization/round2-20261119/shared/final-validation.json
+  s_fde809a6b235c8::t_9d64b336ffafd6 1-35
+results/optimization/round2-20261119/shared/frozen-files-validation.json
+  s_fde809a6b235c8::t_ed519ab90abb9a 1-4
+results/optimization/round2-20261119/shared/graphs-pair-spec.json
+  s_fde809a6b235c8::t_315b38635863c5 1-28
+results/optimization/round2-20261119/shared/numeric-diagnosis.json
+  s_fde809a6b235c8::t_384324a47307f6 1-29
+results/optimization/round2-20261119/shared/prefill-divergence-continuation.json
+  s_fde809a6b235c8::t_87fcedf379381c 1-54
+results/optimization/round2-20261119/shared/prefill-numeric-spec.json
+  s_fde809a6b235c8::t_e32eba9fbe115f 1-53
+results/optimization/round2-20261119/shared/prefill-pair-spec.json
+  s_fde809a6b235c8::t_dab7d754943d6e 1-24
+results/optimization/round2-20261119/shared/prefill-qual-spec.json
+  s_fde809a6b235c8::t_c3337d8e72efb8 1-17
+results/optimization/round2-20261119/shared/profile-review.json
+  s_fde809a6b235c8::t_2d7940455dbd60 1-22
+results/optimization/round2-20261119/shared/reproduction.json
+  s_fde809a6b235c8::t_4c9c555c33b478 1-40
+results/optimization/round2-20261119/throughput.svg
+  s_fde809a6b235c8::t_d498e7a8d85f9e 1-3482
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "82f54af0e7e22f84d618dd9eb740d150e10555f3",
+  "prompts": {},
+  "sessions": {
+    "s_fde809a6b235c8": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1f6c2-b4d7-71e0-b3fa-c7d633aa35e4",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "r-chong <dev.reese.chong@gmail.com>"
+    }
+  }
+}
