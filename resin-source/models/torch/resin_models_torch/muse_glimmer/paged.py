@@ -138,6 +138,58 @@ class PagedRow:
     end: int  # context + query length: positions >= end are unwritten
 
 
+@dataclass(frozen=True)
+class PagedAttentionGroup:
+    """Page selection and attention mask shared by every layer in a group."""
+
+    pages: tuple[Tensor, ...]
+    width: int
+    mask: Tensor
+
+
+def prepare_paged_attention(
+    rows: list[PagedRow], positions: Tensor, read_window: int
+) -> tuple[PagedAttentionGroup, PagedAttentionGroup]:
+    """Prepare batch-dependent metadata once, with no persistent input cache.
+
+    Every full layer reads the same history addresses and every sliding layer
+    reads the same window addresses. Layer weights and K/V values do not affect
+    page selection, padding or masks.
+    """
+
+    groups = []
+    query_length = positions.shape[1]
+    for group, window in ((HISTORY_GROUP, None), (WINDOW_GROUP, read_window)):
+        pages, starts, lengths = [], [], []
+        for row in rows:
+            cache = row.groups[group]
+            first_block = 0
+            if window is not None:
+                first_read = row.end - query_length - window + 1
+                first_block = max(
+                    0, (first_read - cache.first_position) // BLOCK_TOKENS
+                )
+            selected = cache.pages[first_block:]
+            pages.append(selected)
+            starts.append(cache.first_position + first_block * BLOCK_TOKENS)
+            lengths.append(selected.numel() * BLOCK_TOKENS)
+        width = max(lengths)
+        offsets = torch.arange(width, device=positions.device)
+        starts_tensor = torch.tensor(starts, device=positions.device)
+        ends_tensor = torch.tensor([row.end for row in rows], device=positions.device)
+        lengths_tensor = torch.tensor(lengths, device=positions.device)
+        key_positions = starts_tensor[:, None] + offsets
+        valid = (offsets < lengths_tensor[:, None]) & (
+            key_positions < ends_tensor[:, None]
+        )
+        distance = positions[:, :, None] - key_positions[:, None]
+        allowed = (distance >= 0) & valid[:, None]
+        if window is not None:
+            allowed &= distance < window
+        groups.append(PagedAttentionGroup(tuple(pages), width, allowed[:, None]))
+    return groups[0], groups[1]
+
+
 def paged_rows(batch: BatchView, parent_capacity: int, device) -> list[PagedRow]:
     views = [
         CacheGroupView.from_plan(

@@ -21,6 +21,7 @@ from resin_models_torch.muse_glimmer.config import (
     MuseGlimmerConfig,
     MuseGlimmerTextConfig,
 )
+from resin_models_torch.muse_glimmer.paged import prepare_paged_attention
 from resin_models_torch.muse_glimmer.vision import MuseGlimmerVisionModel
 
 
@@ -253,7 +254,9 @@ class Attention(nn.Module):
         )
         return self._output(attended, hidden)
 
-    def forward_paged(self, hidden: Tensor, positions: Tensor, rows, arena) -> Tensor:
+    def forward_paged(
+        self, hidden: Tensor, positions: Tensor, rows, arena, metadata
+    ) -> Tensor:
         """Attend using Engine-managed pages (see ``paged.py``).
 
         ``hidden`` is ``[rows, length, width]``: one prefill chunk (one row) or
@@ -264,6 +267,7 @@ class Attention(nn.Module):
 
         queries, keys, values = self._project(hidden, positions)
         group, key_pages, value_pages = arena.layer_views(self.layer)
+        prepared = metadata[group]
         gathered = []
         for index, row in enumerate(rows):
             cache = row.groups[group]
@@ -273,44 +277,28 @@ class Attention(nn.Module):
             value_pages[cache.append_pages, cache.append_offsets] = values[
                 index
             ].transpose(0, 1)
-        for row in rows:
-            cache = row.groups[group]
-            first_block = 0
-            if self.window is not None:
-                # Allocation retains enough history for the largest prefill
-                # chunk. A shorter query only reads its own sliding window;
-                # avoid gathering/expanding older, entirely masked blocks.
-                first_query = row.end - hidden.shape[1]
-                first_read = first_query - self.window + 1
-                first_block = max(
-                    0, (first_read - cache.first_position) // key_pages.shape[1]
-                )
-            pages = cache.pages[first_block:]
+        for pages in prepared.pages:
             row_keys = key_pages[pages].flatten(0, 1).transpose(0, 1)
             row_values = value_pages[pages].flatten(0, 1).transpose(0, 1)
-            first_position = cache.first_position + first_block * key_pages.shape[1]
-            key_positions = first_position + torch.arange(
-                row_keys.shape[1], device=hidden.device
-            )
-            # Unwritten (reserved) slots move to the far future: always masked.
-            key_positions = torch.where(key_positions < row.end, key_positions, 1 << 30)
-            gathered.append((row_keys, row_values, key_positions))
-        width = max(k.shape[1] for k, _, _ in gathered)
+            gathered.append((row_keys, row_values))
+        width = prepared.width
         padded_keys = torch.stack(
-            [F.pad(k, (0, 0, 0, width - k.shape[1])) for k, _, _ in gathered]
+            [
+                k if k.shape[1] == width else F.pad(k, (0, 0, 0, width - k.shape[1]))
+                for k, _ in gathered
+            ]
         )
         padded_values = torch.stack(
-            [F.pad(v, (0, 0, 0, width - v.shape[1])) for _, v, _ in gathered]
+            [
+                v if v.shape[1] == width else F.pad(v, (0, 0, 0, width - v.shape[1]))
+                for _, v in gathered
+            ]
         )
-        key_positions = torch.stack(
-            [F.pad(p, (0, width - p.shape[0]), value=1 << 30) for _, _, p in gathered]
-        )
-        mask = self._mask(positions, key_positions)[:, None]
         attended = F.scaled_dot_product_attention(
             queries,
             padded_keys.repeat_interleave(self.kv_groups, dim=1),
             padded_values.repeat_interleave(self.kv_groups, dim=1),
-            attn_mask=mask,
+            attn_mask=prepared.mask,
             scale=self.scale,
         )
         return self._output(attended, hidden)
@@ -362,9 +350,11 @@ class DecoderLayer(nn.Module):
         )
         return self._feed_forward(hidden + self.post_attention_layernorm(update))
 
-    def forward_paged(self, hidden: Tensor, positions: Tensor, rows, arena) -> Tensor:
+    def forward_paged(
+        self, hidden: Tensor, positions: Tensor, rows, arena, metadata
+    ) -> Tensor:
         update = self.self_attn.forward_paged(
-            self.input_layernorm(hidden), positions, rows, arena
+            self.input_layernorm(hidden), positions, rows, arena, metadata
         )
         return self._feed_forward(hidden + self.post_attention_layernorm(update))
 
@@ -399,8 +389,9 @@ class MuseGlimmerTextModel(nn.Module):
         return self.norm(hidden)
 
     def forward_paged(self, hidden: Tensor, positions: Tensor, rows, arena) -> Tensor:
+        metadata = prepare_paged_attention(rows, positions, arena.geometry.read_window)
         for layer in self.layers:
-            hidden = layer.forward_paged(hidden, positions, rows, arena)
+            hidden = layer.forward_paged(hidden, positions, rows, arena, metadata)
         return self.norm(hidden)
 
 
