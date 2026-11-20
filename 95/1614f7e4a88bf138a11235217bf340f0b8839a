@@ -1,0 +1,19 @@
+REPRODUCE.md
+  s_fde809a6b235c8::t_5e49123f81d56b 137-152
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "951614f7e4a88bf138a11235217bf340f0b8839a",
+  "prompts": {},
+  "sessions": {
+    "s_fde809a6b235c8": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1f6c2-b4d7-71e0-b3fa-c7d633aa35e4",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "r-chong <dev.reese.chong@gmail.com>"
+    }
+  }
+}
