@@ -9,6 +9,7 @@ graph-captured. It is the correctness baseline for an optimized CUDA runner.
 from __future__ import annotations
 
 import json
+import os
 from dataclasses import dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, cast
@@ -134,6 +135,12 @@ class MuseGlimmerTorchRunner(Runner):
     ``kv_cache="engine"`` (default) declares a Resin ``CacheLayout`` and keeps
     K/V in Engine-managed pages (``paged.py``). ``kv_cache="local"`` keeps the
     original request-owned tensors, retained for comparison.
+
+    ``RESIN_MUSE_MAX_BATCH_TOKENS`` supplies the existing runner token budget
+    when the caller has not specified one. An 8192-token budget lets Engine
+    publish each complete 8K prefill before starting the next request, while
+    keeping the 8192-token prefill chunk and the normal decode batch width.
+    This does not change Engine's prefill-first scheduling policy.
     """
 
     parallelism_capabilities = ParallelismCapabilities()
@@ -155,6 +162,19 @@ class MuseGlimmerTorchRunner(Runner):
     ) -> None:
         if kv_cache not in ("engine", "local"):
             raise ValueError("kv_cache must be 'engine' or 'local'")
+        if max_batch_tokens is None:
+            configured_budget = os.environ.get("RESIN_MUSE_MAX_BATCH_TOKENS")
+            if configured_budget is not None:
+                try:
+                    max_batch_tokens = int(configured_budget)
+                except ValueError as exc:
+                    raise ValueError(
+                        "RESIN_MUSE_MAX_BATCH_TOKENS must be a positive integer"
+                    ) from exc
+                if max_batch_tokens <= 0:
+                    raise ValueError(
+                        "RESIN_MUSE_MAX_BATCH_TOKENS must be a positive integer"
+                    )
         self.device = torch.device(device)
         self.model_path = resolve_model_path(model, revision)
         self._model = load_model(
@@ -185,6 +205,7 @@ class MuseGlimmerTorchRunner(Runner):
             max_batch_tokens=max_batch_tokens,
             cache_layout=self.cache_layout,
         )
+        self.benchmark_metadata = {"runner_max_batch_tokens": max_batch_tokens}
         self._sampler = TorchSampler()
         self._requests: dict[int, _Request] = {}
         self.forward_calls = 0

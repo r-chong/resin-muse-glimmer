@@ -1,0 +1,90 @@
+{
+  "lane": "round2-delivery",
+  "branch": "codex/resin-round2-delivery",
+  "base_commit": "66bb70a63470581f1ced548265e839da374836aa",
+  "record_created_utc": "2026-11-20T04:17:00Z",
+  "status": "candidate-ready-for-centralized-GPU-qualification",
+  "approved_scope": "Earlier CPU-visible prefill delivery through existing RunnerConfig token budget, retaining C attention/math/cache and fixed 8192-token prefill chunk",
+  "hypothesis": "Because the runner executes prefill rows serially but Engine publishes only after the whole batch, an 8192-token runner budget should publish each completed 8K prompt's first token earlier. It does not remove model work or change decode batch width. Extra Engine steps may cost throughput, and prefill-first scheduling may increase early requests' first inter-token gap.",
+  "frozen_configuration": {
+    "model": "meta-models/Muse-Glimmer-30B",
+    "revision": "cec94fcfd6512f2cfe708138c32533b346ea4f69",
+    "precision": "BF16",
+    "gpu_count": 1,
+    "gpu_model": "H100",
+    "prefill_chunk_size": 8192,
+    "attention_math_cache": "unchanged from base C",
+    "workloads_and_timing": "unchanged common qualification, shared bench and completion harness; compare matched cohorts and actual committed output tokens"
+  },
+  "ablation": {
+    "control": {
+      "RESIN_MUSE_MAX_BATCH_TOKENS": "unset",
+      "runner_max_batch_tokens": null
+    },
+    "candidate": {
+      "RESIN_MUSE_MAX_BATCH_TOKENS": "8192",
+      "runner_max_batch_tokens": 8192
+    },
+    "constructor_precedence": "An explicit max_batch_tokens argument takes precedence over the opt-in environment variable.",
+    "metadata": "runner.benchmark_metadata.runner_max_batch_tokens records the effective runner cap; scripts/bench.py also records the effective Engine max_batch_tokens.",
+    "sampling_and_output_budgets": "unchanged"
+  },
+  "attempts": [
+    {
+      "candidate": "existing-token-budget",
+      "changes": [
+        "Opt-in RESIN_MUSE_MAX_BATCH_TOKENS parsed before weights load when no explicit runner budget is supplied",
+        "Existing RunnerConfig.max_batch_tokens contract only; no Engine, Rust, scheduler, cache, model, kernel or graph edits",
+        "Benchmark metadata reports the selected runner budget"
+      ],
+      "local_checks": {
+        "command": "PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=/private/tmp/resin-round2-delivery/resin-source:/private/tmp/resin-round2-delivery/resin-source/models/torch /Users/reese/code/resin/resin-source/.venv/bin/python -m pytest -p no:cacheprovider resin-source/models/torch/tests/test_muse_glimmer_delivery.py resin-source/models/torch/tests/test_muse_glimmer_paged.py resin-source/tests/test_scheduler.py -q",
+        "result": "41 passed in 4.05s",
+        "test_scope": [
+          "Real Engine plus tiny Muse model and Engine-owned paged KV, fixed8192 prefill chunk; token budget scaled to16 for CPU",
+          "Batch1 and batch8 first-token publication steps: all at step1 without cap, request-order steps1..B with cap",
+          "Full decode width B preserved and greedy tokens match a full-context no-cache oracle",
+          "Unequal prompt lengths30,3,17 with partial-prefill continuation and sliding-window crossing",
+          "Cancellation of a partially-prefilled admitted row and an untouched waiting row, no stale forwards, zero remaining runner states",
+          "Stop-token retirement after first prefill token, unaffected concurrent request and zero remaining runner states",
+          "Explicit constructor budget precedence and malformed environment budget rejected before checkpoint loading",
+          "Existing paged-KV correctness and scheduler tests"
+        ],
+        "initial_fixture_failure": "Initial64-parent tiny CPU pool could not physically represent the8192-token retention guard; increased only test pool to1024 parents. No production configuration or chunk changed.",
+        "native_extension": "Untouched base _resin.abi3.so copied to ignored worktree path; no native build or shared-environment mutation",
+        "ruff_lint": "passed",
+        "ruff_format": "passed after formatting-only correction",
+        "diff_check": "passed"
+      },
+      "gpu_requested": {
+        "qualification": "Same full-checkpoint HF greedy/logit parity and concurrency suite used for C, with env8192; retain window-boundary and chunked-prefill references",
+        "benchmark": "Same shared prefill/decode benchmarks, plus paired common completion benchmark with env unset and8192 on the same allocation",
+        "metrics": [
+          "Actual committed output tok/s/GPU through full cohort completion",
+          "Per-request and mean TTFT",
+          "Per-request TPOT and full completion latency",
+          "First-to-second-token gap or full token timestamp series, if existing completion harness supports it"
+        ],
+        "estimated_h100_minutes": "5-10, including qualification and paired representative completion runs; root owns final allocation/budget choice",
+        "launch_policy": "Root only; no paid or remote operations launched by this lane"
+      },
+      "gpu_runs": [],
+      "performance_claim": null
+    }
+  ],
+  "existing_api_limits": [
+    "The scheduler selects prefills first and dispatches homogeneous phases; reducing the budget does not interleave ready decode rows.",
+    "Engine.step(phase=decode) filters the normal selected cohort rather than overriding prefill priority.",
+    "A synchronous runner cannot publish partial ForwardOutput rows through Engine.step before returning.",
+    "True prefill/decode interleaving would require a scheduler/core policy decision outside this approved lane; no such change made."
+  ],
+  "unresolved_coverage": [
+    "GPU/full-checkpoint parity has not been rerun for the changed scheduling yet.",
+    "GPU TTFT, TPOT, full completion throughput, and per-request latency trade-off are unmeasured.",
+    "CPU publication step counts do not establish GPU timing or throughput.",
+    "No HTTP serving, asynchronous overlap, output-quality or new arrival-distribution claims."
+  ],
+  "paid_resources_launched_by_lane": false,
+  "human_interventions": [],
+  "automatic_merge": false
+}
