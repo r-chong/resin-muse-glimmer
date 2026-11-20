@@ -1,0 +1,33 @@
+resin-source/tests/test_muse_glimmer_hf_parity.py
+  s_fde809a6b235c8::t_37895f9223e951 78,81-82
+resin-source/models/torch/tests/test_muse_glimmer_graphs.py
+  s_fde809a6b235c8::t_37895f9223e951 1-5,7-20,26-104,109,115-116
+  s_fde809a6b235c8::t_b84b587c42a439 6,21-25,105-108,110-114
+resin-source/models/torch/tests/test_muse_glimmer_graph_failures.py
+  s_fde809a6b235c8::t_b84b587c42a439 1-50
+results/optimization/round2-graphs/checkpoint-v1.json
+  s_fde809a6b235c8::t_0cb7a3c173e512 1-57
+resin-source/models/torch/resin_models_torch/muse_glimmer/execution.py
+  s_fde809a6b235c8::t_b84b587c42a439 17-21,142-157
+  s_fde809a6b235c8::t_a48def45040c6e 22
+  s_fde809a6b235c8::t_37895f9223e951 1-16,23-141,158-191
+resin-source/models/torch/resin_models_torch/muse_glimmer/reference.py
+  s_fde809a6b235c8::t_37895f9223e951 12,156,194-220,232-240,247
+  s_fde809a6b235c8::t_f97ac1f947fa9a 221-231,241-246
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "6fd2dda4b0677bea4e539135f016c6b40a5c8653",
+  "prompts": {},
+  "sessions": {
+    "s_fde809a6b235c8": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1f6c2-b4d7-71e0-b3fa-c7d633aa35e4",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "r-chong <dev.reese.chong@gmail.com>"
+    }
+  }
+}
