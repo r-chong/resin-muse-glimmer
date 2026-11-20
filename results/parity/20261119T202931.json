@@ -1,0 +1,16 @@
+{
+  "repo_commit": "9a48a5fcf10b3566078d485945b6fa9e642461e0",
+  "resin_source_dirty": false,
+  "reference": [
+    "/bench-traces/muse-reference/e0b3ae6b/gsm8k_test_0001.npz",
+    "/bench-traces/muse-reference/69d7fbf4/long_window.npz",
+    "/bench-traces/muse-reference/69d7fbf4/long_8k.npz"
+  ],
+  "steps": 128,
+  "dump_dir": "/bench-traces/muse-dumps/resin-128",
+  "select": "single_request",
+  "returncode": 5,
+  "elapsed_s": 2.5160984920000002,
+  "report": [],
+  "output": "============================= test session starts ==============================\nplatform linux -- Python 3.12.1, pytest-8.4.2, pluggy-1.7.0 -- /opt/resin-deps/.venv/bin/python\ncachedir: .pytest_cache\nrootdir: /opt/resin\nconfigfile: pyproject.toml\nplugins: anyio-4.14.2\ncollecting ... collected 5 items / 5 deselected / 0 selected\n\n============================ 5 deselected in 1.66s =============================\n"
+}

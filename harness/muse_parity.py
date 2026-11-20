@@ -48,7 +48,8 @@ def main() -> None:
     with modal.enable_output(), modal_bench.app.run():
         result = modal_bench.qualify.with_options(gpu="H100!").remote(
             "muse-glimmer-30b",
-            [TEST, "-s", *(["-k", args.select] if args.select else [])],
+            # qualify() prefixes non-dash arguments with /opt/resin/, so pass -k as one token.
+            [TEST, "-s", *([f"-k{args.select}"] if args.select else [])],
             environment={
                 "RESIN_MUSE_REFERENCES": ",".join(args.reference),
                 "RESIN_MUSE_STEPS": str(args.steps),
