@@ -89,8 +89,14 @@ class MuseKvArena:
     """One device allocation, viewed per group. Slab 0 is the null slab."""
 
     def __init__(
-        self, geometry: MuseCacheGeometry, parent_capacity: int, *, device, dtype,
-        native_decode: bool = False, num_query_heads: int | None = None,
+        self,
+        geometry: MuseCacheGeometry,
+        parent_capacity: int,
+        *,
+        device,
+        dtype,
+        native_decode: bool = False,
+        num_query_heads: int | None = None,
     ):
         self.geometry = geometry
         self.native_decode = native_decode
@@ -137,8 +143,10 @@ class MuseKvArena:
             if self.num_query_heads is None:
                 raise ValueError("native decode needs the model's query-head count")
             self._native_decoder = FlashinferPagedDecode(
-                self.geometry, self.num_query_heads,
-                device=self.storage.device, dtype=self.storage.dtype,
+                self.geometry,
+                self.num_query_heads,
+                device=self.storage.device,
+                dtype=self.storage.dtype,
             )
         self._native_decoder.plan(rows)
         self.decode_attention = self._native_decoder

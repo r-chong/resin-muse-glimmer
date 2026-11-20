@@ -57,8 +57,12 @@ def test_native_paged_decode_matches_independent_dense_attention():
     torch.manual_seed(123)
     device = "cuda"
     geometry = MuseCacheGeometry(
-        full_layers=(0,), sliding_layers=(1, 2, 3),
-        kv_heads=2, head_dim=128, read_window=2048, window_tokens=10239,
+        full_layers=(0,),
+        sliding_layers=(1, 2, 3),
+        kv_heads=2,
+        head_dim=128,
+        read_window=2048,
+        window_tokens=10239,
     )
     arena = MuseKvArena(geometry, 320, device=device, dtype=torch.bfloat16)
     arena.storage.fill_(float("nan"))
@@ -66,7 +70,9 @@ def test_native_paged_decode_matches_independent_dense_attention():
     rows, data = [], {0: [], 1: []}
     next_page = [3, 150]  # disjoint physical slabs for full/window groups
     for end in lengths:
-        first_window = max(0, (end - geometry.read_window) // BLOCK_TOKENS) * BLOCK_TOKENS
+        first_window = (
+            max(0, (end - geometry.read_window) // BLOCK_TOKENS) * BLOCK_TOKENS
+        )
         groups = []
         for group, first in enumerate((0, first_window)):
             live = end - first
@@ -85,9 +91,7 @@ def test_native_paged_decode_matches_independent_dense_attention():
             data[group].append((keys, values))
         rows.append(PagedRow(tuple(groups), end))
 
-    decoder = FlashinferPagedDecode(
-        geometry, 32, device=device, dtype=torch.bfloat16
-    )
+    decoder = FlashinferPagedDecode(geometry, 32, device=device, dtype=torch.bfloat16)
     decoder.plan(rows)
     queries = torch.randn(len(rows), 32, 128, device=device, dtype=torch.bfloat16)
     for group in (0, 1):
@@ -97,8 +101,8 @@ def test_native_paged_decode_matches_independent_dense_attention():
         expected = []
         for query, (keys, values) in zip(queries, data[group]):
             if group == 1:
-                keys = keys[-geometry.read_window:]
-                values = values[-geometry.read_window:]
+                keys = keys[-geometry.read_window :]
+                values = values[-geometry.read_window :]
             expected.append(
                 F.scaled_dot_product_attention(
                     query[None, :, None, :].float(),
@@ -109,7 +113,12 @@ def test_native_paged_decode_matches_independent_dense_attention():
             )
         expected = torch.stack(expected)
         assert torch.isfinite(actual).all(), "unwritten NaN tails entered attention"
-        print({"group": group, "max_abs_error": (actual.float() - expected.float()).abs().max().item()})
+        print(
+            {
+                "group": group,
+                "max_abs_error": (actual.float() - expected.float()).abs().max().item(),
+            }
+        )
         # A primitive BF16 attention tolerance, not a replacement for the exact
         # greedy-token gate or the checkpoint's diagnostic logit comparison.
         torch.testing.assert_close(actual, expected, atol=0.01, rtol=0.01)
