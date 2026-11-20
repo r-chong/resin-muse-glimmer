@@ -3,8 +3,9 @@
 /MUSE_MODAL_PREPARATION.md
 
 # Local upstream checkouts
-/resin-source/
 /resin-explained/
+# Backup of the pre-vendoring Resin fork history (patches are the record)
+/.resin-fork.git/
 
 # Python and local tooling
 __pycache__/

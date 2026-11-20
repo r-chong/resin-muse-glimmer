@@ -1,0 +1,181 @@
+[build-system]
+requires = ["maturin>=1.9,<2"]
+build-backend = "maturin"
+
+[project]
+name = "resin"
+version = "0.1.0"
+description = "A small Rust substrate for model-specific inference engines"
+readme = "README.md"
+requires-python = ">=3.11"
+license = "Apache-2.0"
+license-files = ["LICENSE", "NOTICE", "crates/resin-recipe/licenses/*.txt"]
+authors = [{ name = "Eric Zhang <ekzhang1@gmail.com>" }]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Programming Language :: Python :: 3",
+  "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
+dependencies = ["blake3>=1.0,<2", "numpy>=1.26,<3", "torch>=2.13.0"]
+
+[project.optional-dependencies]
+cuda = [
+  "flashinfer-python>=0.6.15.post1; sys_platform == 'linux'",
+  "cuda-bindings>=13.3,<14; sys_platform == 'linux'",
+  "nvidia-cutlass-dsl==4.6.2; sys_platform == 'linux'",
+  "nvidia-cutlass-dsl-libs-base==4.6.2; sys_platform == 'linux'",
+  "apache-tvm-ffi==0.1.12; sys_platform == 'linux'",
+  "quack-kernels==0.6.4; sys_platform == 'linux'",
+]
+
+[dependency-groups]
+deployment = [
+  "modal>=1.5.3",
+  "resin-models-cuda",
+  "transformers>=5.14.1",
+]
+dev = [
+  "hypothesis>=6.140,<7",
+  "tml-renderers==0.2.0",
+  "resin-models-torch",
+  "resin-models-cuda",
+  "resin-models-mlx",
+  "maturin>=1.9,<2",
+  "modal>=1.5.3",
+  "pytest>=8,<9",
+  "ruff>=0.16,<0.17",
+  "huggingface-hub>=0.35",
+  "safetensors>=0.5",
+  "renderers==0.1.9",
+  "tokenizers>=0.22.2",
+  "transformers>=5.14.1",
+  "ty>=0.0.90",
+  "deepseek-recipe==0.2.0",
+  "openai-harmony==0.0.8",
+  "matplotlib>=3.10,<4",
+]
+
+[tool.maturin]
+manifest-path = "crates/resin-py/Cargo.toml"
+module-name = "resin._resin"
+python-source = "."
+python-packages = ["resin"]
+features = ["pyo3/extension-module"]
+include = [
+  { path = "resin/backend/cuda/sampling_topk.cu", format = ["sdist", "wheel"] },
+]
+
+[tool.ruff]
+target-version = "py311"
+
+[tool.ruff.format]
+# Preserve upstream formatting in the adapted CuTe implementation.
+exclude = ["models/cuda/resin_models_cuda/inkling2/cute_grouped_nvfp4.py"]
+
+[tool.ruff.lint]
+select = ["E4", "E7", "E9", "F", "I", "TID252"]
+
+[tool.ruff.lint.per-file-ignores]
+"resin/_resin.pyi" = ["I001"]
+
+[tool.ruff.lint.flake8-tidy-imports]
+ban-relative-imports = "all"
+
+[tool.ruff.lint.isort]
+known-first-party = [
+  "resin",
+  "resin_models_cuda",
+  "resin_models_mlx",
+  "resin_models_torch",
+]
+
+[tool.pytest.ini_options]
+pythonpath = [".", "models/cuda", "models/mlx", "models/torch"]
+testpaths = ["tests", "models/cuda/tests", "models/mlx/tests", "models/torch/tests"]
+
+[tool.uv]
+default-groups = ["dev"]
+# Workspace-only compatibility overrides for the CUDA model kernel stack. These
+# do not become dependencies of the published core Resin package.
+override-dependencies = [
+  "apache-tvm-ffi==0.1.12; sys_platform == 'linux'",
+  "nvidia-cutlass-dsl==4.6.2; sys_platform == 'linux'",
+  "nvidia-cutlass-dsl-libs-base==4.6.2; sys_platform == 'linux'",
+]
+
+# DeepGEMM's setup.py imports CUDA while computing metadata. Keep resolution
+# portable; build its pinned source only on Linux, against the runtime Torch.
+[[tool.uv.dependency-metadata]]
+name = "deep-gemm"
+version = "2.8.2"
+requires-dist = []
+
+[[tool.uv.dependency-metadata]]
+name = "flash-mla"
+version = "1.0.0"
+requires-dist = []
+
+[[tool.uv.dependency-metadata]]
+name = "deep-select"
+version = "1.0.0"
+requires-dist = []
+
+[tool.uv.extra-build-dependencies]
+deep-gemm = [
+  { requirement = "torch", match-runtime = true },
+  "setuptools==80.9.0",
+  "packaging>=24",
+  "wheel==0.45.1",
+  "pybind11==3.0.1",
+  "tree-sitter==0.26.0",
+  "tree-sitter-cpp==0.23.4",
+]
+flash-mla = [
+  { requirement = "torch", match-runtime = true },
+  "triton==3.7.1",
+  "setuptools==80.9.0",
+  "wheel==0.45.1",
+  "ninja>=1.11",
+  "packaging>=24",
+]
+deep-select = [
+  { requirement = "torch", match-runtime = true },
+  "triton==3.7.1",
+  "setuptools==80.9.0",
+  "wheel==0.45.1",
+  "ninja>=1.11",
+  "packaging>=24",
+]
+
+[tool.uv.extra-build-variables]
+deep-gemm = { DG_USE_LOCAL_VERSION = "0", DG_FORCE_BUILD = "1" }
+deep-select = { DEEP_SELECT_BUILD_TARGET_PLATFORM = "CUDA", MAX_JOBS = "4", NVCC_THREADS = "4" }
+# CUDA 13.3 spills in an unused legacy split-KV kernel; disable the upstream
+# blanket build-time spill check.
+flash-mla = { FLASH_MLA_BUILD_TARGET_PLATFORM = "CUDA", FLASH_MLA_SKIP_REG_SPILL_CHECK = "1", MAX_JOBS = "4", NVCC_THREADS = "4" }
+
+[tool.uv.sources]
+resin-models-cuda = { workspace = true }
+resin-models-mlx = { workspace = true }
+resin-models-torch = { workspace = true }
+
+[tool.uv.workspace]
+members = ["models/*"]
+
+[tool.ty.rules]
+# Development doesn't have all GPU-only packages available.
+unresolved-import = "ignore"
+
+# nn.Module declares forward as a writable Callable; model methods specialize it.
+invalid-mutable-override = "ignore"
+
+[tool.ty.environment]
+extra-paths = [".type-libs/sources"]
+
+[tool.ty.src]
+# CuTe's staged device expressions do not follow Python's static type rules.
+exclude = [
+  "models/cuda/resin_models_cuda/inkling2/cute_grouped_nvfp4.py",
+  "models/cuda/resin_models_cuda/inkling2/fa4_bias_kernel.py",
+  "models/cuda/resin_models_cuda/inkling2/fa4_bias_utils.py",
+]
