@@ -1,0 +1,280 @@
+results/optimization/round2-20261119/shared/final-validation.json
+  s_fde809a6b235c8::t_2186b90a136f44 1-35
+results/optimization/round2-20261119/prefill/agent-audit.json
+  s_fde809a6b235c8::t_c6220b96a2f4f7 1-78
+results/optimization/round2-20261119/shared/executed-drivers/recovery/completion_bench.py
+  s_fde809a6b235c8::t_5f2c8ace8fc8ac 1-257
+results/optimization/round2-20261119/shared/numeric-diagnosis.json
+  s_fde809a6b235c8::t_2186b90a136f44 1-29
+results/optimization/round2-20261119/delivery/b8-recovery-001/qualified-delivery.py
+  s_fde809a6b235c8::t_64e802283e2de1 1-329
+results/optimization/round2-20261119/prefill/numeric-001/divergence-C.json
+  s_fde809a6b235c8::t_4284b61490fd2b 1-1472
+results/optimization/round2-20261119/shared/executed-drivers/final-reporting/combine_delivery.py
+  s_fde809a6b235c8::t_3c26ad4864aa2a 1-78
+results/optimization/round2-20261119/shared/prefill-divergence-continuation.json
+  s_fde809a6b235c8::t_821b2e5d9eb03a 1-54
+results/optimization/round2-20261119/shared/executed-drivers/paired.py
+  s_fde809a6b235c8::t_f9788788a09eab 1-350
+results/optimization/round2-20261119/delivery/b8-recovery-001/qualified-C.py
+  s_fde809a6b235c8::t_64e802283e2de1 1-329
+results/optimization/round2-20261119/shared/executed-drivers/final-reporting/analyze_round2.py
+  s_fde809a6b235c8::t_3c26ad4864aa2a 1-300
+results/optimization/round2-20261119/shared/prefill-pair-spec.json
+  s_fde809a6b235c8::t_c9dfa4e79ce4be 1-24
+results/optimization/round2-20261119/shared/profile-review.json
+  s_fde809a6b235c8::t_f9788788a09eab 1-22
+results/optimization/round2-20261119/analysis.json
+  s_fde809a6b235c8::t_8ad690ca12eed0 1-5181,5394-5395
+  s_fde809a6b235c8::t_2186b90a136f44 5182-5393
+results/optimization/round2-20261119/delivery/agent-audit.json
+  s_fde809a6b235c8::t_c6220b96a2f4f7 1-90
+results/optimization/round2-20261119/prefill/independent.patch
+  s_fde809a6b235c8::t_c6220b96a2f4f7 1-379
+results/optimization/round2-20261119/shared/frozen-files-validation.json
+  s_fde809a6b235c8::t_41d7e3e1af262f 1-4
+results/optimization/round2-20261119/shared/c-profile-analysis.json
+  s_fde809a6b235c8::t_e80d2934213417 1-3392
+results/optimization/round2-20261119/shared/reproduction.json
+  s_fde809a6b235c8::t_3c26ad4864aa2a 1-40
+results/optimization/round2-20261119/shared/delivery-pair-spec.json
+  s_fde809a6b235c8::t_c9dfa4e79ce4be 1-27
+results/optimization/round2-20261119/SHA256.json
+  s_fde809a6b235c8::t_3c26ad4864aa2a 1-112
+results/optimization/round2-20261119/graphs/agent-audit.json
+  s_fde809a6b235c8::t_c6220b96a2f4f7 1-57
+results/optimization/round2-20261119/shared/executed-drivers/analyze_round2.py
+  s_fde809a6b235c8::t_f9788788a09eab 1-271
+results/optimization/round2-20261119/prefill/divergence-audit.json
+  s_fde809a6b235c8::t_a76213b07ff1a3 1-165
+results/optimization/round2-20261119/shared/diagnose_prefill_divergence.py
+  s_fde809a6b235c8::t_821b2e5d9eb03a 1-260
+results/optimization/round2-20261119/shared/prefill-numeric-spec.json
+  s_fde809a6b235c8::t_821b2e5d9eb03a 1-53
+results/optimization/round2-20261119/shared/executed-drivers/numeric/paired.py
+  s_fde809a6b235c8::t_821b2e5d9eb03a 1-356
+results/optimization/round2-20261119/prefill/qual-001.console.log
+  s_fde809a6b235c8::t_bb2c9894415367 3
+  s_fde809a6b235c8::t_de5f0c364622df 8,19,30,41,52
+  s_fde809a6b235c8::t_afc4739aa6c997 1-2
+  s_fde809a6b235c8::t_e83bee3609ab94 4-7
+  s_fde809a6b235c8::t_a769fad6c0b749 9-11,16-18
+  s_fde809a6b235c8::t_8af262351d0ad0 20-22,27-29
+  s_fde809a6b235c8::t_4085354df9a2c3 31-33,38-40
+  s_fde809a6b235c8::t_2255097c14ada7 42-44,49-51
+  s_fde809a6b235c8::t_331ba29388a879 53-55
+  s_fde809a6b235c8::t_a380e5f18563df 12-15,23-26,34-37,45-48,56-198
+results/optimization/round2-20261119/shared/executed-drivers/numeric/completion_bench.py
+  s_fde809a6b235c8::t_821b2e5d9eb03a 1-257
+results/optimization/round2-20261119/shared/executed-drivers/test_executing_path.py
+  s_fde809a6b235c8::t_f9788788a09eab 1-67
+results/optimization/round2-20261119/shared/executed-drivers/recovery/paired.py
+  s_fde809a6b235c8::t_5f2c8ace8fc8ac 1-351
+results/optimization/round2-20261119/shared/prefill-qual-spec.json
+  s_fde809a6b235c8::t_c536abe168963c 1-17
+results/optimization/round2-20261119/delivery/pair-001/function-call.json
+  s_fde809a6b235c8::t_e80d2934213417 1
+results/optimization/round2-20261119/delivery/independent.patch
+  s_fde809a6b235c8::t_c6220b96a2f4f7 1-255
+results/optimization/round2-20261119/shared/checkpoints.json
+  s_fde809a6b235c8::t_c6220b96a2f4f7 1-29
+results/optimization/round2-20261119/shared/analyze_c_profiles.py
+  s_fde809a6b235c8::t_085dce89566037 1-124,130-139,147-288,290-308
+  s_fde809a6b235c8::t_329db571620b4d 125-129,140-146,289
+results/optimization/round2-20261119/graphs/independent.patch
+  s_fde809a6b235c8::t_c6220b96a2f4f7 1-473
+results/optimization/round2-20261119/graphs/pair-001.console.log
+  s_fde809a6b235c8::t_e80d2934213417 241-242
+  s_fde809a6b235c8::t_23602e37cde55b 239
+  s_fde809a6b235c8::t_bb2c9894415367 3
+  s_fde809a6b235c8::t_906a9acd1766a0 1-2
+  s_fde809a6b235c8::t_52cf5b3392c66a 4-6,236-238
+  s_fde809a6b235c8::t_2359cb265c0df7 240
+  s_fde809a6b235c8::t_08ceb80cd4fa4c 243-245
+  s_fde809a6b235c8::t_79a26099669fac 7-235,246-274
+results/optimization/round2-20261119/prefill/numeric-001/divergence-prefill.json
+  s_fde809a6b235c8::t_4284b61490fd2b 1-1473
+results/optimization/round2-20261119/shared/engineering-timeline.json
+  s_fde809a6b235c8::t_3c26ad4864aa2a 1-32
+results/optimization/round2-20261119/prefill/numeric-001/artifacts/divergence-prefill.json
+  s_fde809a6b235c8::t_6ba0f501f0bce6 1-1473
+results/optimization/round2-20261119/shared/executed-drivers/round2_modal.py
+  s_fde809a6b235c8::t_f9788788a09eab 1-129
+results/optimization/round2-20261119/prefill/pair-001.console.log
+  s_fde809a6b235c8::t_23602e37cde55b 4-8,16,18-19,27,29-30,38,40-41
+  s_fde809a6b235c8::t_010433137e0a24 1-3
+  s_fde809a6b235c8::t_cb3748394ef256 9-11,13-15
+  s_fde809a6b235c8::t_e1d9509cdafa7c 17
+  s_fde809a6b235c8::t_41b47cf11f8c46 20-22,24-26
+  s_fde809a6b235c8::t_e0d3d0e77b899b 28
+  s_fde809a6b235c8::t_5d0e6c9a5bc8b7 31-33,35-37
+  s_fde809a6b235c8::t_d50ea34348f4f0 39
+  s_fde809a6b235c8::t_3653e6f49d50fc 42-44
+  s_fde809a6b235c8::t_03cdfbc7cb6ff9 12,23,34,45-183
+results/optimization/round2-20261119/throughput.svg
+  s_fde809a6b235c8::t_ed9dc02afc2527 1-3482
+results/optimization/round2-20261119/shared/executed-drivers/completion_bench.py
+  s_fde809a6b235c8::t_f9788788a09eab 1-247
+results/optimization/round2-20261119/shared/executed-drivers/recovery/round2_modal.py
+  s_fde809a6b235c8::t_5f2c8ace8fc8ac 1-129
+results/optimization/round2-20261119/shared/executed-drivers/final-reporting/plot_round2.py
+  s_fde809a6b235c8::t_3c26ad4864aa2a 1-145
+results/optimization/round2-20261119/prefill/numeric-001/artifacts/divergence-C.json
+  s_fde809a6b235c8::t_6ba0f501f0bce6 1-1472
+results/optimization/round2-20261119/delivery/b8-recovery-001.console.log
+  s_fde809a6b235c8::t_64e802283e2de1 1-63,71,73-74,82,84-85,93,95-96,206
+  s_fde809a6b235c8::t_dc390fbde2e3f0 64-70,72,75-81,83,86-92,94,97-205,207
+results/optimization/round2-20261119/shared/executed-drivers/parallel_modal.py
+  s_fde809a6b235c8::t_f9788788a09eab 1-312
+results/optimization/round2-20261119/shared/executed-drivers/numeric/round2_modal.py
+  s_fde809a6b235c8::t_821b2e5d9eb03a 1-135
+results/optimization/round2-20261119/delivery/pair-001.console.log
+  s_fde809a6b235c8::t_e80d2934213417 42-142
+  s_fde809a6b235c8::t_ace1e2b380b693 39-41
+  s_fde809a6b235c8::t_d954b892f6b4a4 143-145
+  s_fde809a6b235c8::t_18472931571c5b 1-38,146-243
+results/optimization/round2-20261119/shared/graphs-pair-spec.json
+  s_fde809a6b235c8::t_c536abe168963c 1-28
+results/optimization/round2-20261119/delivery/b8-recovery-001/request.json
+  s_fde809a6b235c8::t_64e802283e2de1 1-62
+results/optimization/round2-20261119/protocol.json
+  s_fde809a6b235c8::t_8f219f44ef240c 65-68,70-73,144-145
+  s_fde809a6b235c8::t_5f2c8ace8fc8ac 119
+  s_fde809a6b235c8::t_dbae10e4f9d792 126,130
+  s_fde809a6b235c8::t_8198683a036361 115-117,122,133-136,138-140,164-166
+  s_fde809a6b235c8::t_c536abe168963c 77-80,82-84,88-90,102,127-129
+  s_fde809a6b235c8::t_c9dfa4e79ce4be 69,74,91-96,99-101,104-106,110-113,125
+  s_fde809a6b235c8::t_2186b90a136f44 3,75-76,86-87,97-98,108-109,114,120-121,131-132,137,141-143,153-159,167-181
+  s_fde809a6b235c8::t_f9788788a09eab 151-152,182
+  s_fde809a6b235c8::t_ae641e334d222d 103,107
+  s_fde809a6b235c8::t_d0682b5ca1fb84 81,85
+  s_fde809a6b235c8::t_7b9743fae87402 1-2,4-64,123,146-150,183
+  s_fde809a6b235c8::t_b1b75cad0292ed 118,124,160-163
+results/optimization/round2-20261119/delivery/b8-recovery-001/result.json
+  s_fde809a6b235c8::t_9a82331fdc1445 1-38105
+results/optimization/round2-20261119/delivery/combined/result.json
+  s_fde809a6b235c8::t_6b59b9ea3ca616 1-71322
+results/optimization/round2-20261119/delivery/pair-001/qualified-C.py
+  s_fde809a6b235c8::t_fb0b4044e04bd0 1-329
+results/optimization/round2-20261119/delivery/pair-001/qualified-delivery.py
+  s_fde809a6b235c8::t_635c73bd0095e4 1-329
+results/optimization/round2-20261119/delivery/pair-001/recovered/completion-C.json
+  s_fde809a6b235c8::t_e54967e509ed08 1-35550
+results/optimization/round2-20261119/delivery/pair-001/recovered/completion-C.log
+  s_fde809a6b235c8::t_9cd0f32d02d07b 1-18
+results/optimization/round2-20261119/delivery/pair-001/recovered/completion-delivery.json
+  s_fde809a6b235c8::t_1a531411b9625f 1-29326
+results/optimization/round2-20261119/delivery/pair-001/recovered/qualify-delivery.log
+  s_fde809a6b235c8::t_4da875355ca409 1-41
+results/optimization/round2-20261119/delivery/pair-001/recovered/result.json
+  s_fde809a6b235c8::t_1271d311bc5577 1-35773
+results/optimization/round2-20261119/delivery/pair-001/request.json
+  s_fde809a6b235c8::t_36f97d1d143ffb 1-57
+results/optimization/round2-20261119/prefill/numeric-001.console.log
+  s_fde809a6b235c8::t_e42d0e68cc720e 1-221
+results/optimization/round2-20261119/prefill/numeric-001/function-call.json
+  s_fde809a6b235c8::t_21dcca173f86f8 1
+results/optimization/round2-20261119/prefill/numeric-001/result.json
+  s_fde809a6b235c8::t_d7b556886c848a 1-246
+results/optimization/round2-20261119/prefill/pair-001/function-call.json
+  s_fde809a6b235c8::t_c2c660d966eb7d 1
+results/optimization/round2-20261119/prefill/pair-001/qualified-C.py
+  s_fde809a6b235c8::t_5c91777635bce2 1-329
+results/optimization/round2-20261119/prefill/pair-001/qualified-prefill.py
+  s_fde809a6b235c8::t_e4e7d7b5194291 1-329
+results/optimization/round2-20261119/prefill/pair-001/request.json
+  s_fde809a6b235c8::t_e882ae570cfccc 1-54
+results/optimization/round2-20261119/shared/delivery-b8-recovery-spec.json
+  s_fde809a6b235c8::t_ccf505dbe7a877 1-32
+results/optimization/round2-20261119/delivery/b8-recovery-001/function-call.json
+  s_fde809a6b235c8::t_08ed73aabf5ec6 1
+results/optimization/round2-20261119/graphs/pair-001/qualified-C.py
+  s_d4533d509be2a0::t_b0ce4bef384e9a 1-329
+results/optimization/round2-20261119/graphs/pair-001/qualified-graphs.py
+  s_d4533d509be2a0::t_89f7f486fc2274 1-331
+results/optimization/round2-20261119/graphs/pair-001/request.json
+  s_d4533d509be2a0::t_be23e02ef3142f 1-59
+results/optimization/round2-20261119/graphs/pair-001/result.json
+  s_fde809a6b235c8::t_5471f3e15e1b3a 1-71344
+results/optimization/round2-20261119/prefill/numeric-001/qualified-C.py
+  s_5b0a30cff19c72::t_db2272be6546c6 1-329
+results/optimization/round2-20261119/prefill/numeric-001/qualified-prefill.py
+  s_5b0a30cff19c72::t_3deb2132747973 1-329
+results/optimization/round2-20261119/prefill/numeric-001/request.json
+  s_5b0a30cff19c72::t_3b0170b1828ab4 1-88
+results/optimization/round2-20261119/prefill/pair-001/result.json
+  s_fde809a6b235c8::t_3818a96e5536ef 1-71318
+results/optimization/round2-20261119/prefill/qual-001/function-call.json
+  s_af0f70fe087529::t_84359d00c62d77 1
+results/optimization/round2-20261119/prefill/qual-001/qualified-prefill.py
+  s_d4533d509be2a0::t_93905d3756db1b 1-329
+results/optimization/round2-20261119/prefill/qual-001/request.json
+  s_d4533d509be2a0::t_65989541597a2b 1-33
+results/optimization/round2-20261119/prefill/qual-001/result.json
+  s_fde809a6b235c8::t_9ca311000d751c 1-179
+results/optimization/round2-20261119/profile/c-001.console.log
+  s_fde809a6b235c8::t_706398b9fb909f 1-280
+results/optimization/round2-20261119/profile/c-001/benchmark.jsonl
+  s_fde809a6b235c8::t_3a4744ea96fd45 1-4
+results/optimization/round2-20261119/profile/c-001/function-call.json
+  s_97652247b3ae8f::t_8b3edd371c0676 1
+results/optimization/round2-20261119/profile/c-001/request.json
+  s_d4533d509be2a0::t_e884fdf30b4ce9 1-487
+results/optimization/round2-20261119/profile/c-001/result.json
+  s_fde809a6b235c8::t_1e18c771adadd9 1-1351
+results/optimization/round2-20261119/profile/c-001/test_muse_glimmer_qualified.py
+  s_d4533d509be2a0::t_2d77b83758a847 1-329
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "00c547179c92a14e5f083f5c4fd632c2527ee8c5",
+  "prompts": {},
+  "humans": {
+    "h_04353115311dd2": {
+      "author": "r-chong <dev.reese.chong@gmail.com>"
+    }
+  },
+  "sessions": {
+    "s_5b0a30cff19c72": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1f72f-3921-79a2-a3a1-0615cc25ccd2",
+        "model": "unknown"
+      },
+      "human_author": "r-chong <dev.reese.chong@gmail.com>"
+    },
+    "s_97652247b3ae8f": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1f725-ca19-7ee0-9989-4a8cc67dcb7f",
+        "model": "unknown"
+      },
+      "human_author": "r-chong <dev.reese.chong@gmail.com>"
+    },
+    "s_af0f70fe087529": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1f725-fcc9-7881-a54c-cd0501f91d68",
+        "model": "unknown"
+      },
+      "human_author": "r-chong <dev.reese.chong@gmail.com>"
+    },
+    "s_d4533d509be2a0": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1f6c9-c71d-7dd0-822e-0d6dd43225b6",
+        "model": "unknown"
+      },
+      "human_author": "r-chong <dev.reese.chong@gmail.com>"
+    },
+    "s_fde809a6b235c8": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1f6c2-b4d7-71e0-b3fa-c7d633aa35e4",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "r-chong <dev.reese.chong@gmail.com>"
+    }
+  }
+}
