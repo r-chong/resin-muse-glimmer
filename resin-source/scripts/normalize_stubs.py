@@ -49,6 +49,7 @@ PROPERTY_TYPES = {
             ("Inkling2Media", ("image_positions",)),
             ("Qwen35Media", ("image_positions",)),
             ("Glm53FlashMedia", ("image_positions",)),
+            ("MuseGlimmerMedia", ("image_positions",)),
         )
         for name in ("token_ids", "cache_key", *extra)
     },
@@ -60,6 +61,7 @@ PROPERTY_TYPES = {
             "Inkling2Media",
             "Qwen35Media",
             "Glm53FlashMedia",
+            "MuseGlimmerMedia",
         )
     },
     **{
@@ -70,6 +72,8 @@ PROPERTY_TYPES = {
             ("Qwen35Media", "pixel_values", "float32", False),
             ("Glm53FlashMedia", "pixel_values", "float32", False),
             ("Glm53FlashMedia", "image_grid_thw", "int64", False),
+            ("MuseGlimmerMedia", "pixel_values", "float32", False),
+            ("MuseGlimmerMedia", "image_grid_thw", "int64", False),
             ("Qwen35Media", "image_grid_thw", "int64", False),
             ("Qwen35Media", "position_ids", "int64", False),
             ("Gemma4Media", "pixel_values", "float32", True),

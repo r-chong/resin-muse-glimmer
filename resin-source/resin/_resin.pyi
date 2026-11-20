@@ -872,6 +872,38 @@ class NativeRecipe(Recipe):
     def tokenizer(self, /) -> RecipeTokenizer: ...
 
 @final
+class MuseGlimmerMedia:
+    def __new__(
+        cls,
+        /,
+        *,
+        token_ids: Sequence[int],
+        image_positions: Sequence[int],
+        pixel_values: Any,
+        image_grid_thw: Any,
+        spatial_merge_size: int,
+        image_token_id: int,
+    ) -> MuseGlimmerMedia: ...
+    @property
+    def cache_key(self, /) -> tuple[int, ...]: ...
+    @property
+    def digest(self, /) -> str: ...
+    @property
+    def image_grid_thw(self, /) -> npt.NDArray[np.int64]: ...
+    @property
+    def image_positions(self, /) -> tuple[int, ...]: ...
+    @property
+    def image_token_id(self, /) -> int: ...
+    @property
+    def pixel_values(self, /) -> npt.NDArray[np.float32]: ...
+    @property
+    def spatial_merge_size(self, /) -> int: ...
+    @property
+    def token_ids(self, /) -> tuple[int, ...]: ...
+    @property
+    def token_spans(self, /) -> tuple[MediaTokenSpan, ...]: ...
+
+@final
 class Parallelism:
     """
     Attention and expert meshes over the same GPU ranks.

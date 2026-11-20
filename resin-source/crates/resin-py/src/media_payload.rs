@@ -286,6 +286,21 @@ macro_rules! packed_image_methods {
 packed_image_methods!(Qwen35Media);
 
 #[pyclass(frozen, module = "resin._resin")]
+pub(crate) struct MuseGlimmerMedia {
+    identity: Identity,
+    positions: Vec<usize>,
+    #[pyo3(get, name = "image_token_id")]
+    marker: u32,
+    #[pyo3(get, name = "spatial_merge_size")]
+    merge: usize,
+    #[pyo3(get, name = "pixel_values")]
+    pixels: Py<PyArrayDyn<f32>>,
+    #[pyo3(get, name = "image_grid_thw")]
+    grids: Py<PyArrayDyn<i64>>,
+}
+packed_image_methods!(MuseGlimmerMedia);
+
+#[pyclass(frozen, module = "resin._resin")]
 pub(crate) struct Glm53FlashMedia {
     identity: Identity,
     positions: Vec<usize>,
@@ -767,6 +782,41 @@ impl Glm53FlashMedia {
         })
     }
 }
+impl MuseGlimmerMedia {
+    #[allow(clippy::too_many_arguments)]
+    pub(crate) fn build(
+        py: Python<'_>,
+        tokens: Vec<u32>,
+        positions: Vec<usize>,
+        pixels: Tensor<f32>,
+        grids: Tensor<i64>,
+        merge: usize,
+        marker: u32,
+    ) -> PyResult<Self> {
+        validate_packed_images(&tokens, &positions, &pixels, &grids, merge, marker, "Muse")?;
+        if grids
+            .data
+            .as_chunks::<3>()
+            .0
+            .iter()
+            .any(|grid| grid[0] != 1)
+        {
+            return Err(error("Muse image payload supports still images only"));
+        }
+        let mut hash = Sha256::new();
+        Digest::update(&mut hash, b"resin.muse_glimmer.media.v1");
+        hash_tensor(&mut hash, "pixels", &pixels);
+        hash_tensor(&mut hash, "grids", &grids);
+        Ok(Self {
+            identity: Identity::new(tokens, &positions, hash)?,
+            positions,
+            marker,
+            merge,
+            pixels: array(py, pixels)?,
+            grids: array(py, grids)?,
+        })
+    }
+}
 pub(crate) fn contiguous_ranges(positions: &[usize]) -> Vec<(usize, usize)> {
     let mut result = Vec::new();
     for &position in positions {
@@ -803,6 +853,11 @@ enum MediaDescriptor {
         marker: u32,
     },
     Glm {
+        positions: Vec<usize>,
+        merge: usize,
+        marker: u32,
+    },
+    Muse {
         positions: Vec<usize>,
         merge: usize,
         marker: u32,
@@ -884,6 +939,16 @@ pub(crate) fn _media_to_buffers(
         push_buffer(py, &mut buffers, &value.pixels);
         push_buffer(py, &mut buffers, &value.grids);
         MediaDescriptor::Glm {
+            positions: value.positions.clone(),
+            merge: value.merge,
+            marker: value.marker,
+        }
+    } else if let Ok(value) = media.cast::<MuseGlimmerMedia>() {
+        let value = value.borrow();
+        push_values(media, &mut buffers, &value.identity.tokens);
+        push_buffer(py, &mut buffers, &value.pixels);
+        push_buffer(py, &mut buffers, &value.grids);
+        MediaDescriptor::Muse {
             positions: value.positions.clone(),
             merge: value.merge,
             marker: value.marker,
@@ -997,6 +1062,19 @@ pub(crate) fn _media_from_buffers(
             Py::new(
                 py,
                 Glm53FlashMedia::build(py, tokens, positions, pixels, grids, merge, marker)?,
+            )?
+            .into_any()
+        }
+        MediaDescriptor::Muse {
+            positions,
+            merge,
+            marker,
+        } => {
+            let pixels = take_buffer(py, &mut buffers)?;
+            let grids = take_buffer(py, &mut buffers)?;
+            Py::new(
+                py,
+                MuseGlimmerMedia::build(py, tokens, positions, pixels, grids, merge, marker)?,
             )?
             .into_any()
         }

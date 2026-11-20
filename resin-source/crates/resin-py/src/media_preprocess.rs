@@ -18,7 +18,7 @@ use sha2::{Digest, Sha256};
 use crate::{
     media_payload::{
         DeepSeekV41Image, DeepSeekV41Media, Gemma4Media, Glm53FlashMedia, Inkling2Media,
-        Qwen35Media, error,
+        MuseGlimmerMedia, Qwen35Media, error,
     },
     recipe_media::MediaTokens,
     recipe_types::MediaSources,
@@ -31,6 +31,7 @@ enum Payload {
     Inkling2(media::inkling2::Prepared, u32),
     Qwen(media::qwen::Prepared, usize, u32),
     Glm(media::qwen::Prepared, usize, u32),
+    Muse(media::qwen::Prepared, usize, u32),
 }
 #[derive(Clone)]
 pub(crate) struct Prepared {
@@ -274,6 +275,15 @@ pub(crate) fn process(
                 Payload::Glm(prepared, config.merge_size, id),
             )
         }
+        MediaConfig::Muse(config) => {
+            let id = encoder.special_id("<|patch|>")?;
+            let prepared = config.process(&images)?;
+            (
+                prepared.token_counts.clone(),
+                "<|patch|>",
+                Payload::Muse(prepared, config.merge_size, id),
+            )
+        }
         MediaConfig::Gemma(_) => unreachable!(),
     };
     let id = encoder.special_id(marker)?;
@@ -327,7 +337,7 @@ impl Prepared {
                     + tensor_bytes(&data.image_grid_thw)
                     + vector_bytes(&data.token_counts)
             }
-            Payload::Qwen(data, _, _) | Payload::Glm(data, _, _) => {
+            Payload::Qwen(data, _, _) | Payload::Glm(data, _, _) | Payload::Muse(data, _, _) => {
                 tensor_bytes(&data.pixel_values)
                     + tensor_bytes(&data.image_grid_thw)
                     + vector_bytes(&data.token_counts)
@@ -356,6 +366,22 @@ impl Prepared {
                 Py::new(
                     py,
                     Glm53FlashMedia::build(
+                        py,
+                        tokens,
+                        positions,
+                        data.pixel_values,
+                        data.image_grid_thw,
+                        merge,
+                        marker,
+                    )?,
+                )?
+                .into_any()
+            }
+            Payload::Muse(data, merge, marker) => {
+                let positions = spans.iter().flat_map(|&(p, n)| p..p + n).collect();
+                Py::new(
+                    py,
+                    MuseGlimmerMedia::build(
                         py,
                         tokens,
                         positions,

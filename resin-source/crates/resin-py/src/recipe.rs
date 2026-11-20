@@ -749,6 +749,22 @@ pub(crate) fn get_native_recipe(
             image_processor_params(tokenizer, params)?,
         )?)),
         "lfm2" => Box::new(resin_recipe::lfm2::Lfm2Recipe::new(recipe_params(params)?)),
+        "muse_glimmer" => {
+            // Transformers' template stamps `strftime_now`; pass `current_date`
+            // explicitly for reproducible prompts.
+            if params.get("current_date").is_none_or(Value::is_null) {
+                let date: String = py
+                    .import("datetime")?
+                    .getattr("date")?
+                    .call_method0("today")?
+                    .call_method0("isoformat")?
+                    .extract()?;
+                params.insert("current_date".into(), Value::String(date));
+            }
+            Box::new(resin_recipe::muse::MuseGlimmerRecipe::new(recipe_params(
+                params,
+            )?))
+        }
         "qwen3_5" => Box::new(resin_recipe::qwen::Qwen35Recipe::new(recipe_params(
             image_processor_params(tokenizer, params)?,
         )?)),
